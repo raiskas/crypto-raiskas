@@ -87,6 +87,52 @@ crypto-raiskas/
 - Edite `src/app/globals.css` para modificar as variáveis de cor
 - Use o ThemeProvider para criar novos temas
 
+## Deploy
+
+### Pré-requisitos
+- Conta no [Vercel](https://vercel.com)
+- Conta no [Supabase](https://supabase.com)
+- [Vercel CLI](https://vercel.com/cli) instalado globalmente
+
+### Variáveis de Ambiente
+Antes de fazer o deploy, você precisa configurar as seguintes variáveis de ambiente:
+
+1. No Supabase:
+   - `NEXT_PUBLIC_SUPABASE_URL`: URL do seu projeto Supabase
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Chave anônima do seu projeto Supabase
+   - `SUPABASE_SERVICE_ROLE_KEY`: Chave de serviço do seu projeto Supabase
+
+2. No Vercel:
+   - Adicione todas as variáveis acima no painel de configuração do projeto
+   - Vá para Settings > Environment Variables
+
+### Processo de Deploy
+
+1. Instale o Vercel CLI:
+```bash
+pnpm add -g vercel
+```
+
+2. Faça login no Vercel:
+```bash
+vercel login
+```
+
+3. Inicie o processo de deploy:
+```bash
+vercel
+```
+
+4. Siga as instruções no terminal:
+   - Selecione o projeto
+   - Confirme as configurações
+   - Aguarde o deploy ser concluído
+
+### Pós-Deploy
+- Verifique se todas as variáveis de ambiente foram configuradas corretamente
+- Teste todas as funcionalidades da aplicação
+- Configure o domínio personalizado se necessário
+
 ## Licença
 
 Este projeto está licenciado sob a licença MIT.

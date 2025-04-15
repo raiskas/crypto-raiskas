@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import fetch from "node-fetch";
 
 // Definir tipos para os dados da API
 interface Moeda {
@@ -39,8 +38,7 @@ async function fetchWithCache(url: string, options?: any) {
       headers: {
         'Accept': 'application/json',
         ...(options?.headers || {})
-      },
-      timeout: 10000
+      }
     });
     
     if (!response.ok) {
@@ -92,8 +90,7 @@ export async function GET(request: NextRequest) {
         {
           headers: {
             'Accept': 'application/json'
-          },
-          timeout: 10000
+          }
         }
       );
       

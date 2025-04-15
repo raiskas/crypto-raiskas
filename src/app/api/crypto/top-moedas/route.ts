@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import fetch from "node-fetch";
 
 // Definir tipos para os dados da API
 interface TopMoeda {
