@@ -1,36 +1,92 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Crypto Raiskas - Sistema de Gestão
 
-## Getting Started
+Um sistema de gestão empresarial altamente adaptável e escalável, construído com Next.js, Supabase e Shadcn/UI.
 
-First, run the development server:
+## Recursos Principais
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Autenticação Completa**: Sistema de login e cadastro integrado com Supabase Auth
+- **Gestão de Permissões**: Controle fino de acesso baseado em grupos e permissões
+- **Multi-empresas**: Suporte a múltiplas empresas com isolamento de dados
+- **UI Moderna**: Interface de usuário responsiva e acessível usando Shadcn/UI
+- **Tema Claro/Escuro**: Suporte a temas claro e escuro com persistência
+- **Módulos**: Estrutura modular para fácil adição de novas funcionalidades
+
+## Tecnologias Utilizadas
+
+- **Framework**: Next.js 15
+- **Banco de Dados**: Supabase (PostgreSQL)
+- **Autenticação**: Supabase Auth
+- **UI**: Shadcn/UI + Tailwind CSS
+- **Formulários**: React Hook Form + Zod
+- **Gerenciador de Pacotes**: pnpm
+
+## Pré-requisitos
+
+- Node.js 18+
+- pnpm 8+
+- Conta no Supabase
+
+## Instalação
+
+1. Clone o repositório:
+   ```bash
+   git clone https://github.com/seu-usuario/crypto-raiskas.git
+   cd crypto-raiskas
+   ```
+
+2. Instale as dependências:
+   ```bash
+   pnpm install
+   ```
+
+3. Configure as variáveis de ambiente:
+   - Crie um arquivo `.env.local` baseado no `.env.example`
+   - Preencha as credenciais do Supabase
+
+4. Configure o banco de dados:
+   - Acesse o painel do Supabase
+   - Execute o script SQL `supabase-schema.sql` no editor SQL do Supabase
+
+5. Inicie o servidor de desenvolvimento:
+   ```bash
+   pnpm dev
+   ```
+
+6. Acesse o sistema em [http://localhost:3000](http://localhost:3000)
+
+## Estrutura do Projeto
+
+```
+crypto-raiskas/
+├── src/
+│   ├── app/                   # Rotas e páginas
+│   │   ├── (auth)/            # Rotas de autenticação
+│   │   ├── (dashboard)/       # Rotas protegidas
+│   │   └── api/               # Rotas da API
+│   ├── components/            # Componentes reutilizáveis
+│   │   ├── ui/                # Componentes de UI
+│   │   └── layouts/           # Layouts
+│   └── lib/                   # Utilitários e clientes
+│       ├── supabase/          # Cliente Supabase
+│       └── utils/             # Funções utilitárias
+├── public/                    # Arquivos estáticos
+└── supabase-schema.sql        # Esquema do banco de dados
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Personalização
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Adicionando um Novo Módulo
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Crie uma pasta para o módulo em `src/app/(dashboard)/nome-do-modulo/`
+2. Adicione as rotas e componentes necessários
+3. Atualize o banco de dados com novas tabelas se necessário
+4. Adicione permissões para o novo módulo
 
-## Learn More
+### Customizando o Tema
 
-To learn more about Next.js, take a look at the following resources:
+- Edite `src/app/globals.css` para modificar as variáveis de cor
+- Use o ThemeProvider para criar novos temas
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Licença
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Este projeto está licenciado sob a licença MIT.
