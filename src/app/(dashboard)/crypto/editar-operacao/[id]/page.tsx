@@ -65,7 +65,7 @@ const formSchema = z.object({
   preco_unitario: z.coerce.number().positive({ message: "Preço unitário deve ser maior que zero" }),
   valor_total: z.coerce.number().min(0, { message: "Valor total não pode ser negativo" }),
   data_operacao: z.string().min(1, { message: "Data é obrigatória" }),
-  exchange: z.string().default(""),
+  exchange: z.string().optional(),
   notas: z.string().nullable().optional()
 });
 
@@ -83,7 +83,7 @@ interface Operacao {
   valor_total: number;
   taxa: number;
   data_operacao: string;
-  exchange: string;
+  exchange: string | null;
   notas: string | null;
   criado_em: string;
   atualizado_em: string;
@@ -145,7 +145,7 @@ export default function EditarOperacaoPage() {
       preco_unitario: 0,
       valor_total: 0,
       data_operacao: format(new Date(), 'yyyy-MM-dd'),
-      exchange: "",
+      exchange: undefined,
       notas: ""
     }
   });
@@ -203,7 +203,7 @@ export default function EditarOperacaoPage() {
         form.setValue("preco_unitario", operacaoData.preco_unitario);
         form.setValue("valor_total", operacaoData.valor_total);
         form.setValue("data_operacao", dataFormatada);
-        form.setValue("exchange", operacaoData.exchange || "");
+        form.setValue("exchange", operacaoData.exchange || undefined);
         form.setValue("notas", operacaoData.notas || "");
         
         // Criar objeto para moeda selecionada
@@ -336,7 +336,7 @@ export default function EditarOperacaoPage() {
         preco_unitario: Number(values.preco_unitario),
         valor_total: Number(values.valor_total),
         data_operacao: dataFormatada,
-        exchange: values.exchange || "",
+        exchange: values.exchange || null,
         notas: values.notas || null,
         taxa: 0 // Adicionando taxa com valor padrão 0
       };
