@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 async function checkUserPermission(userId: string, permissionName: string): Promise<boolean> {
   try {
     const { createServerSupabaseClient } = await import('@/lib/supabase/server');
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
     
     // 1. Buscar grupos do usuário
     const { data: userGroups } = await supabase
