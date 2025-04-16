@@ -124,7 +124,7 @@ export function Sidebar({ className }: { className?: string }) {
             
             {isGroupOpen && (
               <div className="ml-4 mt-1 space-y-1 border-l pl-3">
-                {item.submenu.map(subItem => (
+                {item.submenu?.map(subItem => (
                   <Link
                     key={subItem.href}
                     href={subItem.href}
