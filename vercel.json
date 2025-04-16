@@ -1,8 +1,9 @@
 {
-  "version": 2,
-  "buildCommand": "pnpm run build",
-  "installCommand": "pnpm install --no-frozen-lockfile",
+  "buildCommand": "pnpm build",
+  "installCommand": "pnpm install",
   "framework": "nextjs",
+  "outputDirectory": ".next",
+  "regions": ["gru1"],
   "env": {
     "NODE_ENV": "production"
   }
