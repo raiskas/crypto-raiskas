@@ -3,12 +3,6 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-export default function DashboardRootPage() {
-  const router = useRouter();
-  
-  useEffect(() => {
-    router.push("/home");
-  }, [router]);
-  
+export default function Placeholder() {
   return null;
 } 

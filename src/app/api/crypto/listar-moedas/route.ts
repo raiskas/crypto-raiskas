@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from "next/server";
 
 // Definir tipos para os dados da API
