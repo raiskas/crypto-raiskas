@@ -116,10 +116,15 @@ export async function GET(request: NextRequest) {
       // Adicionar preços estimados
       for (const moeda of moedas) {
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+
           const priceResponse = await fetch(
             `https://api.coingecko.com/api/v3/simple/price?ids=${moeda.id}&vs_currencies=usd`,
-            { timeout: 5000 }
+            { signal: controller.signal }
           );
+          
+          clearTimeout(timeoutId);
           
           if (priceResponse.ok) {
             const priceData = await priceResponse.json();
