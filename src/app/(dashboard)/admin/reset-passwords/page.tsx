@@ -27,7 +27,7 @@ const adminResetSchema = z.object({
 });
 
 export default function AdminResetPasswordPage() {
-  const { forceResetPassword } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
