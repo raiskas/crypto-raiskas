@@ -29,9 +29,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true, // Ignora erros de tipo do TypeScript
   },
-  experimental: {
-    serverComponentsExternalPackages: ['bcrypt']
-  }
+  serverExternalPackages: ['bcrypt']
 };
 
 export default nextConfig;
