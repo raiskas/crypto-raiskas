@@ -19,6 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AlertCircle, CheckCircle, LockIcon } from "lucide-react";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { useRouter } from "next/navigation";
+import { forceResetPassword } from "@/lib/admin";
 
 const adminResetSchema = z.object({
   email: z.string().email("Por favor, informe um email válido"),
