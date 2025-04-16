@@ -22,14 +22,18 @@ export async function forceResetPassword(
       };
     }
 
-    // Buscar usuário pelo email
-    const { data: user, error: userError } = await adminClient
-      .from('users')
-      .select('id')
-      .eq('email', email)
-      .single();
+    // Buscar usuário pelo email usando a API de administração
+    const { data: { users }, error: listError } = await adminClient.auth.admin.listUsers();
+    
+    if (listError) {
+      return {
+        success: false,
+        error: "Erro ao buscar usuário"
+      };
+    }
 
-    if (userError || !user) {
+    const user = users.find(u => u.email === email);
+    if (!user) {
       return {
         success: false,
         error: "Usuário não encontrado"
@@ -58,5 +62,21 @@ export async function forceResetPassword(
       success: false,
       error: "Erro interno ao processar a solicitação"
     };
+  }
+}
+
+export async function getUsers() {
+  try {
+    const { data: users, error } = await adminClient.auth.admin.listUsers();
+    
+    if (error) {
+      console.error('Erro ao buscar usuários:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: users };
+  } catch (error) {
+    console.error('Erro ao buscar usuários:', error);
+    return { success: false, error: 'Erro ao buscar usuários' };
   }
 } 
