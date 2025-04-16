@@ -1,18 +1,18 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserClient } from '@supabase/ssr';
 import { Database } from '@/types/supabase';
 import { supabaseConfig } from '@/lib/config';
 
 // Cria um cliente do Supabase para uso no lado do cliente
 // Utiliza o helper específico para Next.js que já lida com persistência de sessão
 export const createClient = () => {
-  return createClientComponentClient<Database>({
-    supabaseUrl: supabaseConfig.url,
-    supabaseKey: supabaseConfig.anonKey,
-  });
+  return createBrowserClient<Database>(
+    supabaseConfig.url,
+    supabaseConfig.anonKey
+  );
 };
 
 // Singleton para evitar múltiplas instâncias
-let supabaseInstance: ReturnType<typeof createClientComponentClient<Database>> | null = null;
+let supabaseInstance: ReturnType<typeof createBrowserClient<Database>> | null = null;
 
 export const getSupabase = () => {
   if (!supabaseInstance) {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserClient } from '@supabase/ssr';
 import { Database } from '@/types/supabase';
 import { supabaseConfig } from '@/lib/config';
 
@@ -18,10 +18,10 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   
   // Criar cliente Supabase diretamente (sem singleton)
-  const supabase = createClientComponentClient<Database>({
-    supabaseUrl: supabaseConfig.url,
-    supabaseKey: supabaseConfig.anonKey,
-  });
+  const supabase = createBrowserClient<Database>(
+    supabaseConfig.url,
+    supabaseConfig.anonKey
+  );
   
   // Renovar token automaticamente
   const refreshToken = async () => {
