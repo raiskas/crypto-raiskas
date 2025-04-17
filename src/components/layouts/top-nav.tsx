@@ -74,16 +74,9 @@ export function TopNav() {
       icon: <Bitcoin className="h-4 w-4" />,
     },
     {
-      title: "Administrativo",
-      href: "/admin",
-      icon: <Settings className="h-4 w-4" />,
-      submenu: [
-        {
-          title: "Usuários",
-          href: "/admin/usuarios",
-          icon: <Users className="h-4 w-4" />,
-        }
-      ],
+      title: "Usuários",
+      href: "/admin/usuarios",
+      icon: <Users className="h-4 w-4" />,
     },
     {
       title: "Perfil",
@@ -130,10 +123,22 @@ export function TopNav() {
         <nav className="hidden md:flex items-center space-x-1 flex-1" aria-label="Menu principal">
           {menuItems.map((item) => 
             item.submenu ? (
-              <DropdownMenu key={item.href}>
+              <DropdownMenu 
+                key={item.href}
+                onOpenChange={(open) => {
+                  if (item.href === '/admin') { 
+                    console.log(`[Dropdown Admin] onOpenChange chamado: ${open}`);
+                  }
+                }}
+              >
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
+                    onClick={(e) => {
+                       if (item.href === '/admin') { 
+                         console.log("[Dropdown Admin] Clique DIRETO no BOTÃO registrado!");
+                       }
+                    }}
                     className={cn(
                       "h-10 px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground relative",
                       isActive(item) ? "text-primary" : "text-foreground",
