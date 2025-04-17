@@ -49,7 +49,9 @@ export function AuthProvider({
   
   // Mostrar componente de loading enquanto verifica autenticação
   if (loading) {
-    return <AuthLoading />;
+    // Comentar temporariamente para teste
+    // return <AuthLoading />;
+    return null; // Retornar null para não renderizar o overlay durante o loading
   }
   
   return <>{children}</>;

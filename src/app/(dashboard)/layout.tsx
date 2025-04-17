@@ -2,8 +2,8 @@ import { AuthProvider } from "@/providers/auth-provider";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "../globals.css";
-import { TopNav } from "@/components/layouts/top-nav";
 import { Toaster } from "sonner";
+import { TopNav } from "@/components/layouts/top-nav";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,7 +21,7 @@ export default function DashboardLayout({
     <AuthProvider requireAuth={true}>
       <div className="flex min-h-screen flex-col">
         <TopNav />
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main className="flex-1 p-4 pt-6 md:p-6">{children}</main>
         <Toaster />
       </div>
     </AuthProvider>
