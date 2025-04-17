@@ -24,10 +24,6 @@ const nextConfig = {
     });
     return config;
   },
-  // Configurações adicionais para Vercel
-  experimental: {
-    serverActions: true,
-  },
   // Otimizações de build
   swcMinify: true,
   compiler: {
