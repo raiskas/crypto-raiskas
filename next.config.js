@@ -2,7 +2,14 @@
 const nextConfig = {
   output: 'standalone',
   images: {
-    domains: ['coin-images.coingecko.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'assets.coingecko.com',
+        port: '',
+        pathname: '/coins/images/**',
+      },
+    ],
   },
   webpack: (config) => {
     config.externals.push({
