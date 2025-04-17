@@ -62,7 +62,7 @@ const getClientWithCookies = async () => {
 };
 
 // Obter informações do usuário atual com base na sessão
-export const getCurrentUser = async () => {
+const getCurrentUser = async () => {
   try {
     console.log('[API:operacoes] Iniciando verificação de usuário');
     
