@@ -11,12 +11,12 @@ export const metadata: Metadata = {
  * Redireciona permanentemente para a página home que contém o dashboard completo
  */
 export default function DashboardPage() {
-  // Conteúdo mínimo para garantir que o Next.js gere os arquivos necessários
-  return (
-    <div className="hidden">
-      <h1>Dashboard</h1>
-    </div>
-  );
+  // Força a geração dos arquivos necessários
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  
+  permanentRedirect('/home');
 }
 
 // Redirecionamento após o conteúdo ser renderizado
