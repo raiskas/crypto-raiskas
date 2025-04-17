@@ -28,7 +28,17 @@ const nextConfig = {
   swcMinify: true,
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
-  }
+  },
+  // Adiciona redirecionamentos
+  async redirects() {
+    return [
+      {
+        source: '/dashboard',
+        destination: '/home',
+        permanent: true, // Redirecionamento 308
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig 
