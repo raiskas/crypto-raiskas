@@ -816,23 +816,24 @@ export default function CryptoPage() {
                       <TableRow key={item.moeda_id}>
                         <TableCell className="flex items-center space-x-2">
                           {item.image ? (
-                            <img
-                              src={item.image}
-                              alt={item.nome}
-                              className="w-6 h-6 rounded-full"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = "/placeholder-coin.png";
-                              }}
-                            />
+                            <>
+                              <div className="relative w-6 h-6">
+                                <Image
+                                  src={item.image}
+                                  alt={item.nome}
+                                  fill
+                                  className="object-contain rounded-full"
+                                  onError={(e) => {
+                                    const img = e.target as HTMLImageElement;
+                                    img.src = "/placeholder-coin.png";
+                                  }}
+                                />
+                              </div>
+                              <span className="font-medium">{item.nome}</span>
+                            </>
                           ) : (
-                            <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
-                              {item.simbolo.charAt(0).toUpperCase()}
-                            </div>
+                            <span>Moeda não encontrada</span>
                           )}
-                          <span className="font-medium">{item.nome}</span>
-                          <span className="text-xs text-muted-foreground">
-                            ({item.simbolo.toUpperCase()})
-                          </span>
                         </TableCell>
                         <TableCell>{formatarQuantidade(item.quantidade)}</TableCell>
                         <TableCell>{formatarMoeda(item.valorMedio)}</TableCell>
@@ -879,23 +880,24 @@ export default function CryptoPage() {
                   <div key={item.moeda_id} className="border-t border-border p-4">
                     <div className="flex items-center mb-2">
                       {item.image ? (
-                        <img
-                          src={item.image}
-                          alt={item.nome}
-                          className="w-6 h-6 rounded-full mr-2"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/placeholder-coin.png";
-                          }}
-                        />
+                        <>
+                          <div className="relative w-6 h-6">
+                            <Image
+                              src={item.image}
+                              alt={item.nome}
+                              fill
+                              className="object-contain rounded-full"
+                              onError={(e) => {
+                                const img = e.target as HTMLImageElement;
+                                img.src = "/placeholder-coin.png";
+                              }}
+                            />
+                          </div>
+                          <span>{item.nome}</span>
+                        </>
                       ) : (
-                        <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center mr-2">
-                          {item.simbolo.charAt(0).toUpperCase()}
-                        </div>
+                        <span>Moeda não encontrada</span>
                       )}
-                      <div>
-                        <div className="font-medium">{item.nome}</div>
-                        <div className="text-xs text-muted-foreground">{item.simbolo.toUpperCase()}</div>
-                      </div>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-2 text-sm">
@@ -1047,14 +1049,18 @@ export default function CryptoPage() {
                           <TableCell className="flex items-center space-x-2">
                             {moeda ? (
                               <>
-                                <img
-                                  src={moeda.image}
-                                  alt={moeda.name}
-                                  className="w-6 h-6 rounded-full"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).src = "/placeholder-coin.png";
-                                  }}
-                                />
+                                <div className="relative w-6 h-6">
+                                  <Image
+                                    src={moeda.image}
+                                    alt={moeda.name}
+                                    fill
+                                    className="object-contain rounded-full"
+                                    onError={(e) => {
+                                      const img = e.target as HTMLImageElement;
+                                      img.src = "/placeholder-coin.png";
+                                    }}
+                                  />
+                                </div>
                                 <span>{moeda.name}</span>
                               </>
                             ) : (

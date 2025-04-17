@@ -159,7 +159,7 @@ export class CryptoService {
         priceChangePercentage24h: 0, // Não disponível nesta rota
         marketCap: 0, // Não disponível nesta rota
         marketCapRank: coin.market_cap_rank || 0,
-        imageUrl: coin.large || coin.thumb
+        imageUrl: coin.large ? coin.large.replace('coin-images.coingecko.com', 'assets.coingecko.com') : coin.thumb
       }));
     } catch (error) {
       console.error('Erro ao pesquisar criptomoedas:', error);
