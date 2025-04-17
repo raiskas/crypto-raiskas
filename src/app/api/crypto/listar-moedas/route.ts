@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+export const revalidate = 300 // 5 minutos
 
 import { NextRequest, NextResponse } from "next/server";
 
@@ -40,6 +41,9 @@ async function fetchWithCache(url: string, options?: any) {
       headers: {
         'Accept': 'application/json',
         ...(options?.headers || {})
+      },
+      next: {
+        revalidate: 300 // 5 minutos
       }
     });
     
@@ -57,6 +61,34 @@ async function fetchWithCache(url: string, options?: any) {
     };
     
     return data;
+  } catch (error) {
+    console.error(`[API:listar-moedas] Erro ao buscar ${url}:`, error);
+    throw error;
+  }
+}
+
+// Função auxiliar para buscar dados
+async function fetchData(url: string, options?: any) {
+  console.log(`[API:listar-moedas] Buscando dados de ${url}`);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Accept': 'application/json',
+        ...(options?.headers || {})
+      },
+      next: {
+        revalidate: 300 // 5 minutos
+      }
+    });
+    
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Erro na requisição: ${response.status} - ${text}`);
+    }
+    
+    return await response.json();
   } catch (error) {
     console.error(`[API:listar-moedas] Erro ao buscar ${url}:`, error);
     throw error;

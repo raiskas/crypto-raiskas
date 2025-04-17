@@ -11,6 +11,15 @@ const nextConfig = {
     });
     return config;
   },
+  // Configurações adicionais para Vercel
+  experimental: {
+    serverActions: true,
+  },
+  // Otimizações de build
+  swcMinify: true,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  }
 }
 
 module.exports = nextConfig 
