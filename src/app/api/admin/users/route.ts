@@ -181,68 +181,94 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
+    console.log("[API:AdminUsers:PATCH] Corpo da requisição recebido:", body); // Log completo do body
     const { id, nome, email, password, empresa_id, ativo } = body;
     
     if (!id) {
+      console.error("[API:AdminUsers:PATCH] ID do usuário faltando no corpo da requisição");
       return NextResponse.json(
         { error: "ID do usuário é obrigatório" },
         { status: 400 }
       );
     }
     
-    console.log("[API:AdminUsers] Atualizando usuário:", id);
+    console.log(`[API:AdminUsers:PATCH] Atualizando usuário com ID (auth_id): ${id}`);
     
     // Atualizar senha se fornecida
     if (password) {
-      const { error: updateAuthError } = await supabase.auth.admin.updateUserById(id, {
-        password,
+      console.log(`[API:AdminUsers:PATCH] Tentando atualizar senha para o usuário ID: ${id}`);
+      const { data: updateResult, error: updateAuthError } = await supabase.auth.admin.updateUserById(id, {
+        password, // A API do Supabase espera 'password'
       });
       
       if (updateAuthError) {
-        console.error("[API:AdminUsers] Erro ao atualizar senha:", updateAuthError);
-        return NextResponse.json({ error: updateAuthError.message }, { status: 500 });
+        console.error(`[API:AdminUsers:PATCH] Erro ao atualizar senha para usuário ID ${id}:`, updateAuthError);
+        // Retornar o erro específico do Supabase se possível
+        return NextResponse.json({ error: `Erro ao atualizar senha: ${updateAuthError.message}` }, { status: 500 });
       }
       
-      console.log("[API:AdminUsers] Senha atualizada com sucesso");
+      console.log(`[API:AdminUsers:PATCH] Senha atualizada com sucesso no Supabase Auth para usuário ID ${id}. Resultado:`, updateResult);
+    } else {
+      console.log(`[API:AdminUsers:PATCH] Nenhuma senha fornecida para atualização para o usuário ID: ${id}`);
     }
     
-    // Buscar registro da tabela personalizada
-    const { data: dbUser, error: findError } = await supabase
-      .from('usuarios')
-      .select('id')
-      .eq('auth_id', id)
-      .single();
-    
-    if (findError) {
-      console.error("[API:AdminUsers] Erro ao buscar registro de usuário:", findError);
-      return NextResponse.json({ error: findError.message }, { status: 500 });
-    }
-    
-    // Atualizar registro na tabela personalizada
+    // Continuar com a atualização dos dados na tabela 'usuarios' (se houver)
     const updateData: any = {};
-    if (nome) updateData.nome = nome;
-    if (email) updateData.email = email;
+    if (nome !== undefined) updateData.nome = nome;
+    if (email !== undefined) updateData.email = email; // Permitir atualização de email se necessário?
     if (empresa_id !== undefined) updateData.empresa_id = empresa_id;
     if (ativo !== undefined) updateData.ativo = ativo;
-    
+
+    // Atualizar apenas se houver dados além da senha
     if (Object.keys(updateData).length > 0) {
-      const { error: updateError } = await supabase
-        .from('usuarios')
-        .update(updateData)
-        .eq('id', dbUser.id);
-      
-      if (updateError) {
-        console.error("[API:AdminUsers] Erro ao atualizar registro:", updateError);
-        return NextResponse.json({ error: updateError.message }, { status: 500 });
-      }
-      
-      console.log("[API:AdminUsers] Usuário atualizado com sucesso");
+        console.log(`[API:AdminUsers:PATCH] Tentando atualizar dados na tabela 'usuarios' para auth_id ${id}:`, updateData);
+        // Buscar registro da tabela personalizada pelo auth_id para obter o ID da tabela
+        const { data: dbUser, error: findError } = await supabase
+          .from('usuarios')
+          .select('id')
+          .eq('auth_id', id)
+          .maybeSingle(); // Usar maybeSingle para não dar erro se não encontrar
+
+        if (findError) {
+          console.error(`[API:AdminUsers:PATCH] Erro ao buscar registro de usuário na tabela 'usuarios' para auth_id ${id}:`, findError);
+          // Considerar se deve retornar erro ou apenas logar, dependendo do caso de uso
+          return NextResponse.json({ error: `Erro ao buscar usuário no banco: ${findError.message}` }, { status: 500 });
+        }
+
+        if (!dbUser) {
+            console.warn(`[API:AdminUsers:PATCH] Usuário com auth_id ${id} não encontrado na tabela 'usuarios' para atualização de dados.`);
+             // Decidir se isso é um erro ou apenas um aviso. 
+             // Se a senha foi atualizada com sucesso, talvez retornar sucesso parcial?
+             // Por ora, vamos retornar um erro se tentou atualizar dados e não encontrou o usuário.
+             return NextResponse.json({ error: `Usuário não encontrado na tabela para atualizar dados (auth_id: ${id})` }, { status: 404 });
+        }
+
+        console.log(`[API:AdminUsers:PATCH] Encontrado ID da tabela 'usuarios': ${dbUser.id} para auth_id ${id}. Atualizando dados...`);
+        const { error: updateDbError } = await supabase
+          .from('usuarios')
+          .update(updateData)
+          .eq('id', dbUser.id); // Usar o ID da tabela 'usuarios' para o update
+        
+        if (updateDbError) {
+          console.error(`[API:AdminUsers:PATCH] Erro ao atualizar registro na tabela 'usuarios' para ID ${dbUser.id}:`, updateDbError);
+          return NextResponse.json({ error: `Erro ao atualizar dados no banco: ${updateDbError.message}` }, { status: 500 });
+        }
+        
+        console.log(`[API:AdminUsers:PATCH] Dados atualizados com sucesso na tabela 'usuarios' para ID ${dbUser.id}`);
+    } else {
+         console.log(`[API:AdminUsers:PATCH] Nenhum dado adicional (além da senha) para atualizar na tabela 'usuarios' para auth_id ${id}.`);
     }
     
+    // Se chegou até aqui, a operação (senha e/ou dados) foi bem-sucedida
     return NextResponse.json({ message: "Usuário atualizado com sucesso" });
+
   } catch (error: any) {
-    console.error("[API:AdminUsers] Erro inesperado:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[API:AdminUsers:PATCH] Erro inesperado no handler PATCH:", error);
+    // Verificar se o erro é de parsing do JSON
+    if (error instanceof SyntaxError) {
+        return NextResponse.json({ error: "Erro ao parsear JSON da requisição" }, { status: 400 });
+    }
+    return NextResponse.json({ error: `Erro interno no servidor: ${error.message}` }, { status: 500 });
   }
 }
 

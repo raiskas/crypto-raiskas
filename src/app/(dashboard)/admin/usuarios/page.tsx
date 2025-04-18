@@ -53,6 +53,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import Link from "next/link";
 
 // Tipos
 interface User {
@@ -74,11 +75,6 @@ const createUserSchema = z.object({
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
 });
 
-const editUserSchema = z.object({
-  nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-  email: z.string().email("Email inválido"),
-});
-
 const changePasswordSchema = z.object({
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   passwordConfirm: z.string().min(6, "Confirme a senha"),
@@ -94,7 +90,6 @@ export default function UserManagementPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -108,14 +103,6 @@ export default function UserManagementPage() {
       nome: "",
       email: "",
       password: "",
-    },
-  });
-
-  const editForm = useForm<z.infer<typeof editUserSchema>>({
-    resolver: zodResolver(editUserSchema),
-    defaultValues: {
-      nome: "",
-      email: "",
     },
   });
 
@@ -182,43 +169,6 @@ export default function UserManagementPage() {
     } catch (err: any) {
       setError(err.message || "Erro ao criar usuário");
       console.error("Erro ao criar usuário:", err);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // Editar usuário
-  const handleEditUser = async (values: z.infer<typeof editUserSchema>) => {
-    if (!selectedUser) return;
-    
-    setActionLoading(true);
-    setError(null);
-    setSuccess(null);
-    
-    try {
-      const response = await fetch('/api/admin/users', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: selectedUser.id,
-          ...values,
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || "Erro ao atualizar usuário");
-      }
-      
-      setSuccess("Usuário atualizado com sucesso!");
-      setIsEditOpen(false);
-      loadUsers();
-    } catch (err: any) {
-      setError(err.message || "Erro ao atualizar usuário");
-      console.error("Erro ao atualizar usuário:", err);
     } finally {
       setActionLoading(false);
     }
@@ -291,14 +241,6 @@ export default function UserManagementPage() {
     }
   };
 
-  // Abrir modal de edição
-  const openEditModal = (user: User) => {
-    setSelectedUser(user);
-    editForm.setValue("nome", user.nome);
-    editForm.setValue("email", user.email);
-    setIsEditOpen(true);
-  };
-
   // Abrir modal de senha
   const openPasswordModal = (user: User) => {
     setSelectedUser(user);
@@ -323,7 +265,7 @@ export default function UserManagementPage() {
   };
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container py-10">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
@@ -476,27 +418,32 @@ export default function UserManagementPage() {
                       <TableCell>{formatDate(user.criado_em)}</TableCell>
                       <TableCell>{formatDate(user.ultimo_login)}</TableCell>
                       <TableCell className="text-right space-x-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => openEditModal(user)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => openPasswordModal(user)}
-                        >
-                          <Key className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="destructive" 
-                          size="sm" 
-                          onClick={() => openDeleteModal(user)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex justify-end space-x-2">
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
+                            onClick={() => router.push(`/admin/usuarios/${user.id}/edit`)}
+                            title="Editar Usuário"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
+                            onClick={() => openPasswordModal(user)}
+                            title="Alterar Senha"
+                          >
+                            <Key className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="icon" 
+                            onClick={() => openDeleteModal(user)}
+                            title="Excluir Usuário"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -506,73 +453,6 @@ export default function UserManagementPage() {
           )}
         </CardContent>
       </Card>
-      
-      {/* Modal de Edição */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Usuário</DialogTitle>
-            <DialogDescription>
-              Altere as informações do usuário
-            </DialogDescription>
-          </DialogHeader>
-          
-          {error && (
-            <div className="bg-destructive/15 text-destructive flex items-center p-3 rounded-md">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              <span className="text-sm">{error}</span>
-            </div>
-          )}
-          
-          <Form {...editForm}>
-            <form onSubmit={editForm.handleSubmit(handleEditUser)} className="space-y-4">
-              <FormField
-                control={editForm.control}
-                name="nome"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nome do usuário" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={editForm.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="email@exemplo.com" type="email" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <DialogFooter>
-                <Button variant="outline" type="button" onClick={() => setIsEditOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={actionLoading}>
-                  {actionLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Salvando...
-                    </>
-                  ) : (
-                    "Salvar Alterações"
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
       
       {/* Modal de Senha */}
       <Dialog open={isPasswordOpen} onOpenChange={setIsPasswordOpen}>

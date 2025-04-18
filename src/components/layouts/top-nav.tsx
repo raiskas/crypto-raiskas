@@ -1,14 +1,24 @@
 "use client";
 
 import Link from "next/link";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown } from "lucide-react";
 
 const navItems = [
   { href: "/home", label: "Home" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/crypto", label: "Crypto" },
   { href: "/vendas", label: "Vendas" },
-  { href: "/perfil", label: "Perfil" },
-  { href: "/admin", label: "Admin" },
+];
+
+const adminNavItems = [
+  { href: "/admin", label: "Visão Geral" },
+  { href: "/admin/usuarios", label: "Usuários" },
 ];
 
 export function TopNav() {
@@ -28,6 +38,20 @@ export function TopNav() {
               {item.label}
             </Link>
           ))}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+              Painel Administrativo
+              <ChevronDown className="relative top-[1px] ml-1 h-3 w-3" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {adminNavItems.map((item) => (
+                <DropdownMenuItem key={item.href} asChild>
+                  <Link href={item.href}>{item.label}</Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         {/* Adicionar menu do usuário aqui se necessário no futuro */}
       </div>
