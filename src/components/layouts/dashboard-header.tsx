@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { useUserData } from "@/lib/hooks/use-user-data";
+import { toast } from "sonner";
 
 const navItems = [
   { href: "/home", label: "Home" },
@@ -24,16 +25,36 @@ const navItems = [
 const adminNavItems = [
   { href: "/admin", label: "Visão Geral" },
   { href: "/admin/usuarios", label: "Usuários" },
+  { href: "/admin/empresas", label: "Empresas" },
 ];
 
 export function DashboardHeader() {
   const router = useRouter();
-  const { signOut, user } = useAuth();
+  const { user } = useAuth();
   const { userData, loading } = useUserData();
 
   const handleLogout = async () => {
-    await signOut();
-    router.push("/signin");
+    console.log("[Header] handleLogout iniciado.");
+    try {
+      console.log("[Header] Chamando POST /api/auth/logout...");
+      const response = await fetch('/api/auth/logout', { method: 'POST' });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("[Header] Erro ao chamar API de logout:", response.status, errorData);
+        toast.error(errorData.error || "Erro no servidor ao fazer logout.");
+        return;
+      }
+
+      console.log("[Header] API de logout retornou sucesso. Limpando estado local e redirecionando...");
+      
+      toast.success("Logout realizado com sucesso");
+      window.location.href = "/signin";
+
+    } catch (error) {
+      console.error("[Header] Exceção em handleLogout:", error);
+      toast.error("Erro inesperado ao tentar fazer logout.");
+    }
   };
 
   return (

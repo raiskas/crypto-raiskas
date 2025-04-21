@@ -37,10 +37,12 @@ import { ArrowLeft, Search } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { useAuth } from "@/lib/hooks/use-auth";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseConfig } from "@/lib/config";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { getServerUser } from '@/lib/supabase/async-cookies';
+import { useUserData } from "@/lib/hooks/use-user-data";
+import { getSupabase } from "@/lib/supabase/client";
 
 // Tipo para a moeda
 interface Moeda {
@@ -64,7 +66,8 @@ const formSchema = z.object({
   valor_total: z.coerce.number().min(0, { message: "Valor total não pode ser negativo" }),
   data_operacao: z.string().min(1, { message: "Data é obrigatória" }),
   exchange: z.string(),
-  notas: z.string()
+  notas: z.string(),
+  grupo_id: z.string().uuid("ID do Grupo inválido")
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -104,7 +107,9 @@ export default function NovaOperacaoPage() {
   const [searchResults, setSearchResults] = useState<Moeda[]>([]);
   const [searchingCoins, setSearchingCoins] = useState(false);
   const [selectedCoin, setSelectedCoin] = useState<Moeda | null>(null);
-  const { checkAuthState } = useAuth();
+
+  // Adicionar hook useUserData
+  const { userData, loading: loadingUserData, error: errorUserData } = useUserData();
 
   // Inicializar o formulário
   const form = useForm<FormValues>({
@@ -119,7 +124,8 @@ export default function NovaOperacaoPage() {
       valor_total: 0,
       data_operacao: format(new Date(), 'yyyy-MM-dd'),
       exchange: "",
-      notas: ""
+      notas: "",
+      grupo_id: ""
     }
   });
 
@@ -292,8 +298,56 @@ export default function NovaOperacaoPage() {
     form.setValue("nome", "");
   };
 
+  // Função para buscar o grupo_id do usuário
+  const fetchUserGroup = async (userId: string): Promise<string | null> => {
+    try {
+      const supabase = getSupabase(); // Reutilizar cliente Supabase
+      const { data, error } = await supabase
+        .from('usuarios_grupos')
+        .select('grupo_id')
+        .eq('usuario_id', userId)
+        .limit(1) // Assumir que queremos o primeiro grupo encontrado
+        .single();
+
+      if (error) {
+        console.error("[NovaCripto] Erro ao buscar grupo do usuário:", error);
+        // Tratar erro 'PGRST116' (zero rows) como grupo não encontrado
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        throw error; 
+      }
+      
+      return data?.grupo_id || null;
+    } catch (err) {
+      console.error("[NovaCripto] Falha geral ao buscar grupo:", err);
+      setError("Falha ao buscar informações do grupo do usuário.");
+      return null;
+    }
+  };
+
+  // Efeito para buscar e definir o grupo_id quando userData estiver disponível
+  useEffect(() => {
+    const setGroup = async () => {
+      if (userData?.id) {
+        const groupId = await fetchUserGroup(userData.id);
+        if (groupId) {
+          form.setValue("grupo_id", groupId);
+        } else {
+          console.warn("[NovaCripto] Nenhum grupo encontrado para o usuário", userData.id);
+          setError("Usuário não associado a um grupo. Não é possível registrar operações.");
+          // Opcional: desabilitar o form ou botão aqui se grupo for obrigatório
+        }
+      }
+    };
+    setGroup();
+  }, [userData, form]); // Depender de userData e form
+
   // Submeter o formulário
-  const onSubmit = form.handleSubmit(async (values) => {
+  const onSubmit = async (values: FormValues) => {
+    console.log("[NovaCripto] onSubmit chamado!");
+    console.log("[NovaCripto] Dados do formulário:", values);
+    
     // Verificar se uma moeda foi selecionada
     if (!values.moeda_id) {
       setError("Selecione uma criptomoeda antes de continuar");
@@ -304,26 +358,32 @@ export default function NovaOperacaoPage() {
     setError(null);
     
     try {
-      // Formatar a data no formato ISO 8601 completo (adicionar hora, minutos, segundos)
+      // Verificar se grupo_id está nos values (deve estar agora)
+      if (!values.grupo_id) {
+        throw new Error("ID do Grupo não definido no formulário. Verifique as permissões ou associação de grupo.");
+      }
+      
+      // Formatar a data no formato ISO 8601 completo
       const dataOperacao = values.data_operacao;
       const dataFormatada = `${dataOperacao}T00:00:00Z`;
       
       // Criar objeto com dados validados para enviar à API
       const dadosOperacao = {
-        ...values,
-        data_operacao: dataFormatada,
-        // Garantir que os campos numéricos são realmente números
+        moeda_id: values.moeda_id,
+        simbolo: values.simbolo,
+        nome: values.nome,
+        tipo: values.tipo,
         quantidade: Number(values.quantidade),
         preco_unitario: Number(values.preco_unitario),
         valor_total: Number(values.valor_total),
-        // Garantir que notas é uma string ou null
-        notas: values.notas || null
+        data_operacao: dataFormatada,
+        exchange: values.exchange || null,
+        notas: values.notas || null,
+        grupo_id: values.grupo_id
       };
       
-      console.log("[NovaCripto] Enviando dados para registro de operação:", dadosOperacao);
+      console.log("[NovaCripto] Enviando dados para API:", dadosOperacao);
       
-      // Tentar enviar para a API
-      console.log("[NovaCripto] Enviando requisição para API de operações");
       const response = await fetch("/api/crypto/operacoes", {
         method: "POST",
         headers: { 
@@ -334,54 +394,29 @@ export default function NovaOperacaoPage() {
         body: JSON.stringify(dadosOperacao)
       });
       
-      console.log("[NovaCripto] Status da resposta:", response.status);
-      
-      // Se houver erro, mostrar mensagem adequada
       if (!response.ok) {
-        console.error(`[NovaCripto] Erro na API: ${response.status}`);
-        
-        // Tentar obter detalhes do erro
-        let mensagemErro = "Erro ao registrar operação. Verifique se a tabela crypto_operacoes existe no banco de dados.";
-        try {
-          const errorData = await response.json();
-          console.log("[NovaCripto] Detalhes do erro:", errorData);
-          
-          if (errorData.error) {
-            mensagemErro = `Erro: ${errorData.error}`;
-          }
-          
-          // Se houver detalhes de validação, mostrar informação mais específica
-          if (errorData.details) {
-            console.log("[NovaCripto] Erros de validação:", errorData.details);
-            
-            const camposInvalidos = Object.keys(errorData.details)
-              .filter(campo => campo !== "_errors") // Ignorar mensagens genéricas
-              .map(campo => campo);
-            
-            if (camposInvalidos.length > 0) {
-              mensagemErro += `. Campos com problema: ${camposInvalidos.join(", ")}`;
-            }
-          }
-        } catch (e) {
-          console.error("[NovaCripto] Erro ao ler resposta de erro:", e);
-          // Ignore erros ao tentar ler o corpo da resposta
-        }
-        
-        throw new Error(mensagemErro);
+        const errorData = await response.json();
+        console.error("[NovaCripto] Erro da API:", errorData);
+        throw new Error(errorData.error || "Erro ao registrar operação");
       }
       
-      console.log("[NovaCripto] Operação registrada com sucesso na API");
       toast.success("Operação registrada com sucesso!");
       router.push("/crypto");
     } catch (err) {
-      console.error("[NovaCripto] Erro ao registrar operação:", err);
-      const errorMessage = err instanceof Error ? err.message : "Erro ao registrar operação";
+      console.error("[NovaCripto] Erro ao submeter operação:", err);
+      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-  });
+  };
+
+  // Função para lidar com erros de validação
+  const onValidationErrors = (errors: any) => {
+    console.error("[NovaCripto] Erros de validação do formulário:", errors);
+    setError("Por favor, corrija os erros no formulário.");
+  };
 
   // Renderização da linha de moeda (extraído para melhorar a legibilidade)
   const renderMoedaItem = (moeda: Moeda) => (
@@ -443,11 +478,12 @@ export default function NovaOperacaoPage() {
           )}
           
           <Form {...form}>
-            <form onSubmit={onSubmit} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit, onValidationErrors)} className="space-y-6">
               {/* Campos escondidos com valores da moeda */}
               <input type="hidden" {...form.register("moeda_id")} />
               <input type="hidden" {...form.register("simbolo")} />
               <input type="hidden" {...form.register("nome")} />
+              <input type="hidden" {...form.register("grupo_id")} />
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -664,23 +700,35 @@ export default function NovaOperacaoPage() {
                   </FormItem>
                 )}
               />
+
+              <div className="flex justify-between mt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.push("/crypto")}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={loading || !selectedCoin}
+                >
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Registrando...
+                    </div>
+                  ) : (
+                    "Registrar Operação"
+                  )}
+                </Button>
+              </div>
             </form>
           </Form>
         </CardContent>
         
-        <CardFooter className="flex justify-between">
-          <Button
-            variant="outline"
-            onClick={() => router.push("/crypto")}
-          >
-            Cancelar
-          </Button>
-          <Button 
-            onClick={onSubmit}
-            disabled={loading || !selectedCoin}
-          >
-            {loading ? "Registrando..." : "Registrar Operação"}
-          </Button>
+        <CardFooter>
+          {/* Footer vazio - botões movidos para dentro do form */}
         </CardFooter>
       </Card>
     </div>

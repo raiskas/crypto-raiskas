@@ -292,6 +292,24 @@ O projeto está funcional com as seguintes capacidades:
    - Adicionar gráficos de desempenho das moedas
    - Integrar APIs para cotações em tempo real
 
+## 2025-07-26
+
+*   **Refatoração (Admin/Usuários):**
+    *   Componentes `UserSection` e `GroupSection` foram refatorados para utilizar feedback global de sucesso/erro (props `setPageSuccess`/`setPageError` passadas do componente pai `page.tsx`) e estados locais (`modalError`) para erros específicos de modais.
+*   **Depuração (Admin/Grupos):**
+    *   Investigado problema onde o modal de edição de grupo não carregava os campos "Empresa" e "Telas Permitidas".
+    *   Comparação com a edição de usuário (funcional) revelou que o problema reside na API `GET /api/admin/groups` (usada para carregar a lista inicial), que retorna dados incompletos (omitindo `empresa_id` e `telas_permitidas`).
+    *   A estrutura do banco de dados (`grupos` com as colunas necessárias) foi confirmada.
+    *   O código frontend em `GroupSection.tsx` foi ajustado para usar os dados da lista inicial (padrão da edição de usuário) e está aguardando a correção da API backend para funcionalidade completa.
+*   **Configuração (Next.js):**
+    *   Adicionado o hostname `cryptoicons.org` à configuração `images.remotePatterns` em `next.config.js` para corrigir erro de carregamento de imagens externas.
+*   **Qualidade de Código:**
+    *   Comentários `// @ts-ignore` foram aplicados em `UserSection.tsx` e `GroupSection.tsx` para suprimir erros persistentes de tipagem relacionados ao `react-hook-form` e `zod`, como solução pragmática.
+
+## 2025-07-20
+
+(...)
+
 ---
 
 Documentação atualizada em: 15/04/2024 

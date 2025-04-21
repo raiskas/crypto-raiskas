@@ -43,6 +43,7 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from "@/components/ui/radio-group";
+import { useUserData } from "@/lib/hooks/use-user-data";
 
 // Tipo para a moeda
 interface Moeda {
@@ -121,7 +122,8 @@ const formatarValorMonetario = (valor: number): string => {
 export default function EditarOperacaoPage() {
   const router = useRouter();
   const params = useParams();
-  const operacaoId = params.id as string;
+  const id = params.id as string;
+  const { userData } = useUserData();
   
   const [loading, setLoading] = useState(true);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
@@ -130,7 +132,6 @@ export default function EditarOperacaoPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Moeda[]>([]);
   const [searchingCoins, setSearchingCoins] = useState(false);
-  const { checkAuthState } = useAuth();
   const [operacao, setOperacao] = useState<Operacao | null>(null);
 
   // Inicialização do formulário
@@ -168,9 +169,9 @@ export default function EditarOperacaoPage() {
         setLoading(true);
         setError(null);
         
-        console.log("[EditarOperacao] Buscando dados da operação:", operacaoId);
+        console.log("[EditarOperacao] Buscando dados da operação:", id);
         
-        const response = await fetch(`/api/crypto/operacoes?id=${operacaoId}`, {
+        const response = await fetch(`/api/crypto/operacoes?id=${id}`, {
           headers: {
             'Cache-Control': 'no-cache',
             'Pragma': 'no-cache'
@@ -223,10 +224,10 @@ export default function EditarOperacaoPage() {
       }
     };
     
-    if (operacaoId) {
+    if (id) {
       carregarOperacao();
     }
-  }, [operacaoId, form]);
+  }, [id, form]);
 
   // Buscar moedas baseado na pesquisa
   const buscarMoedas = async () => {
@@ -327,7 +328,7 @@ export default function EditarOperacaoPage() {
       
       // Criar objeto com dados validados para enviar à API
       const dadosOperacao = {
-        id: operacaoId,
+        id: id,
         moeda_id: values.moeda_id,
         simbolo: values.simbolo,
         nome: values.nome,

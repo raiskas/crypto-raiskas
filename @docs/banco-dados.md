@@ -45,6 +45,8 @@ grupos
   ├── nome
   ├── descricao
   ├── empresa_id (FK -> empresas.id)
+  ├── is_master (BOOLEAN)
+  ├── telas_permitidas (TEXT[])
   ├── criado_em
   └── atualizado_em
      │
@@ -80,6 +82,11 @@ vendas
   ├── criado_em
   └── atualizado_em
 ```
+
+-- Nota: A existência das colunas `empresa_id` (FK), `is_master` (boolean) e `telas_permitidas` (_text/TEXT[]) 
+-- na tabela `grupos` foi verificada durante a depuração da funcionalidade de edição de grupo. 
+-- O problema de carregamento de dados no frontend para esses campos está relacionado à API do backend 
+-- que não os retorna na lista inicial, e não à estrutura do banco de dados.
 
 ## Configuração Inicial
 

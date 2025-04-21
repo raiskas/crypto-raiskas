@@ -16,10 +16,11 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
+  console.log("[(Auth) Layout] Renderizando layout de autenticação...");
   return (
     <AuthProvider requireAuth={false}>
       <div className="flex min-h-screen flex-col">
-        <AuthHeader />
+        {/* <AuthHeader /> // Manter comentado por enquanto */}
         <main className="flex-1">{children}</main>
       </div>
     </AuthProvider>

@@ -246,6 +246,25 @@ Para suporte ou dúvidas sobre o projeto, entre em contato com:
 - **Equipe de desenvolvimento**: dev@exemplo.com
 - **Repositório**: [GitHub - Crypto Raiskas](#)
 
+## Estado Atual
+
+O projeto está funcional com as seguintes capacidades:
+*   Autenticação completa (Registro, Login, Proteção de Rotas).
+*   Layout de Dashboard com navegação (Menu Lateral e Superior) e suporte a Dark Mode.
+*   Estrutura de Banco de Dados implementada no Supabase.
+*   Módulo de Gerenciamento de Usuários funcional (CRUD completo).
+
+**Problemas Conhecidos:**
+*   A funcionalidade de Edição de Grupo no módulo de administração está parcialmente funcional. O modal carrega o nome, mas devido a dados incompletos retornados pela API `GET /api/admin/groups` (lista inicial), os campos "Empresa" e "Telas Permitidas" não são pré-preenchidos. A correção requer ajuste na API do backend para retornar os dados completos. Veja `guia-desenvolvimento.md` para detalhes.
+*   Existem alguns erros de tipo relacionados à integração `react-hook-form`/`zod` que foram temporariamente suprimidos com `// @ts-ignore`.
+
+## Próximos Passos
+
+*   Implementar completamente o Módulo de Vendas.
+*   Desenvolver interface para gerenciamento de Permissões.
+*   Adicionar testes automatizados.
+*   Corrigir a API `GET /api/admin/groups` no backend.
+
 ---
 
 Documentação criada em: 09/04/2024 

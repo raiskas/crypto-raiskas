@@ -163,6 +163,20 @@ className={cn(
 )}
 ```
 
-## Conclusão
+## Análise de Desafios
 
-O menu lateral implementado fornece uma solução robusta e moderna para navegação no sistema Crypto Raiskas. As melhorias futuras sugeridas podem ser implementadas incrementalmente conforme a aplicação evolui e as necessidades dos usuários se tornam mais claras. 
+(...)
+
+## Melhorias Futuras
+
+(...)
+
+## Considerações Finais
+
+O menu lateral é um componente crucial para a navegação. Sua implementação busca balancear estética, funcionalidade e performance.
+
+*Nota de Desenvolvimento Recente:* Esteja ciente de que problemas identificados em APIs do backend (como a que retorna a lista de grupos) podem impactar a completude dos dados exibidos em algumas seções acessadas via menu, como a edição de grupos no painel de administração. Consulte `guia-desenvolvimento.md` para detalhes sobre problemas conhecidos.
+
+---
+
+Documentação atualizada em: 12/04/2024 

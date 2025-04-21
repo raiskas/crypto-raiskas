@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { Settings, Users, ShieldCheck, Database } from "lucide-react";
+import { Settings, Users, ShieldCheck, Database, Building } from "lucide-react";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -17,25 +17,11 @@ export default function AdminPage() {
       color: "bg-blue-100 text-blue-700",
     },
     {
-      title: "Permissões",
-      description: "Configurar grupos e permissões do sistema",
-      icon: <ShieldCheck className="h-8 w-8" />,
-      path: "/admin/permissoes",
-      color: "bg-green-100 text-green-700",
-    },
-    {
-      title: "Configurações",
-      description: "Configurações gerais do sistema",
-      icon: <Settings className="h-8 w-8" />,
-      path: "/admin/configuracoes",
-      color: "bg-amber-100 text-amber-700",
-    },
-    {
-      title: "Banco de Dados",
-      description: "Monitoramento e manutenção do banco de dados",
-      icon: <Database className="h-8 w-8" />,
-      path: "/admin/banco-dados",
-      color: "bg-purple-100 text-purple-700",
+      title: "Gerenciar Empresas",
+      description: "Criar, editar e remover empresas",
+      icon: <Building className="h-8 w-8" />,
+      path: "/admin/empresas",
+      color: "bg-indigo-100 text-indigo-700",
     },
   ];
   

@@ -1,565 +1,202 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  AlertCircle,
-  CheckCircle,
-  Edit,
-  Key,
-  Loader2,
-  Plus,
-  Trash2,
-  UserPlus,
-  Users,
-} from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import Link from "next/link";
+import { useState, useEffect, useCallback } from "react";
+import { AlertCircle, CheckCircle } from "lucide-react";
 
-// Tipos
-interface User {
-  id: string;
-  db_id: string | null;
-  email: string;
-  nome: string;
-  empresa_id: string | null;
-  ativo: boolean;
-  criado_em: string;
-  ultimo_login: string | null;
-  confirmado: boolean;
-}
+// Importar os novos componentes
+import UserSection from "./components/UserSection";
+import GroupSection from "./components/GroupSection";
 
-// Schemas de validação
-const createUserSchema = z.object({
-  nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-  email: z.string().email("Email inválido"),
-  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-});
+// Importar tipos compartilhados
+import { User, Group, Empresa } from "@/types/admin";
 
-const changePasswordSchema = z.object({
-  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-  passwordConfirm: z.string().min(6, "Confirme a senha"),
-}).refine(data => data.password === data.passwordConfirm, {
-  message: "As senhas não coincidem",
-  path: ["passwordConfirm"],
-});
+// REMOVER definições locais de User e Group
+// interface User { ... }
+// interface Group { ... }
+
+// REMOVER Schemas Zod daqui - Eles pertencem aos componentes filhos
+// const createUserSchema = ...
+// const changePasswordSchema = ...
+// const editUserSchema = ...
+// const groupSchema = ...
 
 export default function UserManagementPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isPasswordOpen, setIsPasswordOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [actionLoading, setActionLoading] = useState(false);
-  
-  const router = useRouter();
+    // Estados para dados carregados e erro de carregamento inicial
+    const [users, setUsers] = useState<User[]>([]);
+    const [groups, setGroups] = useState<Group[]>([]);
+    const [empresas, setEmpresas] = useState<Empresa[]>([]);
+    const [loadingUsers, setLoadingUsers] = useState(true);
+    const [loadingGroups, setLoadingGroups] = useState(true);
+    const [loadingEmpresas, setLoadingEmpresas] = useState(true);
+    const [initialLoadError, setInitialLoadError] = useState<string | null>(null);
 
-  // Forms
-  const createForm = useForm<z.infer<typeof createUserSchema>>({
-    resolver: zodResolver(createUserSchema),
-    defaultValues: {
-      nome: "",
-      email: "",
-      password: "",
-    },
-  });
+    // Novos estados para feedback global de ações
+    const [pageError, setPageError] = useState<string | null>(null);
+    const [pageSuccess, setPageSuccess] = useState<string | null>(null);
 
-  const passwordForm = useForm<z.infer<typeof changePasswordSchema>>({
-    resolver: zodResolver(changePasswordSchema),
-    defaultValues: {
-      password: "",
-      passwordConfirm: "",
-    },
-  });
-
-  // Carregar usuários
-  const loadUsers = async () => {
-    setLoading(true);
-    setError(null);
+    // REMOVER Estados de Modais, Seleção, Ações - Pertencem aos filhos
+    // const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    // const [isCreateOpen, setIsCreateOpen] = useState(false);
+    // ... outros estados de modais/ações ...
+    // const [actionLoading, setActionLoading] = useState(false);
+    // const [success, setSuccess] = useState<string | null>(null); 
     
-    try {
-      const response = await fetch('/api/admin/users');
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || "Erro ao carregar usuários");
-      }
-      
-      setUsers(data.users || []);
-    } catch (err: any) {
-      setError(err.message || "Erro ao carregar usuários");
-      console.error("Erro ao carregar usuários:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    // REMOVER useRouter - Se necessário, pertence aos filhos
+    // const router = useRouter();
 
-  // Carregar dados na inicialização
-  useEffect(() => {
-    loadUsers();
-  }, []);
+    // REMOVER Definições de Forms - Pertencem aos filhos
+    // const createForm = useForm(...);
+    // const passwordForm = useForm(...);
+    // const editForm = useForm(...);
+    // const groupForm = useForm(...);
 
-  // Criar usuário
-  const handleCreateUser = async (values: z.infer<typeof createUserSchema>) => {
-    setActionLoading(true);
-    setError(null);
-    setSuccess(null);
-    
-    try {
-      const response = await fetch('/api/admin/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(values),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || "Erro ao criar usuário");
-      }
-      
-      setSuccess("Usuário criado com sucesso!");
-      setIsCreateOpen(false);
-      createForm.reset();
-      loadUsers();
-    } catch (err: any) {
-      setError(err.message || "Erro ao criar usuário");
-      console.error("Erro ao criar usuário:", err);
-    } finally {
-      setActionLoading(false);
-    }
-  };
+    // Funções de Carregamento (limpar erros/sucesso globais ao recarregar)
+    const loadUsers = useCallback(async () => {
+        console.log("[UserManagementPage:loadUsers] Iniciando carregamento..."); // Log: Iniciando
+        setLoadingUsers(true);
+        setInitialLoadError(null);
+        setPageError(null); // Limpar erros/sucesso globais
+        setPageSuccess(null);
+        try {
+            const response = await fetch('/api/admin/users', { credentials: 'include' });
+            const rawResponseText = await response.text(); // Ler como texto primeiro
+            console.log("[UserManagementPage:loadUsers] Resposta bruta da API:", rawResponseText); // Log: Resposta bruta
+            
+            const data = JSON.parse(rawResponseText); // Fazer parse do JSON
+            if (!response.ok) {
+                console.error("[UserManagementPage:loadUsers] Erro na resposta da API:", data.error || response.statusText);
+                throw new Error(data.error || `Erro ${response.status} ao carregar usuários`);
+            }
+            
+            const usersData = data.users || [];
+            console.log("[UserManagementPage:loadUsers] Dados de usuários recebidos:", usersData); // Log: Dados recebidos
+            setUsers(usersData);
+            console.log("[UserManagementPage:loadUsers] Estado 'users' atualizado."); // Log: Estado atualizado
+        } catch (err: any) {
+            console.error("[UserManagementPage:loadUsers] Erro durante fetch/processamento:", err);
+            setInitialLoadError(`Erro ao carregar usuários: ${err.message}`);
+        } finally {
+            setLoadingUsers(false);
+            console.log("[UserManagementPage:loadUsers] Carregamento finalizado."); // Log: Finalizado
+        }
+    }, []);
 
-  // Alterar senha
-  const handleChangePassword = async (values: z.infer<typeof changePasswordSchema>) => {
-    if (!selectedUser) return;
-    
-    setActionLoading(true);
-    setError(null);
-    setSuccess(null);
-    
-    try {
-      const response = await fetch('/api/admin/users', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: selectedUser.id,
-          password: values.password,
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || "Erro ao alterar senha");
-      }
-      
-      setSuccess("Senha alterada com sucesso!");
-      setIsPasswordOpen(false);
-      passwordForm.reset();
-    } catch (err: any) {
-      setError(err.message || "Erro ao alterar senha");
-      console.error("Erro ao alterar senha:", err);
-    } finally {
-      setActionLoading(false);
-    }
-  };
+    const loadGroups = useCallback(async () => {
+        setLoadingGroups(true);
+        // Não limpar initialLoadError aqui intencionalmente
+        setPageError(null); // Limpar erros/sucesso globais
+        setPageSuccess(null);
+        try {
+            const response = await fetch('/api/admin/groups', { credentials: 'include' });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || "Erro ao carregar grupos");
+            setGroups(data.groups || []);
+        } catch (err: any) {
+            console.error("Erro ao carregar grupos:", err);
+            setInitialLoadError(prevError => prevError ? `${prevError}\nErro ao carregar grupos: ${err.message}` : `Erro ao carregar grupos: ${err.message}`);
+        } finally {
+            setLoadingGroups(false);
+        }
+    }, []);
 
-  // Deletar usuário
-  const handleDeleteUser = async () => {
-    if (!selectedUser) return;
-    
-    setActionLoading(true);
-    setError(null);
-    setSuccess(null);
-    
-    try {
-      const response = await fetch(`/api/admin/users?id=${selectedUser.id}`, {
-        method: 'DELETE',
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || "Erro ao remover usuário");
-      }
-      
-      setSuccess("Usuário removido com sucesso!");
-      setIsDeleteOpen(false);
-      loadUsers();
-    } catch (err: any) {
-      setError(err.message || "Erro ao remover usuário");
-      console.error("Erro ao remover usuário:", err);
-    } finally {
-      setActionLoading(false);
-    }
-  };
+    // Nova função para carregar empresas
+    const loadEmpresas = useCallback(async () => {
+        setLoadingEmpresas(true);
+        setPageError(null);
+        setPageSuccess(null);
+        try {
+            const response = await fetch('/api/admin/empresas', { credentials: 'include' });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || "Erro ao carregar empresas");
+            setEmpresas(data.empresas || []);
+        } catch (err: any) {
+            console.error("Erro ao carregar empresas:", err);
+            setInitialLoadError(prevError => prevError ? `${prevError}\nErro ao carregar empresas: ${err.message}` : `Erro ao carregar empresas: ${err.message}`);
+        } finally {
+            setLoadingEmpresas(false);
+        }
+    }, []);
 
-  // Abrir modal de senha
-  const openPasswordModal = (user: User) => {
-    setSelectedUser(user);
-    passwordForm.reset();
-    setIsPasswordOpen(true);
-  };
+    // Carregar dados na inicialização
+    useEffect(() => {
+        loadUsers();
+        loadGroups();
+        loadEmpresas();
+    }, [loadUsers, loadGroups, loadEmpresas]);
 
-  // Abrir modal de exclusão
-  const openDeleteModal = (user: User) => {
-    setSelectedUser(user);
-    setIsDeleteOpen(true);
-  };
+    // REMOVER TODOS OS HANDLERS (handleCreateUser, handleEditUser, etc.) - Pertencem aos filhos
+    // const handleCreateUser = async (...) => { ... };
+    // const handleChangePassword = async (...) => { ... };
+    // ... outros handlers ...
+    // const handleGroupSubmit = async (...) => { ... };
+    // const handleDeleteGroup = async (...) => { ... };
 
-  // Formatar data
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "Nunca";
-    try {
-      return format(new Date(dateString), "dd/MM/yyyy HH:mm", { locale: ptBR });
-    } catch (err) {
-      return "Data inválida";
-    }
-  };
+    // REMOVER Funções de Abrir Modais - Pertencem aos filhos
+    // const openPasswordModal = (...) => { ... };
+    // ... outras funções de abrir modais ...
 
-  return (
-    <div className="container py-10">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-2xl font-bold flex items-center">
-              <Users className="mr-2 h-6 w-6" />
-              Gerenciamento de Usuários
-            </CardTitle>
-            <CardDescription>
-              Gerencie usuários do sistema, senhas e permissões
-            </CardDescription>
-          </div>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <UserPlus className="mr-2 h-4 w-4" />
-                Novo Usuário
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Criar Novo Usuário</DialogTitle>
-                <DialogDescription>
-                  Preencha os dados para criar um novo usuário no sistema
-                </DialogDescription>
-              </DialogHeader>
-              
-              {error && (
-                <div className="bg-destructive/15 text-destructive flex items-center p-3 rounded-md">
-                  <AlertCircle className="h-4 w-4 mr-2" />
-                  <span className="text-sm">{error}</span>
-                </div>
-              )}
-              
-              <Form {...createForm}>
-                <form onSubmit={createForm.handleSubmit(handleCreateUser)} className="space-y-4">
-                  <FormField
-                    control={createForm.control}
-                    name="nome"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nome</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Nome do usuário" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={createForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input placeholder="email@exemplo.com" type="email" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={createForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Senha</FormLabel>
-                        <FormControl>
-                          <Input placeholder="••••••••" type="password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <DialogFooter>
-                    <Button variant="outline" type="button" onClick={() => setIsCreateOpen(false)}>
-                      Cancelar
-                    </Button>
-                    <Button type="submit" disabled={actionLoading}>
-                      {actionLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Criando...
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="mr-2 h-4 w-4" />
-                          Criar Usuário
-                        </>
-                      )}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
-        </CardHeader>
-        
-        <CardContent>
-          {error && (
-            <div className="bg-destructive/15 text-destructive flex items-center p-3 rounded-md mb-4">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              <span className="text-sm">{error}</span>
-            </div>
-          )}
-          
-          {success && (
-            <div className="bg-green-100 text-green-700 flex items-center p-3 rounded-md mb-4">
-              <CheckCircle className="h-4 w-4 mr-2" />
-              <span className="text-sm">{success}</span>
-            </div>
-          )}
-          
-          {loading ? (
-            <div className="flex justify-center items-center h-40">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : users.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Nenhum usuário encontrado
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Criado em</TableHead>
-                    <TableHead>Último login</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.nome || "-"}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <span className={`inline-flex px-2 py-1 text-xs rounded-full ${
-                          user.ativo ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                        }`}>
-                          {user.ativo ? "Ativo" : "Inativo"}
-                        </span>
-                      </TableCell>
-                      <TableCell>{formatDate(user.criado_em)}</TableCell>
-                      <TableCell>{formatDate(user.ultimo_login)}</TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <div className="flex justify-end space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            onClick={() => router.push(`/admin/usuarios/${user.id}/edit`)}
-                            title="Editar Usuário"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            onClick={() => openPasswordModal(user)}
-                            title="Alterar Senha"
-                          >
-                            <Key className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="destructive" 
-                            size="icon" 
-                            onClick={() => openDeleteModal(user)}
-                            title="Excluir Usuário"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      
-      {/* Modal de Senha */}
-      <Dialog open={isPasswordOpen} onOpenChange={setIsPasswordOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Alterar Senha</DialogTitle>
-            <DialogDescription>
-              {selectedUser?.nome ? `Alterar senha de ${selectedUser.nome}` : 'Alterar senha do usuário'}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {error && (
-            <div className="bg-destructive/15 text-destructive flex items-center p-3 rounded-md">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              <span className="text-sm">{error}</span>
-            </div>
-          )}
-          
-          <Form {...passwordForm}>
-            <form onSubmit={passwordForm.handleSubmit(handleChangePassword)} className="space-y-4">
-              <FormField
-                control={passwordForm.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nova senha</FormLabel>
-                    <FormControl>
-                      <Input placeholder="••••••••" type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+    // REMOVER formatDate - Se usada, pertence aos filhos ou a utils
+    // const formatDate = (...) => { ... };
+
+    // --- Renderização --- 
+    return (
+        <>
+            {/* Exibir Erros/Sucessos Globais */} 
+            <div className="container pt-4 space-y-3"> {/* Container para mensagens */}
+                {initialLoadError && (
+                    <div className="bg-destructive/15 text-destructive flex items-start p-3 rounded-md whitespace-pre-line">
+                        <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0 mt-1" />
+                        <span className="text-sm">{initialLoadError}</span>
+                    </div>
                 )}
-              />
-              
-              <FormField
-                control={passwordForm.control}
-                name="passwordConfirm"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirmar senha</FormLabel>
-                    <FormControl>
-                      <Input placeholder="••••••••" type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                {pageError && (
+                    <div className="bg-destructive/15 text-destructive flex items-start p-3 rounded-md whitespace-pre-line">
+                        <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0 mt-1" />
+                        <span className="text-sm">{pageError}</span>
+                    </div>
                 )}
-              />
-              
-              <DialogFooter>
-                <Button variant="outline" type="button" onClick={() => setIsPasswordOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={actionLoading}>
-                  {actionLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Alterando...
-                    </>
-                  ) : (
-                    "Alterar Senha"
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Modal de Exclusão */}
-      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirmar Exclusão</DialogTitle>
-            <DialogDescription>
-              Tem certeza que deseja remover o usuário {selectedUser?.nome || selectedUser?.email}?
-              Esta ação não pode ser desfeita.
-            </DialogDescription>
-          </DialogHeader>
-          
-          {error && (
-            <div className="bg-destructive/15 text-destructive flex items-center p-3 rounded-md">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              <span className="text-sm">{error}</span>
+                {pageSuccess && (
+                     <div className="bg-green-100 text-green-700 flex items-start p-3 rounded-md whitespace-pre-line">
+                         <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 mt-1" />
+                         <span className="text-sm">{pageSuccess}</span>
+                    </div>
+                )}
             </div>
-          )}
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
-              Cancelar
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleDeleteUser}
-              disabled={actionLoading}
-            >
-              {actionLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Removendo...
-                </>
-              ) : (
-                "Confirmar Exclusão"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
+
+            <UserSection 
+                initialUsers={users} 
+                groups={groups} 
+                empresas={empresas}
+                loadUsers={loadUsers} 
+                loadGroups={loadGroups}
+                loadingUsers={loadingUsers} 
+                loadingGroups={loadingGroups}
+                loadingEmpresas={loadingEmpresas}
+                // Passar setters para feedback global
+                setPageError={setPageError}
+                setPageSuccess={setPageSuccess}
+            />
+            
+            <GroupSection 
+                initialGroups={groups}
+                loadUsers={loadUsers}
+                loadGroups={loadGroups}
+                loadingGroups={loadingGroups}
+                empresas={empresas}
+                loadingEmpresas={loadingEmpresas}
+                isMaster={true}
+                setPageError={setPageError}
+                setPageSuccess={setPageSuccess}
+            />
+            
+            {/* REMOVER RENDERIZAÇÃO ANTIGA DE CARDS/MODAIS DAQUI */}
+            {/* <div className="container py-10">
+                <Card> ... Card Usuários ... </Card>
+                {/* Modal Senha * /} 
+                <Dialog> ... </Dialog>
+                {/* ... outros modais de usuário ... * /} 
+            </div> */}
+            {/* ... Card e Modais de Grupo removidos daqui também ... */}
+        </>
+    );
 } 

@@ -8,6 +8,7 @@ import { Settings, Users, BarChart, Database, TrendingUp, Wallet, CreditCard, Tr
 import { useState, useEffect } from "react";
 
 export default function HomePage() {
+  console.log("[HomePage] Iniciando renderização...");
   const router = useRouter();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -94,8 +95,19 @@ export default function HomePage() {
       const topMoedasData = await topMoedasResponse.json();
       const operacoesData = await operacoesResponse.json();
       
-      // Calcular portfólio
-      const portfolioCalculado = calcularPortfolio(operacoesData.operacoes || [], topMoedasData);
+      // Adicionar log para verificar os dados recebidos
+      console.log("[HomePage] Dados de Top Moedas:", topMoedasData?.length);
+      console.log("[HomePage] Dados de Operações:", operacoesData?.length); // Log do array
+
+      // Garantir que operacoesData é um array
+      if (!Array.isArray(operacoesData)) {
+          console.error("[HomePage] Erro: Resposta de operações não é um array:", operacoesData);
+          throw new Error("Formato inesperado da resposta de operações.");
+      }
+      
+      // Calcular portfólio - CORRIGIDO
+      const portfolioCalculado = calcularPortfolio(operacoesData || [], topMoedasData || []);
+      console.log("[HomePage] Portfólio Calculado:", portfolioCalculado);
       
       // Calcular totais
       const totais = portfolioCalculado.reduce(
@@ -180,6 +192,7 @@ export default function HomePage() {
     carregarDados();
   }, []);
   
+  console.log("[HomePage] Renderização concluída.");
   return (
     <div className="container py-10">
       <div className="mb-8">

@@ -28,7 +28,6 @@ const loginSchema = z.object({
 export default function SigninPage() {
   const { signIn } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const form = useForm<z.infer<typeof loginSchema>>({
@@ -40,31 +39,37 @@ export default function SigninPage() {
   });
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
+    console.log("[SignIn Page] onSubmit iniciado."); 
     setLoading(true);
-    setError(null);
     
     try {
-      console.log("[SignIn] Tentando fazer login com:", values.email);
+      console.log("[SignIn Page] Tentando chamar signIn do useAuth com:", values.email);
       
       const result = await signIn(values.email, values.password);
       
+      console.log("[SignIn Page] Resultado recebido de signIn:", result);
+      
       if (result.success) {
-        console.log("[SignIn] Login bem-sucedido, redirecionando...");
-        router.push("/home");
+        console.log("[SignIn Page] Login sucesso. Redirecionando para a raiz ('/')...");
+        // TESTE: Usar window.location.href para forçar reload
+        // window.location.href = "/home";
+        // REVERTER: Usar router.push
+        // router.push("/home"); // Comentado
+        // router.refresh(); // Comentado
+        router.push('/'); // REVERTIDO PARA push('/')
       } else {
-        console.error("[SignIn] Erro no login:", result.error);
-        setError(result.error || "Erro ao fazer login. Tente novamente.");
+        console.error("[SignIn Page] Login reportado como falha:", result.error);
       }
     } catch (err: any) {
-      console.error("[SignIn] Exceção no login:", err);
-      setError(`Erro inesperado: ${err.message}`);
+      console.error("[SignIn Page] Exceção capturada em onSubmit:", err);
     } finally {
+      console.log("[SignIn Page] onSubmit finalizado."); 
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Entrar</CardTitle>
@@ -73,13 +78,6 @@ export default function SigninPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {error && (
-            <div className="bg-destructive/15 text-destructive flex items-center p-3 rounded-md mb-4">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              <span className="text-sm">{error}</span>
-            </div>
-          )}
-          
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField

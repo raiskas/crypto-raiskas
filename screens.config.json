@@ -1,0 +1,10 @@
+[
+  { "id": "dashboard", "label": "Dashboard" },
+  { "id": "admin", "label": "Admin (Painel Principal)" },
+  { "id": "admin/usuarios", "label": "Admin: Usuários e Grupos" },
+  { "id": "admin/empresas", "label": "Admin: Empresas" },
+  { "id": "perfil", "label": "Perfil" },
+  { "id": "crypto", "label": "Crypto" },
+  { "id": "vendas", "label": "Vendas" },
+  { "id": "home", "label": "Home" }
+] 

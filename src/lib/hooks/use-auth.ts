@@ -1,289 +1,118 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { Database } from '@/types/supabase';
 import { supabaseConfig } from '@/lib/config';
+import { User } from '@supabase/supabase-js'; // Importar User
 
-type AuthUser = {
-  id: string;
-  email: string;
-};
-
-// Configuração para sessão de longa duração (1 ano em segundos)
-const LONG_SESSION_EXPIRY = 60 * 60 * 24 * 365; // 1 ano
+// Definir tipo AuthUser compatível com User do Supabase
+type AuthUser = User;
 
 export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  // Criar cliente Supabase diretamente (sem singleton)
-  const supabase = createBrowserClient<Database>(
-    supabaseConfig.url,
-    supabaseConfig.anonKey
+  const [error, setError] = useState<string | null>(null); // Re-adicionar error para feedback
+  const mountedRef = useRef(true);
+
+  // Criar cliente Supabase
+  const [supabase] = useState(() => 
+    createBrowserClient<Database>(
+      supabaseConfig.url!,
+      supabaseConfig.anonKey!
+    )
   );
-  
-  // Renovar token automaticamente
-  const refreshToken = async () => {
-    try {
-      // Primeiro verificar se existe uma sessão
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      // Se não existir sessão, não tentar renovar
-      if (!sessionData.session) {
-        console.log("[Auth] Nenhuma sessão para renovar");
-        return false;
-      }
-      
-      // Se existir sessão, tentar renovar
-      const { data, error } = await supabase.auth.refreshSession();
-      if (error) {
-        console.error("[Auth] Erro ao renovar token:", error.message);
-        return false;
-      }
-      
-      // Se a sessão foi renovada com sucesso, atualizar o usuário
-      if (data.session) {
-        setUser({
-          id: data.session.user.id,
-          email: data.session.user.email || '',
-        });
-        return true;
-      }
-      
-      return false;
-    } catch (err) {
-      console.error("[Auth] Exceção ao renovar token:", err);
-      return false;
-    }
-  };
-  
-  // Configurar timer para renovar token periodicamente
+
+  // Efeito principal: Verificar sessão inicial e configurar listener
   useEffect(() => {
-    // Verificar se existe uma sessão antes de configurar o timer
-    const verificarEConfigurarRenovacao = async () => {
-      const { data } = await supabase.auth.getSession();
-      
-      // Só configurar renovação se houver uma sessão
-      if (data.session) {
-        console.log("[Auth] Sessão existente, configurando renovação automática");
-        
-        // Renovar imediatamente
-        await refreshToken();
-        
-        // E configurar renovação periódica
-        const interval = setInterval(refreshToken, 1000 * 60 * 60); // 1 hora
-        
-        // Retornar função de limpeza
-        return () => clearInterval(interval);
-      } else {
-        console.log("[Auth] Nenhuma sessão ativa, não configurando renovação automática");
-        // Retornar função de limpeza vazia
-        return () => {};
+    mountedRef.current = true;
+    console.log("[Auth Simplified] useEffect: Verificando sessão inicial e configurando listener...");
+    setLoading(true);
+
+    // 1. Verificar sessão inicial
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mountedRef.current) return; // Prevenir atualização se desmontado
+      console.log("[Auth Simplified] Sessão inicial obtida:", session ? 'Encontrada' : 'Não encontrada');
+      setUser(session?.user ?? null);
+      setLoading(false);
+    }).catch((err) => {
+      if (!mountedRef.current) return;
+      console.error("[Auth Simplified] Erro ao buscar sessão inicial:", err);
+      setError(err.message);
+      setUser(null);
+      setLoading(false);
+    });
+
+    // 2. Configurar listener para mudanças futuras
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mountedRef.current) return;
+      console.log(`[Auth Simplified] onAuthStateChange: Evento ${event}, Sessão ${session ? 'existe' : 'null'}`);
+      setUser(session?.user ?? null);
+      // Limpar erro em qualquer mudança de auth bem-sucedida
+      if (event !== 'SIGNED_OUT' && session) {
+         setError(null);
       }
-    };
-    
-    // Executar a verificação e configurar renovação se necessário
-    const limpar = verificarEConfigurarRenovacao();
-    
-    // Função de limpeza
-    return () => {
-      limpar.then(fn => fn());
-    };
-  }, []);
-  
-  // Verificar sessão e configurar listener de mudanças
-  useEffect(() => {
-    // Verificar sessão inicial
-    const checkSession = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("[Auth] Erro ao verificar sessão:", error.message);
-          // Em caso de erro, definir usuário como null
-          setUser(null);
-        } else if (data.session) {
-          // Se temos uma sessão, definir o usuário
-          setUser({
-            id: data.session.user.id,
-            email: data.session.user.email || '',
-          });
-          
-          // Tentar renovar o token em segundo plano, sem interromper o fluxo
-          refreshToken().catch(err => {
-            console.log("[Auth] Erro ao renovar token em segundo plano:", err);
-            // Ignorar erros de renovação, pois a sessão ainda está definida
-          });
-        } else {
-          // Se não houver sessão, definir usuário como null
-          setUser(null);
-        }
-      } catch (err) {
-        console.error("[Auth] Erro ao verificar sessão:", err);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    // Configurar listener para mudanças na autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log("[Auth] Mudança de estado:", event);
-        
-        if (session) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email || '',
-          });
-        } else {
-          setUser(null);
-        }
-        
-        setLoading(false);
-      }
-    );
-    
-    checkSession();
-    
+      // O loading principal já deve ser false aqui, mas garantimos
+      setLoading(false); 
+    });
+
     // Cleanup
     return () => {
-      subscription.unsubscribe();
+      mountedRef.current = false;
+      console.log("[Auth Simplified] useEffect desmontado. Desinscrevendo listener.");
+      subscription?.unsubscribe();
     };
-  }, [supabase.auth]);
-  
-  // Login simples e direto com sessão de longa duração
+  // Adicionar supabase como dependência se necessário, mas createBrowserClient deve ser estável
+  }, [supabase]); 
+
+  // Função SignIn (simplificada)
   const signIn = async (email: string, password: string) => {
+    console.log("[Auth Simplified] signIn chamado.");
+    setLoading(true); // Pode usar um estado de loading específico se preferir
+    setError(null);
     try {
-      console.log("[Auth] Fazendo login para:", email);
-      setLoading(true);
-      
-      // Configurar login para sessão de longa duração
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      // Se o login for bem-sucedido, estender a sessão
-      if (!error && data.session) {
-        // A API getSession().setSession() parece ser a maneira correta de estender a sessão
-        console.log("[Auth] Login bem-sucedido, tentando estender a sessão");
-      }
-      
-      if (error) {
-        console.error("[Auth] Erro de login:", error.message);
-        return { success: false, error: error.message };
-      }
-      
-      console.log("[Auth] Login bem-sucedido com sessão de longa duração");
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) throw signInError;
+      // O listener deve atualizar o estado `user`
+      console.log("[Auth Simplified] signIn bem-sucedido.");
+      setLoading(false);
       return { success: true };
     } catch (err: any) {
-      console.error("[Auth] Exceção no login:", err);
-      return { success: false, error: err.message };
-    } finally {
+      console.error("[Auth Simplified] Erro no signIn:", err);
+      setError(err.message); // Definir o estado de erro
       setLoading(false);
+      return { success: false, error: err.message }; // Retornar o erro
     }
   };
-  
-  // Logout simples e direto
+
+  // Função SignOut (revisada com try...catch)
   const signOut = async () => {
+    console.log("[Auth Simplified] signOut chamado.");
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      await supabase.auth.signOut();
-      return true;
-    } catch (err) {
-      console.error("[Auth] Erro ao fazer logout:", err);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Função simplificada para registrar usuário
-  const signUp = async (email: string, password: string, nome: string, empresa_id?: string) => {
-    try {
-      console.log("[Auth] Registrando novo usuário:", email);
-      setLoading(true);
-      
-      // Fazer chamada à API de registro
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-          nome,
-          empresa_id
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        console.error("[Auth] Erro no registro:", data.error);
-        return { success: false, error: data.error };
+      const { error: signOutError } = await supabase.auth.signOut();
+      if (signOutError) {
+        // Lança o erro para ser pego pelo catch
+        throw signOutError;
       }
-      
-      console.log("[Auth] Registro bem-sucedido:", data.message);
-      
-      // Fazer login automaticamente após o registro
-      return await signIn(email, password);
+      // Se chegou aqui, o signOut foi bem-sucedido (o listener cuidará de limpar o usuário)
+      console.log("[Auth Simplified] signOut bem-sucedido (listener atualizará o estado).");
     } catch (err: any) {
-      console.error("[Auth] Exceção no registro:", err);
-      return { success: false, error: err.message };
+      console.error("[Auth Simplified] Erro no signOut:", err);
+      setError(err.message || 'Erro desconhecido ao fazer logout.');
     } finally {
       setLoading(false);
     }
   };
-  
-  // Verificar se o usuário está autenticado - simplificado para sempre retornar
-  // true se houver qualquer sessão, independentemente da expiração
-  const checkAuthState = async () => {
-    try {
-      console.log("[Auth] Verificando estado de autenticação");
-      
-      // Obter sessão atual
-      const { data, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error("[Auth] Erro ao verificar estado:", error.message);
-        return false;
-      }
-      
-      // Verificar se existe sessão
-      if (!data.session) {
-        console.log("[Auth] Nenhuma sessão encontrada");
-        return false;
-      }
-      
-      // Se houver alguma sessão, consideramos válida e renovamos em segundo plano
-      console.log("[Auth] Sessão encontrada, considerando válida");
-      
-      // Tentar renovar o token em segundo plano, sem bloquear
-      refreshToken().catch(err => {
-        console.log("[Auth] Erro ao renovar token em segundo plano:", err);
-        // Ignorar erros de renovação, pois a sessão ainda é válida
-      });
-      
-      // Sempre retornamos true se houver sessão
-      return true;
-    } catch (err) {
-      console.error("[Auth] Exceção ao verificar estado:", err);
-      return false;
-    }
-  };
-  
+
   return {
     user,
     loading,
+    error, // Exportar o estado de erro
     signIn,
     signOut,
-    signUp,
-    isAuthenticated: !!user,
-    checkAuthState,
-    refreshToken
+    isAuthenticated: !!user, // Derivado simples
+    // Não exportar mais checkAuthState ou refreshToken
   };
 } 

@@ -133,60 +133,17 @@ O sistema é projetado para suportar múltiplas empresas (multitenancy):
 - Os dados são isolados por empresa usando o campo `empresa_id`
 - Todas as consultas de dados incluem filtros por empresa do usuário logado
 
-## Como Implementar Verificação de Permissões
+## Níveis de Acesso e Grupos
 
-### No Servidor (Server Components ou API Routes)
+O sistema utiliza grupos para gerenciar permissões:
 
-```typescript
-import { hasPermission } from "@/lib/utils/permissions";
+*   **Usuário Master:** Possui acesso total a todas as funcionalidades e empresas. O campo `is_master` na tabela `usuarios` (ou um grupo especial) indica este status.
+*   **Grupos por Empresa:** Cada empresa (`empresas`) possui seus próprios grupos (`grupos`), vinculados pela coluna `grupos.empresa_id`.
+*   **Permissões de Tela (Grupos Não-Master):** Para grupos que não são master (`grupos.is_master = false`), as permissões de acesso a diferentes áreas/telas do sistema são definidas na coluna `grupos.telas_permitidas`. Esta coluna armazena um array de strings (identificadores únicos de tela, como 'dashboard', 'admin_usuarios').
+    *   **Importante:** A funcionalidade de edição de grupo no frontend (`GroupSection.tsx`) depende da API que retorna a lista de grupos (`GET /api/admin/groups`) para incluir os campos `empresa_id` e `telas_permitidas`. Atualmente (na última verificação), esta API retorna dados incompletos, impedindo o carregamento correto desses campos no modal de edição.
+*   **Associação:** Usuários (`usuarios`) são associados a grupos através da tabela `usuarios_grupos`.
 
-// Em uma rota de API
-export async function GET(request) {
-  const userId = "..."; // Obter do contexto de autenticação
-  
-  // Verificar permissão
-  const canViewUsers = await hasPermission(userId, "usuario_visualizar");
-  
-  if (!canViewUsers) {
-    return new Response(JSON.stringify({ error: "Sem permissão" }), {
-      status: 403,
-    });
-  }
-  
-  // Continuar processamento...
-}
-```
-
-### No Cliente (Client Components)
-
-```tsx
-import { useState, useEffect } from "react";
-import { useAuth } from "@/lib/hooks/use-auth";
-
-function ProtectedComponent() {
-  const { user } = useAuth();
-  const [hasAccess, setHasAccess] = useState(false);
-  
-  useEffect(() => {
-    async function checkPermission() {
-      if (user) {
-        // Chamar uma API para verificar permissão
-        const response = await fetch(`/api/check-permission?permission=venda_criar`);
-        const data = await response.json();
-        setHasAccess(data.hasPermission);
-      }
-    }
-    
-    checkPermission();
-  }, [user]);
-  
-  if (!hasAccess) {
-    return <p>Você não tem permissão para acessar este conteúdo.</p>;
-  }
-  
-  return <div>Conteúdo protegido aqui...</div>;
-}
-```
+## Fluxo de Autorização
 
 ## Boas Práticas
 

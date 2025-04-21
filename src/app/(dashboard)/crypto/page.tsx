@@ -63,7 +63,7 @@ export default function CryptoPage() {
   const [operacoes, setOperacoes] = useState<Operacao[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user, checkAuthState } = useAuth();
+  const { user } = useAuth();
   const { userData } = useUserData();
   const router = useRouter();
   const pathname = usePathname();
@@ -161,10 +161,13 @@ export default function CryptoPage() {
       } else {
         // Resposta OK, processar dados
         const operacoesData = await operacoesResponse.json();
-        console.log("[Crypto] Resposta completa da API de operações:", operacoesData);
         
-        const operacoesApi = operacoesData.operacoes || [];
-        if (operacoesApi.length === 0) {
+        const operacoesApi = operacoesData || [];
+        if (!Array.isArray(operacoesApi)) {
+          console.error("[Crypto] Erro: A resposta da API não é um array como esperado.", operacoesApi);
+          setError("Formato inesperado da resposta da API.");
+          setOperacoes([]);
+        } else if (operacoesApi.length === 0) {
           console.log("[Crypto] Nenhuma operação encontrada");
           setError("Nenhuma operação encontrada. Verifique se você já cadastrou alguma operação.");
         } else {

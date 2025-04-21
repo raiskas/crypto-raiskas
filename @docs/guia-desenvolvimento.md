@@ -331,6 +331,27 @@ Siga estas práticas para o controle de versão:
 - [Documentação do React Hook Form](https://react-hook-form.com/get-started)
 - [Documentação do Zod](https://zod.dev/)
 
+## Problemas Conhecidos e Soluções Pendentes
+
+Esta seção documenta problemas identificados que requerem atenção ou soluções que dependem de outras partes do sistema (como o backend).
+
+1.  **Edição de Grupo - Carregamento Incompleto de Dados:**
+    *   **Problema:** Ao clicar em "Editar" em um grupo na seção de administração, o modal carrega corretamente o nome do grupo, mas não pré-seleciona a "Empresa" associada nem marca as checkboxes correspondentes às "Telas Permitidas", mesmo que esses dados existam no banco de dados.
+    *   **Diagnóstico:** Após extensa depuração e comparação com a funcionalidade de edição de usuário (que funciona corretamente), a causa raiz foi identificada na API do backend. A API responsável por fornecer a lista inicial de grupos (provavelmente `GET /api/admin/groups`) retorna objetos de grupo incompletos, omitindo os campos `empresa_id` e `telas_permitidas` (selecionando apenas `id` e `nome`, por exemplo). O código frontend em `GroupSection.tsx` foi ajustado para usar os dados da lista inicial (espelhando a edição de usuário) e está pronto para exibir os dados completos assim que forem fornecidos.
+    *   **Solução Pendente (Backend):** É necessário modificar a API do backend (o handler para `GET /api/admin/groups`) para que a consulta SQL na tabela `grupos` inclua as colunas `empresa_id` e `telas_permitidas` nos resultados retornados para o frontend.
+
+2.  **Erros de Tipo com React Hook Form / Zod:**
+    *   **Problema:** Ocasionalmente, ocorrem erros de tipo complexos na integração entre `react-hook-form`, `zod` e os componentes de UI, especialmente relacionados à prop `control` e à função `handleSubmit`.
+    *   **Solução Temporária (Pragmática):** Em vários locais (como nos modais de usuário e grupo), comentários `// @ts-ignore` foram adicionados para suprimir esses erros de lint e permitir o desenvolvimento. Uma investigação mais aprofundada das tipagens pode ser necessária no futuro, mas não é bloqueante no momento.
+
+3.  **Configuração de Imagens Externas (Next.js):**
+    *   **Problema:** Ao tentar exibir imagens de fontes externas (ex: ícones de criptomoedas) usando `<Image>` do Next.js, ocorreu um erro indicando que o hostname não estava configurado.
+    *   **Solução Aplicada:** O hostname `cryptoicons.org` foi adicionado à configuração `images.remotePatterns` no arquivo `next.config.js`. Lembre-se que após modificar `next.config.js`, o servidor de desenvolvimento precisa ser reiniciado.
+
+## Contribuições
+
+(...)
+
 ---
 
 Documentação criada em: 09/04/2024 

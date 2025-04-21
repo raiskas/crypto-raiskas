@@ -579,184 +579,33 @@ Tipos comuns:
 
 ## 9. Troubleshooting
 
-### Problemas de Autenticação
+### Problemas Comuns
 
-1. **Usuário autenticado mas sem acesso a recursos**:
-   - Verifique se o usuário está conectado a uma empresa
-   - Verifique se o usuário pertence a pelo menos um grupo
-   - Verifique se os grupos têm as permissões necessárias
+1.  **Erro de violação de chave estrangeira / única**:
+    *   Verifique se os dados referenciados existem ou se há duplicatas.
 
-2. **Erro "Supabase client is not initialized"**:
-   - Verifique se as variáveis de ambiente estão configuradas corretamente
-   - Reinicie o servidor de desenvolvimento
+2.  **Erro de conexão ao Supabase**:
+    *   Verifique as variáveis de ambiente (`.env.local`).
 
-3. **Redirecionamento em loop**:
-   - Verifique o middleware e as regras de redirecionamento
-   - Verifique o estado de autenticação no hook `useAuth`
+3.  **Redirecionamento em loop**:
+    *   Verifique o `middleware.ts` e o estado de autenticação no `useAuth`.
 
-### Problemas de Banco de Dados
+4.  **Imagens Externas Não Carregam (`next/image`)**
+    *   **Sintoma:** Erro `hostname "..." is not configured under images in your next.config.js`.
+    *   **Solução:** Adicione o hostname necessário ao array `images.remotePatterns` no arquivo `next.config.js` e reinicie o servidor de desenvolvimento. (Ex: `cryptoicons.org` foi adicionado recentemente).
 
-1. **Erro de violação de chave estrangeira**:
-   - Verifique se o registro referenciado existe
-   - Verifique se está tentando excluir um registro que tem dependências
+5.  **Edição de Grupo Não Carrega Dados Completos (Empresa/Permissões)**
+    *   **Sintoma:** Ao editar um grupo, apenas o nome é preenchido; empresa e telas permitidas não são selecionados/marcados.
+    *   **Causa Raiz:** A API do backend que retorna a lista inicial de grupos (provavelmente `GET /api/admin/groups`) não está incluindo os campos `empresa_id` e `telas_permitidas` em sua resposta, mesmo que eles existam no banco.
+    *   **Solução:** A correção **deve ser feita no backend**, modificando a consulta SQL da API para incluir esses campos. O código frontend (`GroupSection.tsx`) já está preparado para usá-los quando fornecidos.
 
-2. **Erro de violação de chave única**:
-   - Verifique se já existe um registro com o mesmo valor em uma coluna com restrição UNIQUE
-   - Para emails duplicados, verifique tanto a tabela `auth.users` quanto a tabela `usuarios`
+## 10. Módulo de Gerenciamento de Usuários e Grupos
 
-3. **Erro de conexão ao Supabase**:
-   - Verifique as variáveis de ambiente
-   - Verifique se as chaves do Supabase estão ativas
+### Edição de Grupos
 
-### Erros Comuns e Soluções
-
-1. **"duplicate key value violates unique constraint 'usuarios_email_key'"**:
-   - Verifique se o email já existe na tabela `usuarios`
-   - Verifique se o mesmo email existe na tabela `auth.users` mas sem correspondência em `usuarios`
-   - Utilize a API `/api/auth/debug` para diagnosticar inconsistências
-
-2. **"You cannot have two parallel pages that resolve to the same path"**:
-   - Certifique-se de que não existem arquivos `page.tsx` em caminhos que se resolveriam para a mesma URL
-   - Lembre-se que grupos de rotas como `(dashboard)` não afetam o caminho da URL
-
-### Consultas Úteis para Diagnóstico
-
-```sql
--- Verificar tabelas existentes
-SELECT table_name 
-FROM information_schema.tables 
-WHERE table_schema = 'public';
-
--- Verificar estrutura de uma tabela
-SELECT 
-  column_name, 
-  data_type, 
-  is_nullable, 
-  column_default
-FROM information_schema.columns 
-WHERE table_name = 'usuarios' 
-ORDER BY ordinal_position;
-
--- Verificar políticas RLS
-SELECT * FROM pg_policies;
-
--- Verificar emails duplicados
-SELECT email, COUNT(*) 
-FROM usuarios 
-GROUP BY email 
-HAVING COUNT(*) > 1;
-
--- Verificar registros em usuarios sem correspondência em auth.users
-SELECT u.* 
-FROM usuarios u 
-LEFT JOIN auth.users a ON u.auth_id = a.id 
-WHERE a.id IS NULL;
-```
-
-## 10. Módulo de Gerenciamento de Usuários
-
-### Visão Geral
-
-O módulo de gerenciamento de usuários permite:
-- Listar todos os usuários do sistema
-- Criar novos usuários
-- Editar informações de usuários existentes
-- Alterar senhas
-- Desativar/remover usuários
-
-### Interface de Usuário
-
-O módulo possui uma interface completa com:
-- Tabela responsiva para listar usuários
-- Modais para criar, editar, alterar senha e remover usuários
-- Indicadores visuais de status (ativo/inativo)
-- Formulários com validação em tempo real
-
-### API de Gerenciamento
-
-#### Listar Usuários
-
-```typescript
-// GET /api/admin/users
-const response = await fetch('/api/admin/users');
-const data = await response.json();
-// data.users contém a lista de usuários
-```
-
-#### Criar Usuário
-
-```typescript
-// POST /api/admin/users
-const response = await fetch('/api/admin/users', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    nome: 'Nome do Usuário',
-    email: 'usuario@exemplo.com',
-    password: 'senha123',
-    empresa_id: 'id-da-empresa', // opcional
-    ativo: true, // opcional, padrão: true
-  }),
-});
-```
-
-#### Atualizar Usuário
-
-```typescript
-// PATCH /api/admin/users
-const response = await fetch('/api/admin/users', {
-  method: 'PATCH',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    id: 'id-do-usuario', // ID na tabela auth.users
-    nome: 'Novo Nome', // opcional
-    email: 'novo-email@exemplo.com', // opcional
-    password: 'nova-senha', // opcional
-    empresa_id: 'nova-empresa-id', // opcional
-    ativo: false, // opcional
-  }),
-});
-```
-
-#### Remover Usuário
-
-```typescript
-// DELETE /api/admin/users?id=:id
-const response = await fetch(`/api/admin/users?id=${userId}`, {
-  method: 'DELETE',
-});
-```
-
-### Tratamento de Casos Especiais
-
-O módulo implementa verificações robustas para:
-
-1. **Prevenção de Duplicações**:
-   - Verifica a existência do email em auth.users antes de criar
-   - Verifica a existência do email em usuarios antes de criar
-   - Tratamento específico para violações de chave única
-
-2. **Consistência de Dados**:
-   - Se a criação falhar em qualquer estágio, todas as operações são revertidas
-   - Registros em auth.users sem correspondência em usuarios são removidos
-   - Detecção e tratamento de erros de diversos tipos
-
-3. **Segurança**:
-   - Validação de dados de entrada com Zod
-   - Proteção contra remoção acidental (confirmação necessária)
-   - Feedback visual de ações (sucesso/erro)
-
-### Próximos Passos
-
-Melhorias planejadas para o módulo:
-- Implementação de paginação para a tabela de usuários
-- Adição de filtros de busca por nome e email
-- Exportação de dados em formato CSV/Excel
-- Histórico de ações por usuário
+*   **Funcionalidade:** Permite editar nome, descrição, status de master e telas permitidas de um grupo existente.
+*   **Implementação:** Modal acessado pela tabela de grupos (`GroupSection.tsx`).
+*   **Observação Importante:** Atualmente, devido a dados incompletos retornados pela API que carrega a lista inicial de grupos (falta de `empresa_id` e `telas_permitidas`), o modal de edição só consegue pré-preencher o nome do grupo. A funcionalidade completa depende da correção da API no backend. Veja a seção Troubleshooting para mais detalhes.
 
 ## 11. Contato e Suporte
 

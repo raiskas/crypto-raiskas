@@ -61,3 +61,18 @@ Para suporte ou dúvidas sobre o projeto, entre em contato com:
 ---
 
 Documentação atualizada em: 09/04/2024 
+
+*   `docs/menu-sidebar.md`: Detalhes sobre o menu lateral.
+*   `docs/menu-superior.md`: Detalhes sobre o menu superior.
+*   `docs/dark-mode.md`: Detalhes sobre a implementação do tema escuro.
+*   `docs/historico-desenvolvimento.md`: Log de alterações importantes.
+
+**Status Atual e Problemas Conhecidos:**
+
+*   O sistema principal de autenticação e gerenciamento de usuários está funcional.
+*   A edição de grupos carrega apenas dados parciais devido a limitações na API `GET /api/admin/groups` (requer correção no backend). Veja `guia-desenvolvimento.md` para detalhes.
+*   Consulte `guia-desenvolvimento.md` para outros problemas conhecidos e soluções pendentes.
+
+## Como Contribuir
+
+(...) 

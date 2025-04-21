@@ -5,6 +5,55 @@ import { Database } from '@/types/supabase';
 import { supabaseConfig } from '@/lib/config';
 import { getServerUser } from './async-cookies';
 
+export const supabase = createClient<Database>(
+  supabaseConfig.url,
+  supabaseConfig.anonKey
+);
+
+export const signIn = async (email: string, password: string) => {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+};
+
+export const signOut = async () => {
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    throw error;
+  }
+};
+
+export const getCurrentUser = async () => {
+  const { data: { session }, error } = await supabase.auth.getSession();
+
+  if (error || !session) {
+    return null;
+  }
+
+  const { data: userData, error: userError } = await supabase
+    .from('usuarios')
+    .select('*')
+    .eq('id', session.user.id)
+    .single();
+
+  if (userError) {
+    console.error('Erro ao buscar dados do usuário:', userError);
+    return null;
+  }
+
+  return {
+    ...session.user,
+    ...userData
+  };
+};
+
 /**
  * Obtém o cliente do Supabase com a chave de serviço
  */
@@ -51,7 +100,7 @@ export async function getClientWithCookies() {
  * Obtém o usuário atual com fallback para usuário temporário
  * Esta função garante que sempre retornará um usuário, mesmo que seja um fallback
  */
-export async function getCurrentUser() {
+export async function getCurrentUserFallback() {
   try {
     console.log('[Auth] Iniciando verificação de usuário');
     

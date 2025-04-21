@@ -1,7 +1,16 @@
-import { cookies } from 'next/headers';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/types/supabase';
 import { supabaseConfig } from '@/lib/config';
+
+// Define o tipo base do usuário a partir do tipo gerado
+type UsuarioBase = Database['public']['Tables']['usuarios']['Row'];
+
+// Definir tipo explícito para o usuário retornado, incluindo campos adicionados
+// Estende o tipo base e adiciona/sobrescreve as propriedades necessárias
+type UsuarioCompleto = Omit<UsuarioBase, 'is_master'> & { // Remove is_master do base se existir (para evitar conflito)
+  is_master: boolean | null | undefined; // Define explicitamente o tipo esperado para is_master
+  grupo_ids: string[];
+};
 
 /**
  * Cria um cliente do Supabase com gerenciamento de cookies compatível com o Next.js 15+
@@ -58,44 +67,34 @@ export async function getServerSession() {
 
 /**
  * Obtém os dados completos do usuário autenticado
+ * Retorna o tipo UsuarioCompleto ou null
  */
-export async function getServerUser() {
-  try {
-    console.log('[ServerAuth] Iniciando verificação de sessão');
-    const session = await getServerSession();
-    
-    if (!session) {
-      console.log('[ServerAuth] Nenhuma sessão encontrada');
-      return null;
-    }
-    
-    console.log('[ServerAuth] Sessão encontrada para usuário:', session.user.id);
-    
-    // Remover verificação de expiração de sessão
-    // Vamos considerar a sessão válida independentemente da data de expiração
-    
-    // Buscar dados do usuário
-    const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase
-      .from('usuarios')
-      .select('*')
-      .eq('auth_id', session.user.id)
-      .single();
-    
-    if (error) {
-      console.error('[ServerAuth] Erro ao buscar dados do usuário:', error);
-      return null;
-    }
-    
-    if (!data) {
-      console.error('[ServerAuth] Nenhum dado encontrado para o usuário auth_id:', session.user.id);
-      return null;
-    }
-    
-    console.log('[ServerAuth] Dados do usuário recuperados com sucesso:', data.id);
-    return data;
-  } catch (error) {
-    console.error('[ServerAuth] Erro ao buscar usuário:', error);
+export const getServerUser = async () => {
+  const supabase = createClient<Database>(
+    supabaseConfig.url,
+    supabaseConfig.anonKey
+  );
+
+  const { data: { session }, error } = await supabase.auth.getSession();
+
+  if (error || !session) {
     return null;
   }
-} 
+
+  // Buscar informações adicionais do usuário
+  const { data: userData, error: userError } = await supabase
+    .from('usuarios')
+    .select('*')
+    .eq('id', session.user.id)
+    .single();
+
+  if (userError) {
+    console.error('Erro ao buscar dados do usuário:', userError);
+    return null;
+  }
+
+  return {
+    ...session.user,
+    ...userData
+  };
+}; 

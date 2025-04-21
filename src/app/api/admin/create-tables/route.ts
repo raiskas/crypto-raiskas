@@ -15,11 +15,18 @@ export async function GET(request: NextRequest) {
   try {
     // Verificar se o usuário é admin
     const user = await getCurrentUser();
+    
+    // Verificar se o usuário existe ANTES de acessar propriedades
+    if (!user) {
+        console.error("[Admin:create-tables] Nenhum usuário autenticado encontrado.");
+        return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
+    
     console.log(`[Admin:create-tables] Usuário: ${user.id}`);
     
-    if (!user || !user.ativo) {
+    if (!user.ativo) {
       return NextResponse.json(
-        { error: "Acesso negado. Usuário não autorizado." },
+        { error: "Usuário não autorizado ou inativo" },
         { status: 403 }
       );
     }

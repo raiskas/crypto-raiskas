@@ -4,9 +4,10 @@ import { useRouter, usePathname } from "next/navigation";
 import { PropsWithChildren, useEffect } from "react";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { AuthLoading } from "@/components/auth-loading";
+import { AUTH_ROUTES, HOME_ROUTE } from "@/lib/config/routes";
 
 // Lista de rotas públicas (não exigem autenticação)
-const publicPaths = ['/signin', '/signup', '/forgot-password', '/auth-diagnostico'];
+// const publicPaths = ['/signin', '/signup', '/forgot-password', '/auth-diagnostico'];
 
 interface AuthProviderProps extends PropsWithChildren {
   requireAuth?: boolean;
@@ -14,45 +15,40 @@ interface AuthProviderProps extends PropsWithChildren {
 
 export function AuthProvider({ 
   children, 
-  requireAuth = true 
+  requireAuth = true // Esta prop pode não ser mais necessária se o middleware fizer tudo
 }: AuthProviderProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   
+  /* // REMOVIDO: Lógica de redirecionamento agora centralizada em /app/page.tsx e middleware
   useEffect(() => {
-    // Pular verificação se estiver carregando
-    if (loading) return;
-    
-    // Se estiver na raiz, redirecionar com base na autenticação
-    if (pathname === '/') {
-      if (user) {
-        router.push('/home');
-      } else {
-        router.push('/signin');
-      }
+    // Pular verificação se estiver carregando ou se a sessão ainda não foi verificada
+    if (loading || !sessionChecked) { 
+      // console.log("[AuthProvider] useEffect: Pulando redirecionamento (loading || !sessionChecked).");
       return;
     }
     
-    // Verificação simples: se precisa de auth e não tem usuário → redirecionar para login
-    if (requireAuth && !user && !publicPaths.includes(pathname)) {
-      router.push('/signin');
-      return;
-    }
+    // console.log("[AuthProvider] useEffect: Verificando redirecionamento...", { user: !!user, pathname });
     
-    // Se já está autenticado e está tentando acessar página de login/cadastro → redirecionar para home
-    if (user && publicPaths.includes(pathname)) {
-      router.push('/home');
+    // Se está autenticado e está tentando acessar página de login/cadastro → redirecionar para home
+    if (user && AUTH_ROUTES.includes(pathname)) {
+      // console.log(`[AuthProvider] useEffect: Usuário logado tentando acessar rota de auth (${pathname}). Redirecionando para ${HOME_ROUTE}...`);
+      router.push(HOME_ROUTE);
       return;
     }
-  }, [user, loading, pathname, router, requireAuth]);
+
+  }, [user, loading, sessionChecked, pathname, router]); 
+  */
   
-  // Mostrar componente de loading enquanto verifica autenticação
+  // Mostrar componente de loading enquanto verifica autenticação inicial
   if (loading) {
-    // Comentar temporariamente para teste
-    // return <AuthLoading />;
-    return null; // Retornar null para não renderizar o overlay durante o loading
+    // REMOVIDO: console.log("[AuthProvider] Estado loading=true. Renderizando AuthLoading...");
+    return <AuthLoading />;
   }
   
+  // Se não está carregando, simplesmente renderiza os children
+  // A proteção de rota é feita pelo middleware
+  // REMOVIDO: console.log("[AuthProvider] Estado loading=false. Renderizando children (sem useEffect de redirecionamento).");
   return <>{children}</>;
 } 
