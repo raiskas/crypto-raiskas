@@ -301,18 +301,9 @@ export default function CryptoPage() {
     
     init();
     
-    // Configurar intervalo para atualizar automaticamente as top moedas a cada 2 minutos
-    const intervalId = setInterval(() => {
-      if (isMounted) {
-        console.log("[Crypto] Atualizando top moedas automaticamente");
-        carregarDados();
-      }
-    }, 2 * 60 * 1000); // 2 minutos
-    
     return () => {
       isMounted = false;
       setMounted(false);
-      clearInterval(intervalId);
     };
   }, [carregarDados]);
   
@@ -512,7 +503,15 @@ export default function CryptoPage() {
  const editarOperacao = (id: string) => {
    const operacaoParaEditar = operacoes.find((op) => op.id === id);
    if (operacaoParaEditar) {
-     openModal(operacaoParaEditar); // Abre o modal com os dados da operação
+     // Encontrar a imagem correspondente na lista topMoedas
+     const moedaInfo = topMoedas.find(m => m.id === operacaoParaEditar.moeda_id);
+     // Criar objeto com a imagem (se encontrada)
+     const initialDataComImagem = { 
+       ...operacaoParaEditar, 
+       image: moedaInfo?.image // Adiciona a URL da imagem de topMoedas
+     };
+     console.log("[CryptoPage] Editando operação com dados:", initialDataComImagem);
+     openModal(initialDataComImagem); // Abre o modal com os dados da operação + imagem
    } else {
      console.error(`[CryptoPage] Operação com ID ${id} não encontrada para edição.`);
      toast.error("Operação não encontrada. Tente atualizar a lista.");
@@ -589,7 +588,8 @@ export default function CryptoPage() {
       image?: string,
       custoMedio: number,
       quantidadeDisponivel: number,
-      lucroRealizado: number
+      lucroRealizado: number,
+      precoAtual: number
     }>();
     
     // Processar cada operação em ordem cronológica
@@ -629,6 +629,7 @@ export default function CryptoPage() {
           item.valorMedio = item.custoMedio;
           item.lucro = item.lucroRealizado + (item.valorAtualizado - (item.quantidadeDisponivel * item.custoMedio));
           item.percentual = item.valorTotal > 0 ? (item.lucro / item.valorTotal) * 100 : 0;
+          item.precoAtual = precoAtual;
           
           portfolioMap.set(op.moeda_id, item);
         } else {
@@ -646,7 +647,8 @@ export default function CryptoPage() {
             lucro: 0,
             lucroRealizado: 0,
             percentual: 0,
-            image: moeda?.image
+            image: moeda?.image,
+            precoAtual: precoAtual
           };
 
           // Se for uma venda, calcular o lucro/prejuízo
@@ -764,129 +766,6 @@ export default function CryptoPage() {
         </div>
       )}
 
-      {/* Top 10 Criptomoedas */}
-      <Card className="mb-6">
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="text-xl">Top 10 Criptomoedas</CardTitle>
-              <CardDescription>Valores atualizados em tempo real</CardDescription>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => carregarDados()}
-              disabled={loadingTopMoedas}
-            >
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Atualizar
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {errorTopMoedas && (
-            <div className="bg-destructive/15 text-destructive flex items-center p-3 rounded-md mb-4">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              <span className="text-sm">{errorTopMoedas}</span>
-            </div>
-          )}
-          
-          {loadingTopMoedas ? (
-            <div className="flex justify-center items-center py-6">
-              <p>Carregando top criptomoedas...</p>
-            </div>
-          ) : topMoedas.length === 0 ? (
-            <div className="flex justify-center items-center py-6">
-              <p className="text-muted-foreground">Nenhuma informação disponível</p>
-            </div>
-          ) : (
-            <>
-              {/* Versão para desktop */}
-              <div className="hidden md:block overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-10">#</TableHead>
-                      <TableHead>Moeda</TableHead>
-                      <TableHead className="text-right">Preço</TableHead>
-                      <TableHead className="text-right">24h %</TableHead>
-                      <TableHead className="text-right">Cap. de Mercado</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {topMoedas.map((moeda, index) => (
-                      <TableRow key={moeda.id}>
-                        <TableCell className="font-medium">{index + 1}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            {moeda.image && (
-                              <div className="relative w-6 h-6 mr-2">
-                                <Image
-                                  src={moeda.image}
-                                  alt={moeda.name}
-                                  fill
-                                  className="object-contain"
-                                />
-                              </div>
-                            )}
-                            <span className="font-medium">{moeda.name}</span>
-                            <span className="ml-2 text-xs text-muted-foreground uppercase">
-                              {moeda.symbol}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatarMoeda(moeda.current_price)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span className={moeda.price_change_percentage_24h >= 0 ? 'text-green-600' : 'text-red-600'}>
-                            {moeda.price_change_percentage_24h.toFixed(2)}%
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatarMoeda(moeda.market_cap)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Versão para mobile */}
-              <div className="md:hidden space-y-4">
-                {topMoedas.map((moeda, index) => (
-                  <div key={moeda.id} className="flex items-center justify-between p-2 border-b border-border">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium w-6 text-center">{index + 1}</span>
-                      <div className="relative w-6 h-6">
-                        {moeda.image && (
-                          <Image
-                            src={moeda.image}
-                            alt={moeda.name}
-                            fill
-                            className="object-contain"
-                          />
-                        )}
-                      </div>
-                      <div>
-                        <div className="font-medium">{moeda.name}</div>
-                        <div className="text-xs text-muted-foreground uppercase">{moeda.symbol}</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-medium">{formatarMoeda(moeda.current_price)}</div>
-                      <div className={moeda.price_change_percentage_24h >= 0 ? 'text-green-600 text-xs' : 'text-red-600 text-xs'}>
-                        {moeda.price_change_percentage_24h.toFixed(2)}%
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Portfólio */}
       <Card className="mb-6">
         <CardHeader>
@@ -923,13 +802,13 @@ export default function CryptoPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Moeda</TableHead>
-                      <TableHead>Quantidade</TableHead>
+                      <TableHead>Qtde</TableHead>
                       <TableHead>Valor Médio</TableHead>
                       <TableHead>Valor Total Investido</TableHead>
                       <TableHead>Valor Atual</TableHead>
-                      <TableHead>Valor Total Atualizado</TableHead>
+                      <TableHead>Valor Total Atual</TableHead>
                       <TableHead>Lucro/Prejuízo</TableHead>
-                      <TableHead>Percentual</TableHead>
+                      <TableHead>%</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -959,7 +838,7 @@ export default function CryptoPage() {
                         <TableCell>{formatarQuantidade(item.quantidade)}</TableCell>
                         <TableCell>{formatarMoeda(item.valorMedio)}</TableCell>
                         <TableCell>{formatarMoeda(item.valorTotal)}</TableCell>
-                        <TableCell>{formatarMoeda(item.valorAtualizado)}</TableCell>
+                        <TableCell>{formatarMoeda(item.precoAtual)}</TableCell>
                         <TableCell>{formatarMoeda(item.valorAtualizado)}</TableCell>
                         <TableCell className={cn(
                           item.lucro > 0 ? "text-green-600" : item.lucro < 0 ? "text-red-600" : ""
@@ -980,6 +859,7 @@ export default function CryptoPage() {
                       <TableCell></TableCell>
                       <TableCell></TableCell>
                       <TableCell>{formatarMoeda(totaisPortfolio.valorTotalInvestido)}</TableCell>
+                      <TableCell></TableCell>
                       <TableCell>{formatarMoeda(totaisPortfolio.valorTotalAtualizado)}</TableCell>
                       <TableCell className={cn(
                         totaisPortfolio.lucroTotal > 0 ? "text-green-600" : totaisPortfolio.lucroTotal < 0 ? "text-red-600" : ""
@@ -1033,7 +913,7 @@ export default function CryptoPage() {
                         <span className="text-muted-foreground">Investido:</span> {formatarMoeda(item.valorTotal)}
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Valor Atual:</span> {formatarMoeda(item.valorAtualizado)}
+                        <span className="text-muted-foreground">Valor Atual:</span> {formatarMoeda(item.precoAtual)}
                       </div>
                       <div className={cn(
                         item.lucro > 0 ? "text-green-600" : item.lucro < 0 ? "text-red-600" : ""
@@ -1043,7 +923,7 @@ export default function CryptoPage() {
                       <div className={cn(
                         item.percentual > 0 ? "text-green-600" : item.percentual < 0 ? "text-red-600" : ""
                       )}>
-                        <span className="text-muted-foreground">Rentabilidade:</span> {formatarPercentual(item.percentual)}
+                        {formatarPercentual(item.percentual)}
                       </div>
                     </div>
                   </div>
@@ -1067,7 +947,7 @@ export default function CryptoPage() {
                     <div className={cn(
                       percentualTotalPortfolio > 0 ? "text-green-600" : percentualTotalPortfolio < 0 ? "text-red-600" : ""
                     )}>
-                      <span className="text-muted-foreground">Rentabilidade:</span> {formatarPercentual(percentualTotalPortfolio)}
+                      {formatarPercentual(percentualTotalPortfolio)}
                     </div>
                   </div>
                 </div>
@@ -1143,15 +1023,15 @@ export default function CryptoPage() {
                       <TableHead>Data</TableHead>
                       <TableHead>Tipo</TableHead>
                       <TableHead>Moeda</TableHead>
-                      <TableHead>Quantidade</TableHead>
-                      <TableHead>Valor Operação</TableHead>
-                      <TableHead>Valor Total</TableHead>
+                      <TableHead>Qtde</TableHead>
+                      <TableHead>Valor Op.</TableHead>
+                      <TableHead>Total Op.</TableHead>
                       <TableHead>Valor Atual</TableHead>
-                      <TableHead>Valor Total Atualizado</TableHead>
+                      <TableHead>Valor Total Atual</TableHead>
                       <TableHead>Lucro/Prejuízo</TableHead>
-                      <TableHead>Percentual</TableHead>
+                      <TableHead>%</TableHead>
                       <TableHead>Exchange</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                      <TableHead className="text-left">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1206,7 +1086,7 @@ export default function CryptoPage() {
                             {formatarPercentual(percentual)}
                           </TableCell>
                           <TableCell>{op.exchange}</TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-left">
                             <div className="flex space-x-2">
                               <Button size="sm" variant="outline" onClick={() => editarOperacao(op.id)}>
                                 <Pencil className="h-4 w-4 mr-1" />
@@ -1259,10 +1139,10 @@ export default function CryptoPage() {
                           <span className="text-muted-foreground">Quantidade:</span> {formatarQuantidade(op.quantidade)}
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Valor Operação:</span> {formatarMoeda(op.preco_unitario)}
+                          <span className="text-muted-foreground">Valor Op.:</span> {formatarMoeda(op.preco_unitario)}
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Total:</span> {formatarMoeda(op.valor_total)}
+                          <span className="text-muted-foreground">Total Op.:</span> {formatarMoeda(op.valor_total)}
                         </div>
                         <div>
                           <span className="text-muted-foreground">Exchange:</span> {op.exchange}
@@ -1281,7 +1161,7 @@ export default function CryptoPage() {
                         <div className={cn(
                           percentual > 0 ? "text-green-600" : percentual < 0 ? "text-red-600" : ""
                         )}>
-                          <span className="text-muted-foreground">Percentual:</span> {formatarPercentual(percentual)}
+                          {formatarPercentual(percentual)}
                         </div>
                       </div>
                       

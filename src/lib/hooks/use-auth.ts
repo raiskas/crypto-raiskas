@@ -106,13 +106,95 @@ export function useAuth() {
     }
   };
 
+  // Função SignUp (adicionada)
+  const signUp = async (email: string, password: string, nome: string) => {
+    console.log("[Auth Simplified] signUp chamado.");
+    setLoading(true);
+    setError(null);
+    try {
+      // 1. Criar o usuário na autenticação do Supabase
+      // IMPORTANTE: Para não enviar email de confirmação, configure no painel Supabase!
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          // Adiciona o nome aos metadados que podem ser úteis,
+          // mas a tabela 'usuarios' será a fonte principal.
+          data: {
+            nome: nome,
+          },
+        },
+      });
+
+      if (signUpError) {
+        console.error("[Auth Simplified] Erro Supabase signUp:", signUpError);
+        throw signUpError;
+      }
+
+      // Verificar se o usuário foi criado (pode ser null se a confirmação estiver ativa)
+      if (!signUpData.user) {
+         // Isso pode acontecer se a confirmação de email estiver habilitada no Supabase
+         // e você não estiver tratando o fluxo de confirmação.
+         // Se você DESABILITOU a confirmação, isso não deveria acontecer.
+         console.warn("[Auth Simplified] Supabase signUp retornou sucesso, mas sem objeto user. Verifique as configurações de confirmação de email.");
+         // Considerar retornar sucesso aqui se a confirmação estiver ativa e for esperada.
+         // Por ora, vamos lançar um erro se a confirmação estiver desativada e mesmo assim user for null.
+         throw new Error("Falha ao obter dados do usuário após cadastro no Supabase.");
+      }
+
+      console.log("[Auth Simplified] Usuário criado no Supabase Auth:", signUpData.user.id);
+
+      // 2. Chamar a API interna para criar o registro na tabela 'usuarios'
+      //    (A API foi simplificada para não criar empresa/grupo)
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          auth_id: signUpData.user.id, // Passa o ID do Supabase Auth
+          email: email,
+          nome: nome,
+        }),
+      });
+
+      if (!response.ok) {
+        // Se a API falhar, TENTAR excluir o usuário recém-criado no Supabase Auth
+        // para manter a consistência (best-effort)
+        console.error("[Auth Simplified] Erro ao chamar API /api/auth/register. Tentando reverter Supabase Auth...");
+        try {
+          // Precisamos de privilégios de admin para excluir, o que não temos no browser.
+          // Idealmente, a API /api/auth/register deveria lidar com a reversão se ela mesma criasse o usuário auth.
+          // Como estamos separando, logamos o erro e informamos.
+          // await supabase.auth.admin.deleteUser(signUpData.user.id); // << NÃO FUNCIONA NO CLIENT-SIDE
+          console.error(`[Auth Simplified] FALHA NA REVERSÃO AUTOMÁTICA: Não foi possível excluir o usuário ${signUpData.user.id} do Supabase Auth pelo cliente. Exclusão manual ou ajuste na API /api/auth/register pode ser necessário.`);
+        } catch (revertError: any) {
+          console.error("[Auth Simplified] Erro ao tentar reverter Supabase Auth:", revertError);
+        }
+        const errorBody = await response.json().catch(() => ({})); // Tenta pegar corpo do erro
+        throw new Error(errorBody.error || `Erro na API de registro: ${response.statusText}`);
+      }
+
+      console.log("[Auth Simplified] signUp completo e API /api/auth/register chamada com sucesso.");
+      // O listener onAuthStateChange deve pegar o novo usuário logado.
+      setLoading(false);
+      return { success: true, user: signUpData.user };
+
+    } catch (err: any) {
+      console.error("[Auth Simplified] Erro geral no signUp:", err);
+      setError(err.message || 'Erro desconhecido durante o cadastro.');
+      setLoading(false);
+      return { success: false, error: err.message };
+    }
+  };
+
   return {
     user,
     loading,
-    error, // Exportar o estado de erro
+    error,
     signIn,
+    signUp,
     signOut,
-    isAuthenticated: !!user, // Derivado simples
-    // Não exportar mais checkAuthState ou refreshToken
+    isAuthenticated: !!user,
   };
 } 

@@ -341,20 +341,25 @@ export default function UserSection({
   };
 
   const openEditUserModal = (user: User) => {
+    const logPrefix = "[UserSection openEditUserModal]";
+    console.log(`${logPrefix} Abrindo modal para editar usuário:`, user);
     setSelectedUser(user);
-    setModalError('');
-    setPasswordChangeError(null);
-    setPasswordChangeSuccess(null);
-    // @ts-ignore
+    setModalError(''); // Limpar erro anterior
+    setActionLoading(false); // Garantir que o botão não esteja desabilitado ao abrir
+
+    // Preencher o formulário com os dados do usuário selecionado
+    // Tratar grupo_id null como string vazia para o Select
+    const defaultGroupId = user.grupo_id === null ? '' : user.grupo_id;
+    console.log(`${logPrefix} Definindo valores do formulário:`, { ...user, grupo_id: defaultGroupId });
+
     editForm.reset({
-        nome: user.nome,
-        email: user.email ?? '', 
-        ativo: user.ativo,
-        empresa_id: user.empresa_id || '',
-        grupo_id: user.grupo_id || null,
-        is_master: user.is_master,
+      nome: user.nome,
+      email: user.email,
+      empresa_id: user.empresa_id || '', // Garantir que não seja null
+      grupo_id: defaultGroupId, // Usar valor tratado
+      ativo: user.ativo,
+      is_master: user.is_master || false, // Garantir que não seja null/undefined
     });
-    passwordForm.reset({ newPassword: "", confirmPassword: "" }); // Descomentar reset do passwordForm
     setIsEditUserOpen(true);
   };
 
@@ -570,7 +575,17 @@ export default function UserSection({
             {selectedUser && (
               <>
                 <Form {...editForm}>
-                  <form onSubmit={editForm.handleSubmit(handleEditUser)} className="space-y-4">
+                  <form 
+                    onSubmit={editForm.handleSubmit(
+                      handleEditUser, 
+                      (errors) => {
+                        console.error("[UserSection Edit] Falha na validação do formulário:", errors);
+                        setModalError("Erro de validação. Verifique os campos marcados.");
+                      }
+                    )} 
+                    className="space-y-4" 
+                    id="editUserForm"
+                  >
                     <FormField control={editForm.control} name="nome" render={({ field }) => ( <FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                     <FormField control={editForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                     <FormField
@@ -581,7 +596,7 @@ export default function UserSection({
                             <FormLabel>Empresa</FormLabel>
                             <Select
                                 onValueChange={field.onChange}
-                                value={field.value?.toString() ?? undefined} // Converter para string
+                                value={field.value?.toString() ?? undefined}
                                 disabled={loadingEmpresas}
                             >
                                 <FormControl>
@@ -592,7 +607,7 @@ export default function UserSection({
                                 </FormControl>
                                 <SelectContent>
                                     {empresas.map((empresa) => (
-                                    <SelectItem key={empresa.id.toString()} value={empresa.id.toString()}> {/* Converter para string */}
+                                    <SelectItem key={empresa.id.toString()} value={empresa.id.toString()}>
                                         {empresa.nome}
                                     </SelectItem>
                                     ))}
@@ -610,7 +625,7 @@ export default function UserSection({
                             <FormLabel>Grupo</FormLabel>
                             <Select
                                 onValueChange={field.onChange}
-                                value={field.value?.toString() ?? undefined} // Converter para string
+                                value={field.value?.toString() ?? undefined}
                                 disabled={loadingGroups}
                             >
                                 <FormControl>
@@ -668,7 +683,6 @@ export default function UserSection({
                         </FormItem>
                       )}
                     />
-                    <button type="submit" hidden disabled={actionLoading}></button>
                   </form>
                 </Form>
 

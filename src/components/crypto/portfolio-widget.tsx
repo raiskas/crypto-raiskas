@@ -252,7 +252,7 @@ export function PortfolioWidget({ compact = false, className }: PortfolioWidgetP
                     {!compact && <TableHead>Valor Total Investido</TableHead>}
                     <TableHead>Valor Total Atual</TableHead>
                     <TableHead>Lucro/Prejuízo</TableHead>
-                    <TableHead>Percentual</TableHead>
+                    <TableHead>%</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -290,7 +290,7 @@ export function PortfolioWidget({ compact = false, className }: PortfolioWidgetP
                       <TableCell className={cn(
                         item.percentual > 0 ? "text-green-600" : item.percentual < 0 ? "text-red-600" : ""
                       )}>
-                        {formatarPercentual(item.percentual)}
+                        <span className="text-muted-foreground">Rentabilidade:</span> {formatarPercentual(item.percentual)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -309,7 +309,7 @@ export function PortfolioWidget({ compact = false, className }: PortfolioWidgetP
                     <TableCell className={cn(
                       percentualTotalPortfolio > 0 ? "text-green-600" : percentualTotalPortfolio < 0 ? "text-red-600" : ""
                     )}>
-                      {formatarPercentual(percentualTotalPortfolio)}
+                      <span className="text-muted-foreground">Rentabilidade:</span> {formatarPercentual(percentualTotalPortfolio)}
                     </TableCell>
                   </TableRow>
                 </TableBody>

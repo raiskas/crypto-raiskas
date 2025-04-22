@@ -1,9 +1,5 @@
-// middleware.ts desativado temporariamente 
-// para evitar conflitos com a autenticação do lado do cliente
-
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { Database } from '@/types/supabase';
 import { supabaseConfig } from '@/lib/config'; // Manter se usado para outras lógicas, senão remover
 import { AUTH_ROUTES, HOME_ROUTE, PUBLIC_ROUTES } from '@/lib/config/routes'; // Importar constantes
 
@@ -68,7 +64,7 @@ export async function middleware(request: NextRequest) {
 
   // Criar cliente Supabase (APENAS para rotas não públicas)
   console.log("[Middleware] Criando cliente Supabase...");
-  const supabase = createServerClient<Database>(
+  const supabase = createServerClient<any>(
     supabaseConfig.url!,
     supabaseConfig.anonKey!,
     {
@@ -176,35 +172,35 @@ export async function middleware(request: NextRequest) {
     const userId = userData.id;
     console.log(`[Middleware] ID interno do usuário: ${userId}`);
 
-    // ---- INÍCIO: Lógica CORRIGIDA para verificar is_master a partir dos grupos ----
-    // 2. Verificar se o usuário pertence a ALGUM grupo que seja master
-    const { data: masterGroupData, error: masterGroupError } = await supabase
+    // ---- INÍCIO: Lógica REVISADA para verificar is_master ----
+    // 2. Buscar TODOS os grupos do usuário, incluindo o status 'is_master'
+    console.log(`[Middleware] Buscando TODOS os grupos para usuário ${userId}...`);
+    const { data: userGroupsData, error: groupsError } = await supabase
       .from('usuarios_grupos')
       .select(`
         grupo_id,
-        grupos ( is_master )
+        grupos ( id, nome, is_master ) 
       `)
-      .eq('usuario_id', userId)
-      .eq('grupos.is_master', true) // Filtra diretamente por grupos master
-      .limit(1) // Só precisamos saber se existe pelo menos um
-      .maybeSingle(); // Retorna null se não encontrar, sem erro
+      .eq('usuario_id', userId); // Busca todos os grupos do usuário
 
-    if (masterGroupError) {
-        console.error(`[Middleware] Erro ao verificar grupos master para usuário ${userId}: ${masterGroupError.message}`);
-        // Em caso de erro na verificação de master, negar acesso por segurança? Ou tentar RPC?
-        // Vamos negar por segurança.
-        return NextResponse.redirect(new URL(HOME_ROUTE + '?error=master_check_error', request.url));
+    if (groupsError) {
+        console.error(`[Middleware] Erro ao buscar grupos para usuário ${userId}: ${groupsError.message}`);
+        return NextResponse.redirect(new URL(HOME_ROUTE + '?error=groups_fetch_error', request.url));
     }
 
-    // Se encontrou algum grupo master associado ao usuário
-    if (masterGroupData) {
-        console.log(`[Middleware] DECISÃO: Usuário ${user?.email} (ID: ${userId}) pertence a um grupo master. Acesso permitido a ${pathname}.`);
+    // @ts-ignore - Ignorar erro de tipo devido à estrutura aninhada e uso de <any>
+    const isMemberOfMasterGroup = userGroupsData?.some(ug => ug.grupos?.is_master === true) ?? false;
+    console.log(`[Middleware] Verificação JS - Usuário ${user?.email} pertence a grupo master? ${isMemberOfMasterGroup}`);
+
+    // Se o usuário pertence a um grupo master (verificado via JS)
+    if (isMemberOfMasterGroup) {
+        console.log(`[Middleware] DECISÃO: Usuário ${user?.email} (ID: ${userId}) pertence a um grupo master (verificado via JS). Acesso permitido a ${pathname}.`);
         return response; // Permite acesso
     }
 
     // Se chegou aqui, o usuário NÃO pertence a nenhum grupo master. Prosseguir com verificação RPC.
-    console.log(`[Middleware] Usuário ${user?.email} (ID: ${userId}) não é master. Verificando permissões específicas via RPC...`);
-    // ---- FIM: Lógica CORRIGIDA para verificar is_master a partir dos grupos ----
+    console.log(`[Middleware] Usuário ${user?.email} (ID: ${userId}) não é master (verificado via JS). Verificando permissões específicas via RPC...`);
+    // ---- FIM: Lógica REVISADA ----
 
     // --- INÍCIO: Chamadas RPC de Teste (Manter por enquanto para depuração) ---
     try {

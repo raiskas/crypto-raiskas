@@ -53,6 +53,7 @@ interface OperacaoData {
   exchange: string | null;
   notas: string | null;
   grupo_id?: string; // Adicionado grupo_id
+  image?: string; // Adicionado para receber a URL da imagem
 }
 
 // Schema de validação Zod (unificado)
@@ -144,12 +145,15 @@ export const OperacaoForm: React.FC<OperacaoFormProps> = ({
   // Efeito para definir a moeda selecionada inicial (modo edição)
   useEffect(() => {
     if (isEditing && initialData) {
+      // Remover logs de depuração
+      // const imageUrl = `https://cryptoicons.org/api/icon/${initialData.simbolo.toLowerCase()}/200`;
+
       setSelectedCoin({
         id: initialData.moeda_id,
         symbol: initialData.simbolo,
         name: initialData.nome,
-        // A imagem pode não estar nos initialData, buscar se necessário ou usar placeholder
-        image: `https://cryptoicons.org/api/icon/${initialData.simbolo.toLowerCase()}/200`,
+        // Prioriza a imagem passada via initialData, usa cryptoicons como fallback
+        image: initialData.image || `https://cryptoicons.org/api/icon/${initialData.simbolo.toLowerCase()}/200`,
         current_price: initialData.preco_unitario // Usar preço da operação como referência inicial
       });
       // Definir grupo_id vindo de initialData se existir
@@ -312,7 +316,22 @@ export const OperacaoForm: React.FC<OperacaoFormProps> = ({
                 <div className="mt-1 p-3 border rounded-md">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="relative w-8 h-8"><Image src={selectedCoin.image} alt={selectedCoin.name} fill className="object-contain" onError={(e) => { e.currentTarget.src = `https://cryptoicons.org/api/icon/${selectedCoin.symbol.toLowerCase()}/200`; }}/></div>
+                      <div className="relative w-8 h-8">
+                        <Image
+                          // Usar a imagem do estado selectedCoin (que já tem o fallback)
+                          src={selectedCoin.image}
+                          alt={selectedCoin.name}
+                          fill
+                          className="object-contain"
+                          // Remover log do onError
+                          onError={(e) => { 
+                            // console.log('[OperacaoForm Edit Mode] Image onError triggered! Trying fallback.');
+                            const target = e.target as HTMLImageElement; 
+                            target.onerror = null; // Previne loop se o fallback falhar
+                            target.src = '/placeholder-coin.png'; 
+                          }}
+                        />
+                      </div>
                       <div><p className="font-semibold">{selectedCoin.name}</p><p className="text-sm text-muted-foreground">{selectedCoin.symbol.toUpperCase()}</p></div>
                     </div>
                     {!isEditing && <Button type="button" variant="ghost" size="sm" onClick={limparSelecao}>Alterar</Button>}

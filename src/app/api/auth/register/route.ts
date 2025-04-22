@@ -18,137 +18,117 @@ const supabase = createClient<Database>(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { nome, email, password, empresa_id } = body;
+    // Password não é mais enviado/necessário para esta API
+    const { nome, email } = body; 
     
-    console.log("[API:Register] Solicitação de registro para:", { email, nome });
+    console.log("[API:Register Simplified] Solicitação de registro para:", { email, nome });
     
-    // Validar campos obrigatórios
-    if (!nome || !email || !password) {
-      console.error("[API:Register] Campos obrigatórios faltando");
+    // Validar campos obrigatórios - REMOVER 'password' DA VERIFICAÇÃO
+    if (!nome || !email) {
+      console.error("[API:Register Simplified] Nome ou email faltando");
       return NextResponse.json(
-        { error: "Nome, email e senha são obrigatórios" },
+        // Mensagem de erro atualizada
+        { error: "Nome e email são obrigatórios" }, 
         { status: 400 }
       );
     }
     
-    // Verificar se o email já existe
-    try {
-      console.log("[API:Register] Verificando se email já existe em Auth");
-      const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
-      
-      if (listError) {
-        console.error("[API:Register] Erro ao verificar usuários:", listError);
-        return NextResponse.json({ error: listError.message }, { status: 500 });
-      }
-      
-      const existingUser = users?.find(u => u.email === email);
-      
-      if (existingUser) {
-        console.error("[API:Register] Email já cadastrado:", email);
-        return NextResponse.json(
-          { error: "Email já cadastrado" },
-          { status: 409 }
-        );
-      }
-    } catch (verifyError: any) {
-      console.error("[API:Register] Erro ao verificar usuários:", verifyError);
-      return NextResponse.json(
-        { error: "Erro ao verificar usuários existentes" },
-        { status: 500 }
+    // >>> O RESTANTE DA API (verificar email, criar auth user, inserir usuario) <<< 
+    // >>> PRECISA SER REVISADO PARA O NOVO FLUXO ONDE AUTH USER JÁ FOI CRIADO <<< 
+    // >>> NO CLIENT-SIDE PELO useAuth hook. <<< 
+
+    // **** AJUSTE DA LÓGICA DA API ****
+    // A API agora recebe auth_id, nome, email do hook useAuth.
+    // Ela NÃO precisa mais criar o usuário em supabase.auth.admin
+    // Ela SÓ precisa inserir na tabela 'usuarios'.
+
+    // Pegar auth_id que agora é enviado pelo hook useAuth
+    const { auth_id } = body;
+    if (!auth_id) {
+       console.error("[API:Register Simplified] auth_id faltando no corpo da requisição");
+       return NextResponse.json(
+        { error: "ID de autenticação ausente" }, 
+        { status: 400 }
       );
     }
-    
-    // Verificar duplicação na tabela personalizada também
+
+    // Verificar duplicação na tabela personalizada (mantém)
     try {
-      console.log("[API:Register] Verificando se email já existe na tabela usuarios");
+      console.log("[API:Register Simplified] Verificando se email já existe na tabela usuarios");
       const { data: existingDbUser, error: dbError } = await supabase
         .from("usuarios")
         .select("id, email")
         .eq("email", email)
         .maybeSingle();
       
+      if (dbError && dbError.code !== 'PGRST116') { // Ignorar 'not found' mas logar outros erros
+         console.error("[API:Register Simplified] Erro DB ao verificar email duplicado:", dbError);
+         throw dbError; // Lançar outros erros de DB
+      }
+
       if (existingDbUser) {
-        console.error("[API:Register] Email já existe na tabela de usuários:", email);
+        console.error("[API:Register Simplified] Email já existe na tabela de usuários:", email);
+        // Neste fluxo, se o email existe aqui mas não em Auth, algo está inconsistente.
+        // Poderíamos tentar limpar Auth user aqui, mas é complexo.
+        // Por ora, retornar erro claro.
         return NextResponse.json(
-          { error: "Email já cadastrado" },
-          { status: 409 }
+          { error: "Email já cadastrado no sistema." },
+          { status: 409 } // Conflito
         );
       }
+      console.log("[API:Register Simplified] Verificação de email duplicado na tabela usuarios OK.");
     } catch (dbError: any) {
-      // É esperado um erro se o usuário não existir (not found)
-      console.log("[API:Register] Verificação na tabela usuarios ok, usuário não encontrado");
+       console.error("[API:Register Simplified] Erro não esperado ao verificar email duplicado em usuarios:", dbError);
+       return NextResponse.json({ error: "Erro ao verificar dados existentes." }, { status: 500 });
     }
-    
-    // Criar usuário na autenticação do Supabase
+
+    // REMOVER Bloco: Criar usuário na autenticação do Supabase (já feito no cliente)
+    /*
     let newUser;
-    try {
-      console.log("[API:Register] Criando usuário na autenticação");
-      const { data, error } = await supabase.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true, // Auto confirmar email para simplificar
-      });
-      
-      if (error) {
-        console.error("[API:Register] Erro ao criar usuário na autenticação:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
-      }
-      
-      newUser = data.user;
-      console.log("[API:Register] Usuário criado na autenticação:", { id: newUser.id, email: newUser.email });
-    } catch (createError: any) {
-      console.error("[API:Register] Erro ao criar usuário na autenticação:", createError);
-      return NextResponse.json(
-        { error: "Erro ao criar usuário: " + createError.message },
-        { status: 500 }
-      );
-    }
-    
+    try { ... supabase.auth.admin.createUser ... } catch { ... }
+    */
+
     // Criar registro na tabela de usuários personalizada
     try {
-      console.log("[API:Register] Criando registro na tabela usuarios");
+      console.log("[API:Register Simplified] Criando registro na tabela usuarios para auth_id:", auth_id);
       const { data, error } = await supabase
         .from("usuarios")
         .insert({
           nome,
           email,
-          empresa_id: empresa_id || null,
-          auth_id: newUser.id, // Importante: associar com ID de autenticação
+          empresa_id: null, // Definir explicitamente como null
+          auth_id: auth_id, // Usar o auth_id recebido
           ativo: true,
         })
         .select()
         .single();
       
       if (error) {
-        console.error("[API:Register] Erro ao inserir na tabela usuarios:", error);
+        console.error("[API:Register Simplified] Erro ao inserir na tabela usuarios:", error);
+        // Neste ponto, o usuário Auth existe, mas o usuário DB falhou.
+        // A reversão ideal seria feita aqui, mas requer privilégios admin.
+        // Logar a inconsistência é crucial.
+        console.error(`[API:Register Simplified] INCONSISTÊNCIA: Usuário Auth (${auth_id}) criado, mas falha ao criar usuário DB. Requer atenção manual.`);
         
-        // Verificar se é erro de duplicação
+        // Tratar erro de duplicação se ocorrer (embora a verificação anterior deva pegar)
         if (error.code === '23505' && error.message.includes('usuarios_email_key')) {
-          // Remover usuário da autenticação se o email já existir
-          await supabase.auth.admin.deleteUser(newUser.id);
-          return NextResponse.json(
-            { error: "Este email já está cadastrado no sistema" },
-            { status: 409 }
-          );
+          return NextResponse.json({ error: "Este email já está cadastrado." }, { status: 409 });
+        }
+        if (error.code === '23505' && error.message.includes('usuarios_auth_id_key')) {
+          return NextResponse.json({ error: "ID de autenticação já cadastrado." }, { status: 409 });
         }
         
-        // Se falhar na tabela personalizada, excluir o usuário da autenticação para evitar inconsistências
-        await supabase.auth.admin.deleteUser(newUser.id);
-        
-        return NextResponse.json(
-          { error: "Erro ao criar registro de usuário: " + error.message },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: "Erro ao salvar registro do usuário." }, { status: 500 });
       }
       
-      console.log("[API:Register] Registro criado com sucesso na tabela usuarios:", { id: data.id, nome: data.nome });
+      console.log("[API:Register Simplified] Registro criado com sucesso na tabela usuarios:", { id: data.id, nome: data.nome });
       
       // Retornar resposta de sucesso
       return NextResponse.json(
         { 
           message: "Usuário registrado com sucesso",
           user: { 
-            id: data.id,
+            id: data.id, // ID da tabela usuarios
             nome: data.nome,
             email: data.email
           }
@@ -156,21 +136,14 @@ export async function POST(request: NextRequest) {
         { status: 201 }
       );
     } catch (insertError: any) {
-      console.error("[API:Register] Erro ao inserir na tabela usuarios:", insertError);
-      
-      // Limpar usuário da autenticação se o registro falhar
-      await supabase.auth.admin.deleteUser(newUser.id);
-      
-      return NextResponse.json(
-        { error: "Erro ao criar registro de usuário: " + insertError.message },
-        { status: 500 }
-      );
+      console.error("[API:Register Simplified] Erro catch ao inserir na tabela usuarios:", insertError);
+      // Logar inconsistência
+      console.error(`[API:Register Simplified] INCONSISTÊNCIA: Usuário Auth (${auth_id}) criado, mas falha GERAL ao criar usuário DB. Requer atenção manual.`);
+      return NextResponse.json({ error: "Erro ao finalizar o registro do usuário." }, { status: 500 });
     }
+
   } catch (error: any) {
-    console.error("[API:Register] Erro inesperado:", error);
-    return NextResponse.json(
-      { error: `Erro interno: ${error.message}` },
-      { status: 500 }
-    );
+    console.error("[API:Register Simplified] Erro inesperado no handler POST:", error);
+    return NextResponse.json({ error: `Erro interno do servidor.` }, { status: 500 });
   }
 } 
