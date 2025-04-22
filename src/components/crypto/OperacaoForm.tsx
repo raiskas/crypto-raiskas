@@ -99,31 +99,20 @@ export const OperacaoForm: React.FC<OperacaoFormProps> = ({
   const [selectedCoin, setSelectedCoin] = useState<Moeda | null>(null);
   const isEditing = !!initialData;
 
-  // Formata string YYYY-MM-DD para objeto Date (necessário para Calendar)
-  // Retorna null se a string for inválida para evitar erros no Calendar
-  const parseDateString = (dateString: string | null | undefined): Date | undefined => {
-    if (!dateString) return undefined;
-    try {
-      // Adicionar "T00:00:00" para interpretar como início do dia LOCAL
-      // Evita problemas de timezone ao converter de string para Date
-      const date = new Date(`${dateString}T00:00:00`);
-      if (isNaN(date.getTime())) {
-        console.warn("[OperacaoForm] parseDateString: Data inválida recebida:", dateString);
-        return undefined;
-      }
-      return date;
-    } catch (e) {
-      console.error("[OperacaoForm] parseDateString: Erro:", e);
-      return undefined;
-    }
-  };
+  // Renomeado para clareza
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [displayValue, setDisplayValue] = useState("");
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData ? {
           ...initialData,
-          // Manter string no form state, mas o Calendar usará Date
-          data_operacao: format(parseDateString(initialData.data_operacao as string) || new Date(), 'yyyy-MM-dd'), 
+          // Lógica revisada para data_operacao
+          data_operacao: initialData.data_operacao instanceof Date
+            ? format(initialData.data_operacao, 'yyyy-MM-dd') // Se já for Date
+            : initialData.data_operacao // Se for string, usar diretamente (assumindo YYYY-MM-DD ou ISO)
+              ? format(new Date(`${String(initialData.data_operacao).substring(0, 10)}T00:00:00`), 'yyyy-MM-dd') // Tenta formatar YYYY-MM-DD/ISO
+              : format(new Date(), 'yyyy-MM-dd'), // Fallback SÓ se initialData.data_operacao for nulo/vazio
           exchange: initialData.exchange ?? "",
           notas: initialData.notas ?? "",
           grupo_id: initialData.grupo_id ?? grupoIdUsuario ?? undefined,
@@ -135,12 +124,24 @@ export const OperacaoForm: React.FC<OperacaoFormProps> = ({
           quantidade: 0,
           preco_unitario: 0,
           valor_total: 0,
-          data_operacao: format(new Date(), 'yyyy-MM-dd'), // String YYYY-MM-DD
+          data_operacao: format(new Date(), 'yyyy-MM-dd'), // Default para criação continua o mesmo
           exchange: "",
           notas: "",
-          grupo_id: grupoIdUsuario ?? undefined, // Usar grupo do usuário se disponível
+          grupo_id: grupoIdUsuario ?? undefined, 
       },
   });
+
+  // Sincroniza displayValue (dd/MM/yyyy) com o valor do form (yyyy-MM-dd)
+  const formDataOperacao = form.watch('data_operacao');
+  useEffect(() => {
+    const date = formDataOperacao ? new Date(`${formDataOperacao}T00:00:00`) : null;
+    const formatted = date && !isNaN(date.getTime()) ? format(date, 'dd/MM/yyyy', { locale: ptBR }) : '';
+    // Só atualiza o display se for diferente, evitando loops
+    if (formatted !== displayValue) {
+      setDisplayValue(formatted);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formDataOperacao]); // Reage à mudança no valor do form
 
   // Efeito para definir a moeda selecionada inicial (modo edição)
   useEffect(() => {
@@ -364,83 +365,101 @@ export const OperacaoForm: React.FC<OperacaoFormProps> = ({
 
         {/* --- Data e Exchange --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* --- Campo de Data Simplificado (Apenas Input Texto) --- */}
+          {/* --- Campo de Data Híbrido (Input + Calendário Popover com asChild) --- */}
           <FormField
             control={form.control}
-            name="data_operacao" // O valor no form state é 'yyyy-MM-dd'
+            name="data_operacao"
             render={({ field }) => {
-              // Estado local para controlar o valor visível no Input (dd/MM/yyyy)
-              const [displayValue, setDisplayValue] = useState(() => {
-                const date = parseDateString(field.value); // Usa a função parse robusta
-                return date ? format(date, 'dd/MM/yyyy', { locale: ptBR }) : '';
-              });
-
-              // Atualiza displayValue se o valor do form (field.value) mudar externamente
-              useEffect(() => {
-                const date = parseDateString(field.value);
-                const formatted = date ? format(date, 'dd/MM/yyyy', { locale: ptBR }) : '';
-                // Evita loop infinito atualizando só se necessário
-                if (formatted !== displayValue) {
-                    setDisplayValue(formatted);
-                }
-                // eslint-disable-next-line react-hooks/exhaustive-deps
-              }, [field.value]); // Dependência apenas em field.value
-
+              // Handler para o input de texto (formato UTC corrigido)
               const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 const typedValue = e.target.value;
-                setDisplayValue(typedValue); // Atualiza visualização imediatamente
+                setDisplayValue(typedValue); // Atualiza visualização imediata
 
-                // Tenta fazer parse do valor digitado (dd/MM/yyyy)
                 const parts = typedValue.split('/');
                 if (parts.length === 3) {
                   const day = parseInt(parts[0], 10);
-                  const month = parseInt(parts[1], 10); // Mês digitado é 1-indexed
+                  const month = parseInt(parts[1], 10);
                   const year = parseInt(parts[2], 10);
 
-                  if (!isNaN(day) && !isNaN(month) && !isNaN(year) && parts[2].length === 4 && month >= 1 && month <= 12 && day > 0 && day <= 31) {
-                    // Valida a data criando-a em UTC para checar overflows (ex: 31/04)
-                    const validationDate = new Date(Date.UTC(year, month - 1, day));
+                  if (!isNaN(day) && !isNaN(month) && !isNaN(year) && String(year).length === 4) {
+                    const dateObj = new Date(Date.UTC(year, month - 1, day));
                     if (
-                        !isNaN(validationDate.getTime()) &&
-                        validationDate.getUTCDate() === day &&
-                        validationDate.getUTCMonth() === month - 1 &&
-                        validationDate.getUTCFullYear() === year
-                       ) {
-                      // Se válida, CONSTRÓI a string 'yyyy-MM-dd' manualmente
-                      const monthPadded = month.toString().padStart(2, '0');
-                      const dayPadded = day.toString().padStart(2, '0');
-                      const newValue = `${year}-${monthPadded}-${dayPadded}`;
+                      !isNaN(dateObj.getTime()) &&
+                      dateObj.getUTCDate() === day &&
+                      dateObj.getUTCMonth() === month - 1 &&
+                      dateObj.getUTCFullYear() === year
+                    ) {
+                      const yearUTC = dateObj.getUTCFullYear();
+                      const monthUTC = (dateObj.getUTCMonth() + 1).toString().padStart(2, '0');
+                      const dayUTC = dateObj.getUTCDate().toString().padStart(2, '0');
+                      const newValue = `${yearUTC}-${monthUTC}-${dayUTC}`;
 
                       if (newValue !== field.value) {
-                           field.onChange(newValue);
+                        field.onChange(newValue);
                       }
-                      return; // Para aqui se a data for válida
+                      return;
                     }
                   }
                 }
-                // Data inválida ou incompleta
+              };
+
+              // Handler para seleção no calendário (atualizado para fechar estado local)
+              const handleCalendarSelect = (date: Date | undefined) => {
+                const formattedDate = date ? format(date, 'yyyy-MM-dd') : "";
+                field.onChange(formattedDate);
+                setIsCalendarOpen(false); // Fecha o calendário condicional
               };
 
               return (
                 <FormItem className="flex flex-col">
                   <FormLabel>Data da Operação</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="text"
-                      placeholder="dd/MM/yyyy"
-                      value={displayValue}
-                      onChange={handleInputChange}
-                      onBlur={field.onBlur} // Manter onBlur para validação do react-hook-form
-                      name={field.name}
-                      ref={field.ref}
-                      className="" // Sem padding extra
-                    />
-                  </FormControl>
+                  {/* Container Relativo para posicionar o calendário */}
+                  <div className="relative flex items-center gap-2">
+                    <FormControl className="flex-grow">
+                      <Input
+                        type="text"
+                        placeholder="dd/MM/yyyy"
+                        value={displayValue}
+                        onChange={handleInputChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
+                    </FormControl>
+                    {/* Botão direto com onClick */}
+                    <Button
+                      type="button" // Garante que não submete o form
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9 flex-shrink-0"
+                      onClick={() => setIsCalendarOpen(true)} // Abre o calendário
+                    >
+                      <CalendarIcon className="h-4 w-4" />
+                      <span className="sr-only">Abrir calendário</span>
+                    </Button>
+
+                    {/* Renderização Condicional do Calendário */}
+                    {isCalendarOpen && (
+                      <div className="absolute top-full right-0 mt-1 z-10 bg-background border rounded-md shadow-md p-0 w-auto">
+                        <Calendar
+                          mode="single"
+                          selected={field.value ? new Date(`${field.value}T00:00:00`) : undefined}
+                          defaultMonth={field.value ? new Date(`${field.value}T00:00:00`) : undefined}
+                          onSelect={handleCalendarSelect}
+                          disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                          initialFocus
+                          locale={ptBR}
+                        />
+                      </div>
+                    )}
+                  </div>
                   <FormMessage />
                 </FormItem>
               );
             }}
           />
+          {/* --- Fim do Campo de Data Híbrido --- */}
+
           <FormField control={form.control} name="exchange" render={({ field }) => (<FormItem><FormLabel>Exchange (opcional)</FormLabel><FormControl><Input {...field} value={field.value ?? ''} placeholder="Binance, Coinbase..." /></FormControl><FormMessage /></FormItem>)}/>
         </div>
 

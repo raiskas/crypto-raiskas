@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { Database } from '@/types/supabase'; // Garantir que esta linha exista
 import { supabaseConfig } from '@/lib/config'; // Manter se usado para outras lógicas, senão remover
 import { AUTH_ROUTES, HOME_ROUTE, PUBLIC_ROUTES } from '@/lib/config/routes'; // Importar constantes
 
@@ -64,7 +65,7 @@ export async function middleware(request: NextRequest) {
 
   // Criar cliente Supabase (APENAS para rotas não públicas)
   console.log("[Middleware] Criando cliente Supabase...");
-  const supabase = createServerClient<any>(
+  const supabase = createServerClient<Database>(
     supabaseConfig.url!,
     supabaseConfig.anonKey!,
     {
@@ -188,7 +189,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL(HOME_ROUTE + '?error=groups_fetch_error', request.url));
     }
 
-    // @ts-ignore - Ignorar erro de tipo devido à estrutura aninhada e uso de <any>
+    // @ts-ignore - Remover esta linha
     const isMemberOfMasterGroup = userGroupsData?.some(ug => ug.grupos?.is_master === true) ?? false;
     console.log(`[Middleware] Verificação JS - Usuário ${user?.email} pertence a grupo master? ${isMemberOfMasterGroup}`);
 
