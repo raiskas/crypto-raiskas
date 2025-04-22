@@ -85,7 +85,6 @@ export async function GET(request: NextRequest) {
     }
 
     const userGroupIds = userGroupLinks?.map(link => link.grupo_id) || [];
-    console.log(`[API:AdminUsers:GET][DEBUG] Grupos do usuário ${requesterUserId}:`, userGroupIds);
 
     // 3b. Verificar se ALGUM desses grupos é master
     let isRequesterMaster = false;
@@ -103,9 +102,6 @@ export async function GET(request: NextRequest) {
         }
 
         isRequesterMaster = !!masterGroupsResult && masterGroupsResult.length > 0;
-         console.log(`[API:AdminUsers:GET][DEBUG] Resultado da verificação de grupos master (${userGroupIds.join(', ')}):`, masterGroupsResult);
-    } else {
-        console.log(`[API:AdminUsers:GET][DEBUG] Usuário ${requesterUserId} não pertence a nenhum grupo.`);
     }
 
     // Log final da verificação
@@ -158,9 +154,6 @@ export async function GET(request: NextRequest) {
       const dbUser = dbUsersData?.find(db => db.auth_id === authUser.id);
       const firstGroup = dbUser?.usuarios_grupos?.[0]?.grupo;
                        
-      // Log para cada usuário combinado (pode ser verboso)
-      // console.log(`[API:AdminUsers:GET] Combinando authUser ${authUser.id} com dbUser ${dbUser?.id}`);
-                       
       return {
         id: authUser.id, // auth_id
         email: authUser.email,
@@ -183,7 +176,7 @@ export async function GET(request: NextRequest) {
 
     // 6. Filtrar resultado final se o requisitante NÃO for master (ESTE FILTRO AGORA DEVE FUNCIONAR)
     if (!isRequesterMaster) {
-        console.log(`[API:AdminUsers:GET] Entrando no bloco de filtro final. Requester Empresa ID: ${requesterEmpresaId}`);
+        console.log(`[API:AdminUsers:GET] Aplicando filtro de empresa para usuário não-master. Empresa: ${requesterEmpresaId}`); // Log informativo
         mergedUsers = mergedUsers.filter(user => {
             const userEmpresaId = user.empresa_id;
             const shouldKeep = userEmpresaId === requesterEmpresaId;
@@ -191,7 +184,7 @@ export async function GET(request: NextRequest) {
         });
         console.log(`[API:AdminUsers:GET] ${mergedUsers.length} usuários após filtro final de empresa.`);
     } else {
-        console.log(`[API:AdminUsers:GET] Pulando o bloco de filtro final pois isRequesterMaster é true.`);
+        console.log(`[API:AdminUsers:GET] Usuário é master (via grupo). Pulando filtro de empresa.`); // Log informativo
     }
 
     console.log(`[API:AdminUsers:GET] ${mergedUsers.length} usuários combinados para retornar.`);
@@ -353,104 +346,151 @@ export async function POST(request: NextRequest) {
 // Patch para atualizar usuário
 export async function PATCH(request: NextRequest) {
   try {
-    const body = await request.json();
-    console.log("[API:AdminUsers:PATCH] Corpo da requisição recebido:", body);
-    // Extrair todos os campos possíveis, incluindo os novos
-    const {
-      id, // auth_id do usuário a ser atualizado
-      nome, email, password, empresa_id, ativo,
-      is_master, // Novo
-      grupo_ids, // Esperamos um array, mas por enquanto usaremos apenas o primeiro ID
-      telefone, // Novo
-      endereco_rua, endereco_numero, endereco_complemento, // Novo
-      endereco_bairro, endereco_cidade, endereco_estado, endereco_cep // Novo
-    } = body;
-    
-    if (!id) {
-      console.error("[API:AdminUsers:PATCH] ID do usuário (auth_id) faltando no corpo da requisição");
-      return NextResponse.json({ error: "ID do usuário é obrigatório" }, { status: 400 });
+    // 1. Obter usuário requisitante para verificações de permissão
+    const cookieStore = cookies();
+    const supabaseCookieClient = createServerClient<Database>(
+      supabaseConfig.url!,
+      supabaseConfig.anonKey!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+        },
+      }
+    );
+    const { data: { session }, error: sessionError } = await supabaseCookieClient.auth.getSession();
+    if (sessionError || !session) {
+      console.warn("[API:AdminUsers:PATCH] Sessão do requisitante não encontrada.");
+      return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
+    const requesterAuthId = session.user.id;
 
-    // Buscar o ID da tabela usuarios (db_id) correspondente ao auth_id
-    const { data: dbUserLookup, error: lookupError } = await supabase
+    // Buscar perfil do requisitante (incluindo is_master)
+    const { data: requesterProfile, error: requesterProfileError } = await supabase
       .from('usuarios')
-      .select('id')
-      .eq('auth_id', id)
+      .select('id, is_master')
+      .eq('auth_id', requesterAuthId)
       .single();
 
-    if (lookupError || !dbUserLookup) {
-      console.error(`[API:AdminUsers:PATCH] Erro ao buscar db_id para auth_id ${id}:`, lookupError);
-      return NextResponse.json({ error: "Usuário não encontrado na tabela local." }, { status: 404 });
+    if (requesterProfileError || !requesterProfile) {
+      console.error(`[API:AdminUsers:PATCH] Erro ao buscar perfil do requisitante ${requesterAuthId}:`, requesterProfileError?.message);
+      return NextResponse.json({ error: "Perfil do requisitante não encontrado" }, { status: 403 });
     }
-    const usuarioDbId = dbUserLookup.id;
-    console.log(`[API:AdminUsers:PATCH] Encontrado usuario.id (db_id): ${usuarioDbId} para auth_id ${id}`);
+    const requesterDbId = requesterProfile.id;
+    const isRequesterTrulyMaster = requesterProfile.is_master === true; // Verifica a flag direta
+    console.log(`[API:AdminUsers:PATCH] Requisitante: auth_id=${requesterAuthId}, db_id=${requesterDbId}, is_master_flag=${isRequesterTrulyMaster}`);
 
-    // Preparar dados para atualizar na tabela usuarios
-    const updateDbData: any = {};
-    if (nome !== undefined) updateDbData.nome = nome;
-    if (email !== undefined) updateDbData.email = email;
-    if (empresa_id !== undefined) updateDbData.empresa_id = empresa_id;
-    if (ativo !== undefined) updateDbData.ativo = ativo;
-    if (is_master !== undefined) updateDbData.is_master = is_master;
-    if (telefone !== undefined) updateDbData.telefone = telefone;
-    if (endereco_rua !== undefined) updateDbData.endereco_rua = endereco_rua;
-    if (endereco_numero !== undefined) updateDbData.endereco_numero = endereco_numero;
-    if (endereco_complemento !== undefined) updateDbData.endereco_complemento = endereco_complemento;
-    if (endereco_bairro !== undefined) updateDbData.endereco_bairro = endereco_bairro;
-    if (endereco_cidade !== undefined) updateDbData.endereco_cidade = endereco_cidade;
-    if (endereco_estado !== undefined) updateDbData.endereco_estado = endereco_estado;
-    if (endereco_cep !== undefined) updateDbData.endereco_cep = endereco_cep;
-    
+    // 2. Obter corpo da requisição
+    const body = await request.json();
+    console.log("[API:AdminUsers:PATCH] Corpo da requisição recebido:", body);
+
+    // Extrair ID do usuário alvo e flag is_master (se presente)
+    const { id: targetAuthId, is_master: isMasterPayload, ...otherData } = body;
+    const isAttemptingToChangeMaster = isMasterPayload !== undefined; // Verifica se a chave 'is_master' está presente
+
+    if (!targetAuthId) {
+      console.error("[API:AdminUsers:PATCH] ID do usuário alvo (auth_id) faltando no corpo da requisição");
+      return NextResponse.json({ error: "ID do usuário alvo é obrigatório" }, { status: 400 });
+    }
+
+    // 3. Buscar o ID da tabela usuarios (db_id) correspondente ao auth_id do ALVO
+    const { data: targetDbUserLookup, error: targetLookupError } = await supabase
+      .from('usuarios')
+      .select('id')
+      .eq('auth_id', targetAuthId)
+      .single();
+
+    if (targetLookupError || !targetDbUserLookup) {
+      console.error(`[API:AdminUsers:PATCH] Erro ao buscar db_id para auth_id alvo ${targetAuthId}:`, targetLookupError);
+      return NextResponse.json({ error: "Usuário alvo não encontrado na tabela local." }, { status: 404 });
+    }
+    const targetDbId = targetDbUserLookup.id;
+    console.log(`[API:AdminUsers:PATCH] Encontrado usuario.id (db_id) alvo: ${targetDbId} para auth_id ${targetAuthId}`);
+
+    // --- INÍCIO: Verificações de Permissão para Alterar 'is_master' --- 
+    if (isAttemptingToChangeMaster) {
+        console.log(`[API:AdminUsers:PATCH] Tentativa de alterar is_master para usuário alvo ${targetAuthId} (db_id: ${targetDbId})`);
+
+        // Regra 1: Requisitante precisa ter is_master = true
+        if (!isRequesterTrulyMaster) {
+            console.warn(`[API:AdminUsers:PATCH] Permissão negada: Requisitante ${requesterAuthId} (db_id: ${requesterDbId}) não é master (flag is_master é ${requesterProfile.is_master}).`);
+            return NextResponse.json({ error: "Apenas usuários master podem alterar o status master de outros usuários." }, { status: 403 });
+        }
+        console.log(`[API:AdminUsers:PATCH] Verificação 1 OK: Requisitante ${requesterAuthId} é master.`);
+
+        // Regra 2: Requisitante não pode alterar o próprio status master
+        if (requesterDbId === targetDbId) {
+            console.warn(`[API:AdminUsers:PATCH] Permissão negada: Requisitante ${requesterAuthId} (db_id: ${requesterDbId}) tentou alterar o próprio status master.`);
+            return NextResponse.json({ error: "Você não pode alterar seu próprio status de master." }, { status: 403 });
+        }
+         console.log(`[API:AdminUsers:PATCH] Verificação 2 OK: Requisitante ${requesterAuthId} não está alterando o próprio status.`);
+    }
+    // --- FIM: Verificações de Permissão --- 
+
+    // Preparar dados para atualizar na tabela usuarios (usando otherData e isMasterPayload)
+    const updateDbData: any = { ...otherData }; // Começa com outros dados
+    if (isAttemptingToChangeMaster) {
+        updateDbData.is_master = isMasterPayload; // Adiciona is_master apenas se estava no payload e passou nas verificações
+    }
+    // Remover campos que não pertencem à tabela 'usuarios' diretamente
+    delete updateDbData.id; // Já temos targetAuthId e targetDbId
+    delete updateDbData.grupo_ids; // Será tratado separadamente
+    delete updateDbData.password; // Será tratado na auth
+    const password = otherData.password; // Pegar senha de otherData se existir
+    const grupo_ids = otherData.grupo_ids; // Pegar grupos de otherData se existir
+
+    // Continuar com as atualizações como antes...
     let dbUpdateError: any = null;
     if (Object.keys(updateDbData).length > 0) {
-      console.log(`[API:AdminUsers:PATCH] Atualizando tabela usuarios (ID: ${usuarioDbId}) com:`, updateDbData);
+      console.log(`[API:AdminUsers:PATCH] Atualizando tabela usuarios (ID: ${targetDbId}) com:`, updateDbData);
       const { error } = await supabase
         .from('usuarios')
         .update(updateDbData)
-        .eq('id', usuarioDbId); // Usar o ID da tabela usuarios
+        .eq('id', targetDbId); // Usar o ID da tabela usuarios do ALVO
       dbUpdateError = error;
     }
 
     if (dbUpdateError) {
-      console.error(`[API:AdminUsers:PATCH] Erro ao atualizar tabela usuarios (ID: ${usuarioDbId}):`, dbUpdateError);
+      console.error(`[API:AdminUsers:PATCH] Erro ao atualizar tabela usuarios (ID: ${targetDbId}):`, dbUpdateError);
       // Verificar se é erro de duplicação de email
       if (dbUpdateError.code === '23505' && dbUpdateError.message.includes('usuarios_email_key')) {
          return NextResponse.json({ error: "Este email já está em uso por outro usuário" }, { status: 409 });
       }
       return NextResponse.json({ error: dbUpdateError.message }, { status: 500 });
     }
-    console.log(`[API:AdminUsers:PATCH] Tabela usuarios (ID: ${usuarioDbId}) atualizada com sucesso.`);
+    console.log(`[API:AdminUsers:PATCH] Tabela usuarios (ID: ${targetDbId}) atualizada com sucesso.`);
 
     // Atualizar usuário na autenticação (email, senha)
     const updateAuthData: any = {};
-    if (email !== undefined) updateAuthData.email = email;
-    if (password) updateAuthData.password = password; // Apenas se a senha for fornecida
+    if (updateDbData.email !== undefined) updateAuthData.email = updateDbData.email; // Usar email do updateDbData se presente
+    if (password) updateAuthData.password = password; // Apenas se a senha for fornecida em otherData
     
     let authUpdateError: any = null;
     if (Object.keys(updateAuthData).length > 0) {
-      console.log(`[API:AdminUsers:PATCH] Atualizando tabela auth.users (ID: ${id}) com:`, Object.keys(updateAuthData));
-      const { error } = await supabase.auth.admin.updateUserById(id, updateAuthData);
+      console.log(`[API:AdminUsers:PATCH] Atualizando tabela auth.users (ID: ${targetAuthId}) com:`, Object.keys(updateAuthData));
+      const { error } = await supabase.auth.admin.updateUserById(targetAuthId, updateAuthData);
       authUpdateError = error;
     }
 
     if (authUpdateError) {
-      console.error(`[API:AdminUsers:PATCH] Erro ao atualizar auth.users (ID: ${id}):`, authUpdateError);
+      console.error(`[API:AdminUsers:PATCH] Erro ao atualizar auth.users (ID: ${targetAuthId}):`, authUpdateError);
       // Poderíamos tentar reverter a atualização no banco aqui, mas por ora só retornamos erro
       return NextResponse.json({ error: `Erro ao atualizar autenticação: ${authUpdateError.message}` }, { status: 500 });
     }
-     console.log(`[API:AdminUsers:PATCH] Tabela auth.users (ID: ${id}) atualizada com sucesso.`);
+     console.log(`[API:AdminUsers:PATCH] Tabela auth.users (ID: ${targetAuthId}) atualizada com sucesso.`);
 
     // --- Atualizar Associação de Grupos --- 
-    console.log(`[API:AdminUsers:PATCH] Atualizando grupos para usuario.id: ${usuarioDbId}`);
+    console.log(`[API:AdminUsers:PATCH] Atualizando grupos para usuario.id: ${targetDbId}`);
     // 1. Remover associações antigas
     const { error: deleteGroupsError } = await supabase
         .from('usuarios_grupos')
         .delete()
-        .eq('usuario_id', usuarioDbId);
+        .eq('usuario_id', targetDbId); // Usar ID do alvo
 
     if (deleteGroupsError) {
         // Logar erro mas continuar, atualização principal foi bem-sucedida
-        console.error(`[API:AdminUsers:PATCH] Erro ao remover associações de grupo antigas para usuario ${usuarioDbId}:`, deleteGroupsError.message);
+        console.error(`[API:AdminUsers:PATCH] Erro ao remover associações de grupo antigas para usuario ${targetDbId}:`, deleteGroupsError.message);
         // Poderia retornar um aviso parcial
     }
 
@@ -458,14 +498,14 @@ export async function PATCH(request: NextRequest) {
     let newGroupId = null;
     if (grupo_ids && Array.isArray(grupo_ids) && grupo_ids.length > 0 && typeof grupo_ids[0] === 'string' && grupo_ids[0]) {
       newGroupId = grupo_ids[0]; // Usamos apenas o primeiro ID por enquanto
-      console.log(`[API:AdminUsers:PATCH] Associando usuário ${usuarioDbId} ao novo grupo: ${newGroupId}`);
+      console.log(`[API:AdminUsers:PATCH] Associando usuário ${targetDbId} ao novo grupo: ${newGroupId}`);
       const { error: insertGroupError } = await supabase
         .from('usuarios_grupos')
-        .insert({ usuario_id: usuarioDbId, grupo_id: newGroupId });
+        .insert({ usuario_id: targetDbId, grupo_id: newGroupId }); // Usar ID do alvo
 
       if (insertGroupError) {
         // Logar erro mas continuar
-        console.error(`[API:AdminUsers:PATCH] Erro ao associar usuário ${usuarioDbId} ao novo grupo ${newGroupId}:`, insertGroupError.message);
+        console.error(`[API:AdminUsers:PATCH] Erro ao associar usuário ${targetDbId} ao novo grupo ${newGroupId}:`, insertGroupError.message);
         // Poderia retornar um aviso parcial
         newGroupId = null; // Define como null se a inserção falhou
       }
@@ -476,22 +516,30 @@ export async function PATCH(request: NextRequest) {
     const { data: updatedUser, error: fetchError } = await supabase
       .from('usuarios')
       .select('*, grupo_id:usuarios_grupos(grupo_id)') // Reutiliza a busca com grupo do GET
-      .eq('id', usuarioDbId)
+      .eq('id', targetDbId) // Usar ID do alvo
       .single();
 
+    if (fetchError) {
+        console.error(`[API:AdminUsers:PATCH] Erro ao buscar dados atualizados do usuário alvo ${targetDbId}:`, fetchError);
+        // Retorna sucesso mesmo assim, pois a atualização principal ocorreu
+         return NextResponse.json({ message: "Usuário atualizado, mas houve erro ao buscar dados finais." }, { status: 200 });
+    }
+
     const finalGroupId = updatedUser?.grupo_id && updatedUser.grupo_id.length > 0 ? updatedUser.grupo_id[0].grupo_id : null;
+    const finalIsMaster = updatedUser?.is_master ?? isMasterPayload; // Usa o valor do banco ou o payload se o banco falhar
+
     
     return NextResponse.json(
       { 
         message: "Usuário atualizado com sucesso",
         user: {
-          id: id, // auth_id
-          nome: updatedUser?.nome || nome,
-          email: updatedUser?.email || email,
-          ativo: updatedUser?.ativo ?? ativo,
-          is_master: updatedUser?.is_master ?? is_master,
-          empresa_id: updatedUser?.empresa_id || empresa_id,
-          db_id: usuarioDbId,
+          id: targetAuthId, // auth_id do alvo
+          nome: updatedUser?.nome || otherData.nome, // Usar valor do banco ou do payload
+          email: updatedUser?.email || otherData.email,
+          ativo: updatedUser?.ativo ?? otherData.ativo,
+          is_master: finalIsMaster, 
+          empresa_id: updatedUser?.empresa_id || otherData.empresa_id,
+          db_id: targetDbId,
           grupo_id: finalGroupId // Retorna o grupo que foi efetivamente associado
         }
       },
