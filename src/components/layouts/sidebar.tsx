@@ -42,11 +42,11 @@ export function Sidebar({ className }: { className?: string }) {
       href: "/home",
       icon: <Home className="h-5 w-5" />,
     },
-    {
-      title: "Dashboard",
-      href: "/dashboard",
-      icon: <Laptop className="h-5 w-5" />,
-    },
+    // {
+    //   title: "Dashboard",
+    //   href: "/dashboard",
+    //   icon: <Laptop className="h-5 w-5" />,
+    // }, // REMOVIDO
     {
       title: "Criptomoedas",
       href: "/crypto",

@@ -55,6 +55,8 @@ import { Switch } from "@/components/ui/switch"; // Adicionar importação Switc
 import { supabase } from '@/lib/supabase/auth';
 import { toast } from 'react-hot-toast';
 import { Toaster } from 'react-hot-toast';
+import { PasswordInput } from "@/components/ui/PasswordInput";
+import { Badge } from "@/components/ui/badge";
 
 // Importar tipos compartilhados
 import { User, Group, Empresa } from "@/types/admin"; 
@@ -529,168 +531,171 @@ export default function UserSection({
       {/* --- User Modals --- */}
       {/* Edit User Modal */}
       <Dialog open={isEditUserOpen} onOpenChange={setIsEditUserOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col"> 
           <DialogHeader>
             <DialogTitle>Editar Usuário</DialogTitle>
           </DialogHeader>
-          {selectedUser && (
-            <>
-              <Form {...editForm}>
-                <form onSubmit={editForm.handleSubmit(handleEditUser)} className="space-y-4">
-                  <FormField control={editForm.control} name="nome" render={({ field }) => ( <FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
-                  <FormField control={editForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
-                  <FormField
+          <div className="flex-grow overflow-y-auto pr-6 space-y-4"> 
+            {selectedUser && (
+              <>
+                <Form {...editForm}>
+                  <form onSubmit={editForm.handleSubmit(handleEditUser)} className="space-y-4">
+                    <FormField control={editForm.control} name="nome" render={({ field }) => ( <FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
+                    <FormField control={editForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
+                    <FormField
+                        control={editForm.control}
+                        name="empresa_id"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Empresa</FormLabel>
+                            <Select
+                                onValueChange={field.onChange}
+                                value={field.value?.toString() ?? undefined} // Converter para string
+                                disabled={loadingEmpresas}
+                            >
+                                <FormControl>
+                                  {/* @ts-ignore */}
+                                <SelectTrigger>
+                                    {loadingEmpresas ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : field.value ? empresas.find(e => e.id === field.value)?.nome : "Selecione a empresa"}
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {empresas.map((empresa) => (
+                                    <SelectItem key={empresa.id.toString()} value={empresa.id.toString()}> {/* Converter para string */}
+                                        {empresa.nome}
+                                    </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={editForm.control}
+                        name="grupo_id"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Grupo</FormLabel>
+                            <Select
+                                onValueChange={field.onChange}
+                                value={field.value?.toString() ?? undefined} // Converter para string
+                                disabled={loadingGroups}
+                            >
+                                <FormControl>
+                                  {/* @ts-ignore */}
+                                <SelectTrigger>
+                                    {loadingGroups ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : field.value ? groups.find(g => g.id === field.value)?.nome : "Selecione o grupo"}
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {groups.map((group) => (
+                                    <SelectItem key={group.id.toString()} value={group.id.toString()}> {/* Converter para string */}
+                                        {group.nome}
+                                    </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={editForm.control}
+                        name="is_master"
+                        render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                            <FormLabel className="text-base">Usuário Master</FormLabel>
+                            <FormDescription>
+                                Permite acesso irrestrito a todas as empresas e funcionalidades.
+                            </FormDescription>
+                            </div>
+                            <FormControl>
+                            {/* @ts-ignore */}
+                            <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                            />
+                            </FormControl>
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
                       control={editForm.control}
-                      name="empresa_id"
+                      name="ativo"
                       render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>Empresa</FormLabel>
-                          <Select
-                              onValueChange={field.onChange}
-                              value={field.value?.toString() ?? undefined} // Converter para string
-                              disabled={loadingEmpresas}
-                          >
-                              <FormControl>
-                                {/* @ts-ignore */}
-                              <SelectTrigger>
-                                  {loadingEmpresas ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : field.value ? empresas.find(e => e.id === field.value)?.nome : "Selecione a empresa"}
-                              </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                  {empresas.map((empresa) => (
-                                  <SelectItem key={empresa.id.toString()} value={empresa.id.toString()}> {/* Converter para string */}
-                                      {empresa.nome}
-                                  </SelectItem>
-                                  ))}
-                              </SelectContent>
-                          </Select>
-                          <FormMessage />
-                      </FormItem>
-                      )}
-                  />
-                  <FormField
-                      control={editForm.control}
-                      name="grupo_id"
-                      render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>Grupo</FormLabel>
-                          <Select
-                              onValueChange={field.onChange}
-                              value={field.value?.toString() ?? undefined} // Converter para string
-                              disabled={loadingGroups}
-                          >
-                              <FormControl>
-                                {/* @ts-ignore */}
-                              <SelectTrigger>
-                                  {loadingGroups ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : field.value ? groups.find(g => g.id === field.value)?.nome : "Selecione o grupo"}
-                              </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                  {groups.map((group) => (
-                                  <SelectItem key={group.id.toString()} value={group.id.toString()}> {/* Converter para string */}
-                                      {group.nome}
-                                  </SelectItem>
-                                  ))}
-                              </SelectContent>
-                          </Select>
-                          <FormMessage />
-                      </FormItem>
-                      )}
-                  />
-                  <FormField
-                      control={editForm.control}
-                      name="is_master"
-                      render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                           <div className="space-y-0.5">
-                          <FormLabel className="text-base">Usuário Master</FormLabel>
-                          <FormDescription>
-                              Permite acesso irrestrito a todas as empresas e funcionalidades.
-                          </FormDescription>
+                            <FormLabel className="text-base">Status</FormLabel>
+                            <FormDescription>Define se o usuário está ativo ou inativo no sistema.</FormDescription>
                           </div>
                           <FormControl>
-                          {/* @ts-ignore */}
-                          <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                          />
+                            {/* @ts-ignore - Mantido para Switch */}
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
                           </FormControl>
-                      </FormItem>
-                      )}
-                  />
-                  <FormField
-                    control={editForm.control}
-                    name="ativo"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Status</FormLabel>
-                          <FormDescription>Define se o usuário está ativo ou inativo no sistema.</FormDescription>
-                        </div>
-                        <FormControl>
-                          {/* @ts-ignore - Mantido para Switch */}
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <DialogFooter>
-                    {modalError && <p className="text-red-500 text-sm mr-auto">{modalError}</p>} {/* Garantir que erro é exibido */}
-                    <Button type="button" variant="outline" onClick={() => setIsEditUserOpen(false)} disabled={actionLoading}>Cancelar</Button>
-                    <Button type="submit" disabled={actionLoading}>
-                      {actionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Salvar Alterações
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-
-              {/* Remover comentários para reativar seção */}
-              <Separator className="my-6" /> 
-              <div>
-                <h3 className="text-lg font-medium mb-4">Alterar Senha</h3>
-                {passwordChangeError && ( <div className="bg-destructive/15 text-destructive flex items-center p-3 rounded-md mb-2"> <AlertCircle className="h-4 w-4 mr-2" /> <span className="text-sm">{passwordChangeError}</span> </div> )}
-                {passwordChangeSuccess && ( <div className="bg-green-100 text-green-700 flex items-center p-3 rounded-md mb-2"> <CheckCircle className="h-4 w-4 mr-2" /> <span className="text-sm">{passwordChangeSuccess}</span> </div> )}
-
-                <Form {...passwordForm}>
-                  <form onSubmit={passwordForm.handleSubmit(handleChangePassword)} className="space-y-4">
-                    <FormField
-                      control={passwordForm.control}
-                      name="newPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nova Senha</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="••••••••" {...field} />
-                          </FormControl>
-                          <FormMessage />
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={passwordForm.control}
-                      name="confirmPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Confirmar Nova Senha</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="••••••••" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <DialogFooter>
-                      <Button type="submit" disabled={passwordChangeLoading}>
-                        {passwordChangeLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        <Key className="mr-2 h-4 w-4" /> Alterar Senha
-                      </Button>
-                    </DialogFooter>
+                    <button type="submit" hidden disabled={actionLoading}></button>
                   </form>
                 </Form>
-              </div>
-              
-            </>
-          )}
+
+                <Separator className="my-6" /> 
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Alterar Senha</h3>
+                  {passwordChangeError && ( <div className="bg-destructive/15 text-destructive flex items-center p-3 rounded-md mb-2"> <AlertCircle className="h-4 w-4 mr-2" /> <span className="text-sm">{passwordChangeError}</span> </div> )}
+                  {passwordChangeSuccess && ( <div className="bg-green-100 text-green-700 flex items-center p-3 rounded-md mb-2"> <CheckCircle className="h-4 w-4 mr-2" /> <span className="text-sm">{passwordChangeSuccess}</span> </div> )}
+
+                  <Form {...passwordForm}>
+                    <form onSubmit={passwordForm.handleSubmit(handleChangePassword)} className="space-y-4">
+                      <FormField
+                        control={passwordForm.control}
+                        name="newPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nova Senha</FormLabel>
+                            <FormControl>
+                              <PasswordInput placeholder="••••••••" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={passwordForm.control}
+                        name="confirmPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Confirmar Nova Senha</FormLabel>
+                            <FormControl>
+                              <PasswordInput placeholder="••••••••" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <DialogFooter>
+                        <Button type="submit" disabled={passwordChangeLoading}>
+                          {passwordChangeLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          <Key className="mr-2 h-4 w-4" /> Alterar Senha
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </Form>
+                </div>
+              </>
+            )}
+          </div> 
+
+          <DialogFooter className="pt-4 border-t"> 
+              {modalError && <p className="text-red-500 text-sm mr-auto">{modalError}</p>}
+              <Button type="button" variant="outline" onClick={() => setIsEditUserOpen(false)} disabled={actionLoading}>Cancelar</Button>
+              <Button type="submit" form="editUserForm" disabled={actionLoading}>
+                {actionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Salvar Alterações
+              </Button>
+           </DialogFooter> 
+
         </DialogContent>
       </Dialog>
 

@@ -129,7 +129,12 @@ export default function GroupSection({
         if (!response.ok) {
           throw new Error(data.error || 'Erro ao buscar telas disponíveis');
         }
-        setAvailableScreens(data.screens || []);
+        // FILTRAR AQUI ANTES DE DEFINIR O ESTADO
+        const screensToExclude = ['vendas', 'dashboard', 'perfil']; // Adicionado 'perfil'
+        const filteredScreens = (data.screens || []).filter(
+          (screen: ScreenConfig) => !screensToExclude.includes(screen.id)
+        );
+        setAvailableScreens(filteredScreens); // Define o estado com a lista filtrada
       } catch (err: any) {
         console.error("Erro ao buscar telas disponíveis:", err);
         setScreensError(`Erro ao carregar telas: ${err.message}`);

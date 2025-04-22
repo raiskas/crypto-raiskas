@@ -30,6 +30,17 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   console.log(`\n[Middleware] Requisição recebida para: ${pathname}`);
 
+  // IGNORAR _next, api, e arquivos estáticos (com extensões comuns)
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api/') ||
+    // pathname.includes('.') // REMOVIDO - Usar regex mais específico abaixo
+    /\.(png|jpg|jpeg|gif|svg|ico|js|css|woff2|woff|ttf|eot)$/.test(pathname) // Regex para extensões comuns
+  ) {
+    console.log(`[Middleware] DECISÃO: Rota interna/API/asset (${pathname}). Ignorando middleware.`);
+    return NextResponse.next();
+  }
+
   // Logar cookies recebidos (para depuração)
   console.log("[Middleware] Cookies Recebidos:", JSON.stringify(request.cookies.getAll(), null, 2));
 

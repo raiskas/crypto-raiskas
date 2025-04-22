@@ -17,9 +17,9 @@ import { toast } from "sonner";
 
 const navItems = [
   { href: "/home", label: "Home" },
-  { href: "/dashboard", label: "Dashboard" },
+  // { href: "/dashboard", label: "Dashboard" }, // REMOVIDO
   { href: "/crypto", label: "Crypto" },
-  { href: "/vendas", label: "Vendas" },
+  // { href: "/vendas", label: "Vendas" }, // REMOVIDO
 ];
 
 const adminNavItems = [
@@ -62,7 +62,11 @@ export function DashboardHeader() {
       <div className="container flex h-full items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center space-x-2">
-            <span className="font-bold">Crypto Raiskas</span>
+            <img 
+              src="/logo-no-background.png" 
+              alt="Crypto Raiskas Logo"
+              className="h-8"
+            />
           </Link>
 
           <nav className="hidden md:flex items-center gap-4">

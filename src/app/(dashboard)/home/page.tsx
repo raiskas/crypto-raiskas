@@ -34,20 +34,6 @@ export default function HomePage() {
       path: "/admin",
       color: "bg-purple-100 text-purple-700",
     },
-    {
-      title: "Relatórios",
-      description: "Visualize estatísticas e dados do sistema",
-      icon: <BarChart className="h-8 w-8" />,
-      path: "/relatorios",
-      color: "bg-blue-100 text-blue-700",
-    },
-    {
-      title: "Perfil",
-      description: "Altere suas informações e configure preferências",
-      icon: <Users className="h-8 w-8" />,
-      path: "/perfil",
-      color: "bg-green-100 text-green-700",
-    }
   ];
 
   // Formatar valores monetários
