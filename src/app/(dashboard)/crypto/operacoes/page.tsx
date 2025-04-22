@@ -19,7 +19,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Eye, Pencil, Trash2, ArrowUpDown, ListX, Loader2, PlusCircle, AlertCircle } from "lucide-react";
-import { format as formatDate } from "date-fns";
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -69,9 +70,27 @@ const formatarValorMonetario = (valor: number): string => {
   }).format(valor);
 };
 
-// Função para formatar a data
-const formatarData = (data: string): string => {
-  return formatDate(new Date(data), 'dd/MM/yyyy');
+// Formatar data (String Split para evitar timezone)
+const formatarData = (dataStr: string | null | undefined): string => {
+  if (!dataStr || typeof dataStr !== 'string' || !dataStr.includes('T')) {
+    // Retorna um valor padrão ou a string original se o formato for inesperado
+    return dataStr || "Data inválida";
+  }
+  try {
+    // Pega a parte antes do 'T' -> "YYYY-MM-DD"
+    const datePart = dataStr.split('T')[0];
+    // Divide em ano, mês, dia
+    const [year, month, day] = datePart.split('-');
+    // Valida se temos 3 partes
+    if (!year || !month || !day) {
+      return dataStr; // Retorna original se o split falhar
+    }
+    // Remonta como "DD/MM/YYYY"
+    return `${day}/${month}/${year}`;
+  } catch (e) {
+    console.error("Erro ao formatar data (string split):", dataStr, e);
+    return dataStr; // Retorna original em caso de erro
+  }
 };
 
 export default function OperacoesPage() {
@@ -240,7 +259,7 @@ export default function OperacoesPage() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="w-full px-4 py-6 space-y-6">
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">

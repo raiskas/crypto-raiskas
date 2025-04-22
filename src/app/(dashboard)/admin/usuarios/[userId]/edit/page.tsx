@@ -179,7 +179,7 @@ export default function AdminEditUserPage() {
 
   if (loading) {
     return (
-      <div className="container py-10">
+      <div className="w-full px-4 py-10">
         <Skeleton className="h-8 w-1/4 mb-4" />
         <Skeleton className="h-12 w-full mb-6" />
         <Card>
@@ -200,7 +200,7 @@ export default function AdminEditUserPage() {
   if (!userData) {
     // Se não estiver carregando e não houver dados, mostra mensagem
     return (
-        <div className="container py-10 text-center">
+        <div className="w-full px-4 py-10 text-center">
             <p className="text-red-500">Usuário não encontrado ou erro ao carregar.</p>
             <Button variant="outline" asChild className="mt-4">
                 <Link href="/admin/usuarios">
@@ -212,7 +212,7 @@ export default function AdminEditUserPage() {
   }
 
   return (
-    <div className="container py-10">
+    <div className="w-full px-4 py-10">
        <Button variant="outline" asChild className="mb-4">
            <Link href="/admin/usuarios">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para Usuários

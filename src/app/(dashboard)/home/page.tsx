@@ -180,7 +180,8 @@ export default function HomePage() {
   
   console.log("[HomePage] Renderização concluída.");
   return (
-    <div className="container py-10">
+    <div className="w-full px-4 py-10">
+      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Bem-vindo, {user?.email}</h1>
         <p className="text-muted-foreground">

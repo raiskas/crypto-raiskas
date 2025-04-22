@@ -35,7 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Search } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { z as zod } from "zod";
@@ -44,6 +44,7 @@ import {
   RadioGroupItem,
 } from "@/components/ui/radio-group";
 import { useUserData } from "@/lib/hooks/use-user-data";
+import { ptBR } from 'date-fns/locale';
 
 // Tipo para a moeda
 interface Moeda {
@@ -90,33 +91,27 @@ interface Operacao {
   atualizado_em: string;
 }
 
-// Formata a data para o formato do input date (YYYY-MM-DD)
-const formatarDataFormulario = (dataString: string): string => {
+// Formatar data (String Split para evitar timezone)
+const formatarData = (dataStr: string | null | undefined): string => {
+  if (!dataStr || typeof dataStr !== 'string' || !dataStr.includes('T')) {
+    // Retorna um valor padrão ou a string original se o formato for inesperado
+    return dataStr || "Data inválida";
+  }
   try {
-    // A data pode vir em formato ISO completo, então precisamos extrair apenas a data
-    const dataObj = new Date(dataString);
-    return format(dataObj, 'yyyy-MM-dd');
+    // Pega a parte antes do 'T' -> "YYYY-MM-DD"
+    const datePart = dataStr.split('T')[0];
+    // Divide em ano, mês, dia
+    const [year, month, day] = datePart.split('-');
+    // Valida se temos 3 partes
+    if (!year || !month || !day) {
+      return dataStr; // Retorna original se o split falhar
+    }
+    // Remonta como "DD/MM/YYYY"
+    return `${day}/${month}/${year}`;
   } catch (e) {
-    console.error("[EditarOperacao] Erro ao formatar data:", e);
-    return format(new Date(), 'yyyy-MM-dd');
+    console.error("Erro ao formatar data (string split):", dataStr, e);
+    return dataStr; // Retorna original em caso de erro
   }
-};
-
-// Função para formatar valores monetários
-const formatarValorMonetario = (valor: number): string => {
-  // Se o valor for menor que 1, mostrar mais casas decimais
-  if (valor < 1) {
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 8
-    }).format(valor);
-  }
-  
-  // Para valores maiores que 1, manter 2 casas decimais
-  return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(valor);
 };
 
 export default function EditarOperacaoPage() {
@@ -193,7 +188,7 @@ export default function EditarOperacaoPage() {
         setOperacao(operacaoData);
         
         // Formatar a data para o formato do input date
-        const dataFormatada = formatarDataFormulario(operacaoData.data_operacao);
+        const dataFormatada = formatarData(operacaoData.data_operacao);
         
         // Preenche o formulário com os dados da operação
         form.setValue("moeda_id", operacaoData.moeda_id);
@@ -437,17 +432,15 @@ export default function EditarOperacaoPage() {
   };
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="flex items-center gap-4 mb-6">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.back()}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <h1 className="text-2xl font-bold">Editar Operação</h1>
-      </div>
+    <div className="w-full px-4 py-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Editar Operação de Criptomoeda</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div className="text-destructive">{error}</div>
+        </CardContent>
+      </Card>
 
       {loading ? (
         <div className="flex justify-center items-center h-64">

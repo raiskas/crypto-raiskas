@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from '@supabase/supabase-js';
+// @ts-ignore - Ignorar erro de tipo devido à falha na geração de tipos
 import { Database } from '@/types/supabase';
 import { supabaseConfig } from '@/lib/config';
 import { z } from "zod";
@@ -21,13 +22,13 @@ const supabase = createClient<Database>(
   }
 );
 
-// Schema de validação para criação de usuário (ajuste conforme necessário)
+// Schema de validação para criação de usuário
 const createUserSchema = z.object({
   nome: z.string().min(3, "Nome é obrigatório"),
   email: z.string().email("Email inválido"),
   password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
   empresa_id: z.string().uuid("Empresa inválida"),
-  // Adicione outros campos se necessário (ex: grupo_id inicial)
+  grupo_id: z.string().uuid("Grupo inválido"), // ADICIONADO grupo_id como obrigatório
 });
 
 // Endpoint para listar todos os usuários
@@ -199,25 +200,28 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const logPrefix = "[API /api/admin/users POST]";
   console.log(`${logPrefix} Recebida requisição para criar usuário.`);
+  
+  // Cliente Supabase com ROLE_SERVICE (para operações admin)
+  const supabaseAdmin = await createServiceRoleClient();
+  console.log(`${logPrefix} Cliente Supabase (service_role) criado.`);
 
   try {
-    // 1. Criar cliente Supabase que LÊ COOKIES DIRETAMENTE AQUI
-    const cookieStore = cookies(); // Obter o cookie store
+    // 1. Obter sessão do administrador (USANDO CLIENTE QUE LÊ COOKIES)
+    const cookieStore = cookies();
     const supabaseCookieClient = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!, // Usar variáveis de ambiente
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, // Usar variáveis de ambiente
+      supabaseConfig.url!,
+      supabaseConfig.anonKey!, // Chave ANON para ler sessão
       {
         cookies: {
           get(name: string) {
             return cookieStore.get(name)?.value;
           },
-          // Não precisamos de set/remove aqui, apenas get para a sessão
         },
       }
     );
-    console.log(`${logPrefix} Cliente Supabase (cookie-aware) criado.`);
+    console.log(`${logPrefix} Cliente Supabase (cookie-aware) criado para verificação de sessão.`);
 
-    // 2. Obter sessão do administrador
+    // Usar supabaseCookieClient para getSession
     const { data: { session }, error: sessionError } = await supabaseCookieClient.auth.getSession();
     if (sessionError) {
       console.error(`${logPrefix} Erro ao obter sessão:`, sessionError);
@@ -230,10 +234,10 @@ export async function POST(request: NextRequest) {
     const adminUserId = session.user.id;
     console.log(`${logPrefix} Chamada feita pelo admin com auth_id: ${adminUserId}`);
 
-    // 3. Verificar permissão (Placeholder)
+    // 2. Verificar permissão (Placeholder - CONTINUA USANDO adminUserId)
     console.warn(`${logPrefix} ATENÇÃO: Verificação de permissão ('usuario_criar') está desativada para depuração.`);
 
-    // 4. Obter e validar corpo da requisição
+    // 3. Obter e validar corpo da requisição
     let body;
     try {
       body = await request.json();
@@ -251,95 +255,86 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const { nome, email, password, empresa_id } = validation.data;
-    console.log(`${logPrefix} Dados validados com sucesso.`);
+    const { nome, email, password, empresa_id, grupo_id } = validation.data;
+    console.log(`${logPrefix} Dados validados:`, { nome, email, empresa_id, grupo_id }); // Não logar senha
 
-    // --- Operações Críticas --- 
-    // 5. Criar cliente com ROLE DE SERVIÇO
-    const supabaseServiceRoleClient: SupabaseClient<Database> = await createServiceRoleClient();
-    console.log(`${logPrefix} Cliente Supabase (service role) criado para operações admin.`);
-    
-    let newAuthUser = null;
-    try {
-      // 6. Criar usuário na autenticação (usando cliente de serviço)
-      console.log(`${logPrefix} Tentando criar usuário na Supabase Auth (service role):`, { email });
-      const { data: authData, error: authError } = await supabaseServiceRoleClient.auth.admin.createUser({
-        email: email,
-        password: password,
-        email_confirm: true, 
-        user_metadata: { nome: nome }, 
-      });
+    // --- Operações que exigem ROLE_SERVICE --- 
+    // USAR supabaseAdmin daqui em diante
 
-      if (authError) {
-        console.error(`${logPrefix} Erro ao criar usuário na Supabase Auth:`, authError);
-        if (authError.message.includes('duplicate key value violates unique constraint')) {
-           throw new Error(`O email '${email}' já está em uso.`);
-        } else if (authError.message.includes('Password should be at least 6 characters')) {
-           throw new Error('A senha fornecida é muito fraca ou curta.');
-        }
-        throw new Error("Falha ao criar usuário na autenticação: " + authError.message);
+    // 4. Criar usuário na autenticação Supabase (usando cliente admin)
+    console.log(`${logPrefix} Criando usuário na autenticação Supabase para ${email}...`);
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: email,
+      password: password,
+      email_confirm: true, // Marcar como confirmado? Depende do fluxo desejado
+      user_metadata: { nome: nome }, // Adicionar nome aos metadados se útil
+    });
+
+    if (authError) {
+      console.error(`${logPrefix} Erro ao criar usuário na autenticação:`, authError);
+      // Tratar erro de usuário já existente
+      if (authError.message.includes("User already registered")) {
+         return NextResponse.json({ error: "Email já cadastrado." }, { status: 409 }); // Conflict
       }
-      
-      newAuthUser = authData.user;
-      if (!newAuthUser) {
-         throw new Error("Resposta da criação na Auth não retornou um usuário.");
-      }
-      console.log(`${logPrefix} Usuário criado na Supabase Auth com sucesso. auth_id: ${newAuthUser.id}`);
-
-      // 7. Inserir usuário na tabela 'public.usuarios' (usando cliente de serviço)
-      console.log(`${logPrefix} Tentando inserir na tabela 'usuarios' (service role):`, { auth_id: newAuthUser.id, nome, email, empresa_id });
-      const { data: profileData, error: profileError } = await supabaseServiceRoleClient
-        .from("usuarios")
-        .insert({
-          auth_id: newAuthUser.id, 
-          nome: nome,
-          email: email,
-          empresa_id: empresa_id, 
-          ativo: true, 
-        })
-        .select()
-        .single();
-
-      if (profileError) {
-        console.error(`${logPrefix} Erro ao inserir na tabela 'usuarios':`, profileError);
-        console.warn(`${logPrefix} Tentando reverter criação na Auth para ${newAuthUser.id}...`);
-        const { error: deleteError } = await supabaseServiceRoleClient.auth.admin.deleteUser(newAuthUser.id);
-        if (deleteError) {
-            console.error(`${logPrefix} FALHA AO REVERTER criação na Auth:`, deleteError);
-        } else {
-            console.log(`${logPrefix} Reversão na Auth bem-sucedida.`);
-        }
-        throw new Error("Falha ao salvar perfil do usuário no banco de dados: " + profileError.message);
-      }
-      console.log(`${logPrefix} Usuário inserido na tabela 'usuarios' com sucesso:`, profileData);
-      
-      // 8. (Opcional) Adicionar usuário a um grupo padrão
-      console.log(`${logPrefix} TODO: Implementar adição a grupo padrão, se necessário (usando service role client).`);
-
-      // 9. Sucesso - Retornar resposta
-       const successResponse = { message: "Usuário criado com sucesso!", userId: profileData.id };
-       console.log(`${logPrefix} Retornando sucesso:`, successResponse);
-       return NextResponse.json(successResponse, { status: 201 });
-
-    } catch (operationError: any) {
-        console.error(`${logPrefix} Erro durante as operações críticas:`, operationError);
-        if (newAuthUser && newAuthUser.id) { 
-          console.warn(`${logPrefix} Erro após criação na Auth. Tentando reverter criação na Auth para ${newAuthUser.id}...`);
-          const { error: deleteError } = await supabaseServiceRoleClient.auth.admin.deleteUser(newAuthUser.id);
-          if (deleteError) {
-              console.error(`${logPrefix} FALHA AO REVERTER criação na Auth durante tratamento de erro:`, deleteError);
-          }
-        }
-        const errorResponse = { error: operationError.message || "Erro interno nas operações de banco de dados." };
-        console.log(`${logPrefix} Retornando erro da operação:`, errorResponse);
-        return NextResponse.json(errorResponse, { status: 400 }); 
+      throw authError; // Lançar outros erros de autenticação
     }
 
+    const newAuthUserId = authData.user.id;
+    console.log(`${logPrefix} Usuário criado na autenticação com auth_id: ${newAuthUserId}`);
+
+    // 5. Inserir usuário na tabela 'usuarios' (usando cliente admin)
+    console.log(`${logPrefix} Inserindo usuário na tabela 'usuarios'...`);
+    const { data: dbUserData, error: dbError } = await supabaseAdmin
+      .from('usuarios')
+      .insert({
+        auth_id: newAuthUserId,
+        nome: nome,
+        email: email,
+        empresa_id: empresa_id,
+        // Adicionar outros campos padrões se necessário (ativo=true?)
+      })
+      .select('id') // Selecionar o ID interno do usuário recém-criado
+      .single();
+
+    if (dbError) {
+      console.error(`${logPrefix} Erro ao inserir usuário na tabela 'usuarios':`, dbError);
+      // Tentar deletar o usuário da autenticação se a inserção no DB falhar?
+      // await supabaseAdmin.auth.admin.deleteUser(newAuthUserId);
+      throw dbError;
+    }
+
+    const newDbUserId = dbUserData.id;
+    console.log(`${logPrefix} Usuário inserido na tabela 'usuarios' com id: ${newDbUserId}`);
+
+    // 6. Associar usuário ao grupo (usando cliente admin)
+    console.log(`${logPrefix} Associando usuário ${newDbUserId} ao grupo ${grupo_id}...`);
+    const { error: groupLinkError } = await supabaseAdmin
+        .from('usuarios_grupos')
+        .insert({ usuario_id: newDbUserId, grupo_id: grupo_id });
+
+    if (groupLinkError) {
+        console.error(`${logPrefix} Erro ao associar usuário ao grupo:`, groupLinkError);
+        // Considerar deletar usuário do auth e da tabela usuarios se a ligação falhar?
+        // await supabaseAdmin.auth.admin.deleteUser(newAuthUserId);
+        // await supabaseAdmin.from('usuarios').delete().eq('id', newDbUserId);
+        throw groupLinkError;
+    }
+    console.log(`${logPrefix} Usuário ${newDbUserId} associado ao grupo ${grupo_id} com sucesso.`);
+
+    // 7. Retornar sucesso
+    console.log(`${logPrefix} Usuário ${email} criado e associado ao grupo ${grupo_id} com sucesso.`);
+    return NextResponse.json({ message: "Usuário criado com sucesso!", userId: newDbUserId });
+
   } catch (error: any) {
-     console.error(`${logPrefix} Erro inesperado no handler:`, error);
-     const finalErrorResponse = { error: error.message || "Erro interno do servidor." };
-     console.log(`${logPrefix} Retornando erro geral:`, finalErrorResponse);
-     return NextResponse.json(finalErrorResponse, { status: 500 });
+    console.error(`${logPrefix} Erro inesperado no processo:`, error);
+    const errorMessage = error.message || "Erro interno do servidor";
+    // Definir status baseado no tipo de erro, se possível
+    let statusCode = 500;
+    if (errorMessage.includes("Não autenticado")) statusCode = 401;
+    if (errorMessage.includes("Dados inválidos")) statusCode = 400;
+    if (errorMessage.includes("Email já cadastrado")) statusCode = 409;
+    
+    return NextResponse.json({ error: errorMessage }, { status: statusCode });
   }
 }
 
@@ -555,40 +550,58 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+    const id = searchParams.get('id'); // Este é o auth_id
     
     if (!id) {
       return NextResponse.json(
-        { error: "ID do usuário é obrigatório" },
+        { error: "ID do usuário (auth_id) é obrigatório" }, 
         { status: 400 }
       );
     }
     
-    console.log("[API:AdminUsers] Deletando usuário:", id);
+    console.log("[API:AdminUsers:DELETE] Deletando usuário com auth_id:", id);
+
+    // Cliente com role de serviço para operações admin
+    const supabaseAdmin = await createServiceRoleClient();
     
-    // Deletar usuário da autenticação
-    const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(id);
+    // 1. Deletar da tabela public.usuarios PRIMEIRO (se houver restrições de FK)
+    //    ou depois, dependendo da sua configuração.
+    //    Vamos deletar DEPOIS da auth por enquanto.
+
+    // 2. Deletar usuário da autenticação
+    console.log(`[API:AdminUsers:DELETE] Tentando deletar usuário da Supabase Auth (auth_id: ${id})...`);
+    const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(id);
     
-    if (deleteAuthError) {
-      console.error("[API:AdminUsers] Erro ao deletar usuário da autenticação:", deleteAuthError);
-      return NextResponse.json({ error: deleteAuthError.message }, { status: 500 });
+    // Tratar erro específico onde o usuário pode já não existir na Auth (talvez por exclusão manual)
+    // mas ainda existir no DB.
+    if (deleteAuthError && deleteAuthError.message !== "User not found") { // <<< Atenção a esta condição
+      console.error("[API:AdminUsers:DELETE] Erro ao deletar usuário da autenticação:", deleteAuthError);
+      // Não retornar erro fatal aqui ainda, tentar deletar do banco mesmo assim.
+      // return NextResponse.json({ error: deleteAuthError.message }, { status: 500 });
+    } else if (deleteAuthError && deleteAuthError.message === "User not found"){
+       console.warn(`[API:AdminUsers:DELETE] Usuário com auth_id ${id} não encontrado na Auth. Prosseguindo para deletar do banco.`);
+    } else {
+       console.log(`[API:AdminUsers:DELETE] Usuário auth_id ${id} deletado da Auth (ou já não existia).`);
     }
     
-    // Deletar ou apenas inativar na tabela personalizada
-    const { error: deleteDbError } = await supabase
+    // 3. Deletar da tabela public.usuarios
+    console.log(`[API:AdminUsers:DELETE] Tentando deletar usuário da tabela usuarios (auth_id: ${id})...`);
+    const { error: deleteDbError } = await supabaseAdmin
       .from('usuarios')
-      .update({ ativo: false })
+      .delete() // <<< CORRIGIDO: Usar delete() em vez de update()
       .eq('auth_id', id);
     
     if (deleteDbError) {
-      console.error("[API:AdminUsers] Erro ao inativar usuário no banco:", deleteDbError);
-      // Não retornar erro, pois o usuário já foi removido da autenticação
-      console.warn("[API:AdminUsers] Usuário removido da autenticação, mas não do banco");
+      console.error("[API:AdminUsers:DELETE] Erro ao deletar usuário da tabela usuarios:", deleteDbError);
+      // Se falhou ao deletar do DB, mas conseguiu deletar da Auth, pode ser um problema.
+      // Retornar erro aqui é mais apropriado.
+      return NextResponse.json({ error: `Erro ao deletar usuário do banco: ${deleteDbError.message}` }, { status: 500 });
     }
+    console.log(`[API:AdminUsers:DELETE] Usuário deletado da tabela usuarios (auth_id: ${id}).`);
     
     return NextResponse.json({ message: "Usuário removido com sucesso" });
   } catch (error: any) {
-    console.error("[API:AdminUsers] Erro inesperado:", error);
+    console.error("[API:AdminUsers:DELETE] Erro inesperado:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 } 

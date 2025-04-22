@@ -78,7 +78,8 @@ export default function AdminResetPasswordPage() {
   }
 
   return (
-    <div className="container mx-auto py-10">
+    <div className="w-full px-4 py-10">
+      <h1 className="text-3xl font-bold mb-6">Redefinição de Senhas</h1>
       <Card className="max-w-md mx-auto">
         <CardHeader>
           <div className="flex items-center mb-2">

@@ -7,8 +7,8 @@ interface UserData {
   id: string;
   nome: string;
   email: string;
-  empresa_id: string;
-  ativo: boolean;
+  empresa_id: string | null;
+  ativo: boolean | null;
 }
 
 export function useUserData() {

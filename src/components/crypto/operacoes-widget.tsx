@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, AlertCircle, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useRouter } from "next/navigation";
 
@@ -66,12 +66,26 @@ export function OperacoesWidget({ compact = false, className }: OperacoesWidgetP
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Formatar data
-  const formatarData = (dataStr: string) => {
+  // Formatar data (String Split para evitar timezone)
+  const formatarData = (dataStr: string | null | undefined): string => {
+    if (!dataStr || typeof dataStr !== 'string' || !dataStr.includes('T')) {
+      // Retorna um valor padrão ou a string original se o formato for inesperado
+      return dataStr || "Data inválida";
+    }
     try {
-      return format(new Date(dataStr), "dd/MM/yyyy", { locale: ptBR });
+      // Pega a parte antes do 'T' -> "YYYY-MM-DD"
+      const datePart = dataStr.split('T')[0];
+      // Divide em ano, mês, dia
+      const [year, month, day] = datePart.split('-');
+      // Valida se temos 3 partes
+      if (!year || !month || !day) {
+        return dataStr; // Retorna original se o split falhar
+      }
+      // Remonta como "DD/MM/YYYY"
+      return `${day}/${month}/${year}`;
     } catch (e) {
-      return "Data inválida";
+      console.error("Erro ao formatar data (string split):", dataStr, e);
+      return dataStr; // Retorna original em caso de erro
     }
   };
 

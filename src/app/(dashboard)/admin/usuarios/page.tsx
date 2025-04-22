@@ -140,28 +140,26 @@ export default function UserManagementPage() {
 
     // --- Renderização --- 
     return (
-        <>
-            {/* Exibir Erros/Sucessos Globais */} 
-            <div className="container pt-4 space-y-3"> {/* Container para mensagens */}
-                {initialLoadError && (
-                    <div className="bg-destructive/15 text-destructive flex items-start p-3 rounded-md whitespace-pre-line">
-                        <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0 mt-1" />
-                        <span className="text-sm">{initialLoadError}</span>
-                    </div>
-                )}
-                {pageError && (
-                    <div className="bg-destructive/15 text-destructive flex items-start p-3 rounded-md whitespace-pre-line">
-                        <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0 mt-1" />
-                        <span className="text-sm">{pageError}</span>
-                    </div>
-                )}
-                {pageSuccess && (
-                     <div className="bg-green-100 text-green-700 flex items-start p-3 rounded-md whitespace-pre-line">
-                         <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 mt-1" />
-                         <span className="text-sm">{pageSuccess}</span>
-                    </div>
-                )}
-            </div>
+        <div className="w-full px-4 pt-4 space-y-3"> {/* Container para mensagens - MANTIDO pt-4 */}
+            {/* Mensagens de sucesso/erro */}
+            {initialLoadError && (
+                <div className="bg-destructive/15 text-destructive flex items-start p-3 rounded-md whitespace-pre-line">
+                    <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0 mt-1" />
+                    <span className="text-sm">{initialLoadError}</span>
+                </div>
+            )}
+            {pageError && (
+                <div className="bg-destructive/15 text-destructive flex items-start p-3 rounded-md whitespace-pre-line">
+                    <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0 mt-1" />
+                    <span className="text-sm">{pageError}</span>
+                </div>
+            )}
+            {pageSuccess && (
+                 <div className="bg-green-100 text-green-700 flex items-start p-3 rounded-md whitespace-pre-line">
+                     <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 mt-1" />
+                     <span className="text-sm">{pageSuccess}</span>
+                </div>
+            )}
 
             <UserSection 
                 initialUsers={users} 
@@ -188,15 +186,6 @@ export default function UserManagementPage() {
                 setPageError={setPageError}
                 setPageSuccess={setPageSuccess}
             />
-            
-            {/* REMOVER RENDERIZAÇÃO ANTIGA DE CARDS/MODAIS DAQUI */}
-            {/* <div className="container py-10">
-                <Card> ... Card Usuários ... </Card>
-                {/* Modal Senha * /} 
-                <Dialog> ... </Dialog>
-                {/* ... outros modais de usuário ... * /} 
-            </div> */}
-            {/* ... Card e Modais de Grupo removidos daqui também ... */}
-        </>
+        </div>
     );
 } 

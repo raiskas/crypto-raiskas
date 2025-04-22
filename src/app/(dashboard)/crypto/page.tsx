@@ -22,13 +22,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, ArrowUpDown, Plus, Trash2, Edit, Search, TrendingUp, Pencil, Wallet, CreditCard, TrendingDown } from "lucide-react";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { useUserData } from "@/lib/hooks/use-user-data";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
-import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { OperacaoModal } from "@/components/crypto/OperacaoModal";
+import { toast } from "sonner";
+import { getSupabase } from "@/lib/supabase/client";
 
 // Tipo para as operações de cripto
 interface Operacao {
@@ -46,6 +48,7 @@ interface Operacao {
   notas: string | null;
   criado_em: string;
   atualizado_em: string;
+  grupo_id?: string;
 }
 
 // Tipo para top moedas
@@ -64,7 +67,7 @@ export default function CryptoPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-  const { userData } = useUserData();
+  const { userData, loading: userDataLoading, error: userDataError } = useUserData();
   const router = useRouter();
   const pathname = usePathname();
   const [activeTab, setActiveTab] = useState("todas");
@@ -73,6 +76,91 @@ export default function CryptoPage() {
   const [topMoedas, setTopMoedas] = useState<TopMoeda[]>([]);
   const [loadingTopMoedas, setLoadingTopMoedas] = useState(false);
   const [errorTopMoedas, setErrorTopMoedas] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingOperation, setEditingOperation] = useState<Operacao | null>(null);
+  const [currentUserGrupoId, setCurrentUserGrupoId] = useState<string | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  // LOG INICIAL PARA DEBUG
+  console.log("[CryptoPage] Renderizando...", { 
+    user: user, 
+    userData: userData, 
+    userDataLoading: userDataLoading,
+    userDataError: userDataError 
+  });
+
+  // NOVO useEffect: Buscar grupo_id do usuário via 'usuarios_grupos'
+  useEffect(() => {
+    const fetchUserGroup = async () => {
+      if (userDataLoading || !userData?.id) {
+        console.log("[CryptoPage] fetchUserGroup: Aguardando userData básico carregar ou userData.id.", { isLoading: userDataLoading, hasId: !!userData?.id });
+        if (!userDataLoading) setLoadingProfile(false);
+        return;
+      }
+
+      console.log(`[CryptoPage] fetchUserGroup: Buscando grupo para usuário ID: ${userData.id}`);
+      setLoadingProfile(true); // Reutilizar o estado de loading
+      setProfileError(null);
+      setCurrentUserGrupoId(null);
+
+      try {
+        const supabase = getSupabase();
+        // Buscar na tabela de ligação usuarios_grupos
+        // @ts-ignore - Ignorar erro de tipo da tabela (tipos desatualizados)
+        const { data: userGroupLink, error: fetchError } = await supabase
+          .from('usuarios_grupos') // <<< Tabela de ligação correta
+          .select('grupo_id')      // Pegar o ID do grupo
+          .eq('usuario_id', userData.id) // Filtrar pelo ID do usuário
+          .limit(1) // Pegar apenas o primeiro grupo encontrado
+          .maybeSingle(); // Não dar erro se o usuário não estiver em nenhum grupo
+
+        if (fetchError) {
+          throw fetchError;
+        }
+
+        // @ts-ignore - Ignorar erro de tipo de 'grupo_id' (tipos desatualizados)
+        if (userGroupLink?.grupo_id) {
+          // @ts-ignore - Ignorar erro de tipo de 'grupo_id' (tipos desatualizados)
+          console.log("[CryptoPage] fetchUserGroup: Grupo ID encontrado:", userGroupLink.grupo_id);
+           // @ts-ignore - Ignorar erro de tipo de 'grupo_id' (tipos desatualizados)
+          setCurrentUserGrupoId(userGroupLink.grupo_id);
+        } else {
+          console.warn(`[CryptoPage] fetchUserGroup: Usuário ${userData.id} não encontrado em nenhum grupo via 'usuarios_grupos'.`);
+          setProfileError("Usuário não associado a nenhum grupo."); // Mensagem mais específica
+        }
+
+      } catch (err: any) {
+        console.error("[CryptoPage] fetchUserGroup: Erro ao buscar grupo:", err);
+        setProfileError(err.message || "Erro ao carregar dados do grupo.");
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+
+    fetchUserGroup();
+  }, [userData, userDataLoading]);
+
+  // Função para abrir o modal (criação ou edição)
+  const openModal = (operacao: Operacao | null = null) => {
+    console.log("[CryptoPage] Abrindo modal.", operacao ? `Editando ID: ${operacao.id}` : "Criando nova.");
+    setEditingOperation(operacao); // Define null para criar, ou os dados para editar
+    setIsModalOpen(true);
+  };
+
+  // Função para fechar o modal
+  const closeModal = () => {
+    console.log("[CryptoPage] Fechando modal.");
+    setIsModalOpen(false);
+    setEditingOperation(null); // Limpa a operação em edição
+  };
+
+  // Função chamada após sucesso na criação/edição no modal
+  const handleSuccess = () => {
+    console.log("[CryptoPage] Operação salva com sucesso. Recarregando dados...");
+    closeModal(); // Fecha o modal primeiro
+    carregarDados(true); // Recarrega a lista de operações (passando true para mostrar loading)
+  };
 
   // Verificar se a tabela crypto_operacoes existe e criar se necessário
   const verificarTabelaCryptoOperacoes = async () => {
@@ -307,12 +395,26 @@ export default function CryptoPage() {
 
   const totais = calcularTotais();
 
-  // Formatar data
-  const formatarData = (dataStr: string) => {
+  // Formatar data (String Split para evitar timezone)
+  const formatarData = (dataStr: string | null | undefined): string => {
+    if (!dataStr || typeof dataStr !== 'string' || !dataStr.includes('T')) {
+      // Retorna um valor padrão ou a string original se o formato for inesperado
+      return dataStr || "Data inválida";
+    }
     try {
-      return format(new Date(dataStr), "dd/MM/yyyy", { locale: ptBR });
+      // Pega a parte antes do 'T' -> "YYYY-MM-DD"
+      const datePart = dataStr.split('T')[0];
+      // Divide em ano, mês, dia
+      const [year, month, day] = datePart.split('-');
+      // Valida se temos 3 partes
+      if (!year || !month || !day) {
+        return dataStr; // Retorna original se o split falhar
+      }
+      // Remonta como "DD/MM/YYYY"
+      return `${day}/${month}/${year}`;
     } catch (e) {
-      return "Data inválida";
+      console.error("Erro ao formatar data (string split):", dataStr, e);
+      return dataStr; // Retorna original em caso de erro
     }
   };
 
@@ -390,17 +492,33 @@ export default function CryptoPage() {
     return valor.toFixed(8).replace(/\.?0+$/, '');
   };
 
-  // Navegar para criar uma nova operação
+  // MODIFICAR: Função para lidar com clique em "Nova Operação"
   const novaOperacao = () => {
-    router.push("/crypto/nova-operacao");
-  };
+    if (userDataLoading || loadingProfile) { // Checar ambos loadings
+       toast.info("Aguarde, carregando dados do usuário/grupo..."); // Mensagem ajustada
+       console.log("[CryptoPage] Click Nova Operação: Aguardando loading", { userDataLoading, loadingProfile });
+       return;
+    }
+    if (!currentUserGrupoId) {
+       // Usar profileError se existir, senão a mensagem genérica
+       toast.error(profileError || "Não foi possível determinar o grupo padrão do usuário."); // Mensagem ajustada
+       console.error("[CryptoPage] Tentativa de criar operação sem grupoId do usuário.", { currentUserGrupoId, profileError });
+       return;
+    }
+   openModal();
+ };
 
-  // Navegar para editar uma operação
-  const editarOperacao = (id: string) => {
-    router.push(`/crypto/editar-operacao/${id}`);
-  };
+ // MODIFICAR: Função para lidar com clique em "Editar"
+ const editarOperacao = (id: string) => {
+   const operacaoParaEditar = operacoes.find((op) => op.id === id);
+   if (operacaoParaEditar) {
+     openModal(operacaoParaEditar); // Abre o modal com os dados da operação
+   } else {
+     console.error(`[CryptoPage] Operação com ID ${id} não encontrada para edição.`);
+     toast.error("Operação não encontrada. Tente atualizar a lista.");
+   }
+ };
 
-  // Excluir uma operação
   const excluirOperacao = async (id: string) => {
     if (!confirm("Tem certeza que deseja excluir esta operação?")) {
       return;
@@ -456,7 +574,6 @@ export default function CryptoPage() {
     }
   };
 
-  // Calcular portfólio consolidado (agrupado por moeda)
   const calcularPortfolio = () => {
     // Criar um mapa para armazenar as informações por moeda
     const portfolioMap = new Map<string, {
@@ -575,7 +692,7 @@ export default function CryptoPage() {
     : 0;
 
   return (
-    <div className="container py-6">
+    <div className="w-full px-4 py-6">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold">Gerenciamento de Criptomoedas</h1>
@@ -809,6 +926,7 @@ export default function CryptoPage() {
                       <TableHead>Quantidade</TableHead>
                       <TableHead>Valor Médio</TableHead>
                       <TableHead>Valor Total Investido</TableHead>
+                      <TableHead>Valor Atual</TableHead>
                       <TableHead>Valor Total Atualizado</TableHead>
                       <TableHead>Lucro/Prejuízo</TableHead>
                       <TableHead>Percentual</TableHead>
@@ -841,6 +959,7 @@ export default function CryptoPage() {
                         <TableCell>{formatarQuantidade(item.quantidade)}</TableCell>
                         <TableCell>{formatarMoeda(item.valorMedio)}</TableCell>
                         <TableCell>{formatarMoeda(item.valorTotal)}</TableCell>
+                        <TableCell>{formatarMoeda(item.valorAtualizado)}</TableCell>
                         <TableCell>{formatarMoeda(item.valorAtualizado)}</TableCell>
                         <TableCell className={cn(
                           item.lucro > 0 ? "text-green-600" : item.lucro < 0 ? "text-red-600" : ""
@@ -1027,6 +1146,7 @@ export default function CryptoPage() {
                       <TableHead>Quantidade</TableHead>
                       <TableHead>Valor Operação</TableHead>
                       <TableHead>Valor Total</TableHead>
+                      <TableHead>Valor Atual</TableHead>
                       <TableHead>Valor Total Atualizado</TableHead>
                       <TableHead>Lucro/Prejuízo</TableHead>
                       <TableHead>Percentual</TableHead>
@@ -1191,6 +1311,18 @@ export default function CryptoPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Renderizar o Modal */}
+      {isModalOpen && (
+        <OperacaoModal
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          initialData={editingOperation}
+          onSuccess={handleSuccess}
+          userId={user?.id}
+          grupoIdUsuario={currentUserGrupoId}
+        />
+      )}
     </div>
   );
 } 

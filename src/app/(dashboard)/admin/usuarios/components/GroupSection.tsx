@@ -322,7 +322,7 @@ export default function GroupSection({
 
   // --- Renderização ---
   return (
-    <div className="container pb-10">
+    <div className="w-full px-4 pb-10">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>

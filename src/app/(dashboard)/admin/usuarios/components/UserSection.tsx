@@ -141,18 +141,20 @@ export default function UserSection({
     nome: z.string().min(3, 'O nome deve ter no mínimo 3 caracteres'),
     email: z.string().email('Email inválido'),
     password: z.string().min(6, 'A senha deve ter no mínimo 6 caracteres'),
-    empresa_id: z.string().uuid('Selecione uma empresa válida'), // Adicionado empresa_id
+    empresa_id: z.string().uuid('Selecione uma empresa válida'),
+    grupo_id: z.string().uuid('Selecione um grupo válido'),
   });
 
   // --- Forms ---
-  type CreateUserFormData = z.infer<typeof createUserFormSchema>; // Usar novo schema
+  type CreateUserFormData = z.infer<typeof createUserFormSchema>;
   const createUserForm = useForm<CreateUserFormData>({
-    resolver: zodResolver(createUserFormSchema), // Usar novo schema
+    resolver: zodResolver(createUserFormSchema),
     defaultValues: {
-      nome: '', // Ajustado de 'name' para 'nome'
+      nome: '',
       email: '',
       password: '',
-      empresa_id: '', // Adicionado default
+      empresa_id: '',
+      grupo_id: '',
     }
   });
 
@@ -192,6 +194,7 @@ export default function UserSection({
       email: data.email,
       password: data.password,
       empresa_id: data.empresa_id,
+      grupo_id: data.grupo_id,
     };
 
     console.log(`${logPrefix} Tentando criar usuário. Chamando POST /api/admin/users com payload:`, payload);
@@ -363,7 +366,7 @@ export default function UserSection({
 
   // --- Renderização ---
   return (
-    <div className="container py-10">
+    <div className="w-full px-4 py-10">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
@@ -454,6 +457,34 @@ export default function UserSection({
                             {!loadingEmpresas && empresas.map((empresa) => (
                               <SelectItem key={empresa.id} value={empresa.id}>
                                 {empresa.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={createUserForm.control}
+                    name="grupo_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Grupo</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          disabled={loadingGroups}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={loadingGroups ? "Carregando..." : "Selecione um grupo"} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {!loadingGroups && groups.map((group) => (
+                              <SelectItem key={String(group.id)} value={String(group.id)}>
+                                {group.nome}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -590,7 +621,7 @@ export default function UserSection({
                                 </FormControl>
                                 <SelectContent>
                                     {groups.map((group) => (
-                                    <SelectItem key={group.id.toString()} value={group.id.toString()}> {/* Converter para string */}
+                                    <SelectItem key={String(group.id)} value={String(group.id)}>
                                         {group.nome}
                                     </SelectItem>
                                     ))}

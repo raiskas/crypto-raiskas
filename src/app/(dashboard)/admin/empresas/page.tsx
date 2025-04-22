@@ -256,7 +256,14 @@ export default function EmpresaManagementPage() {
 
   // --- Renderização ---
   return (
-    <div className="container py-10">
+    <div className="w-full px-4 py-10">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Empresas</h1>
+        <Button onClick={openCreateModal}>
+          <PlusCircle className="mr-2 h-4 w-4" /> Criar Empresa
+        </Button>
+      </div>
+
       {/* Mensagens Globais */} 
        <div className="mb-4 space-y-2">
           {error && (

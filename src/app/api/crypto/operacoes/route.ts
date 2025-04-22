@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from '@supabase/supabase-js';
+// @ts-ignore - Ignorar erro de tipo devido à falha na geração de tipos
 import { Database } from '@/types/supabase';
 import { supabaseConfig } from '@/lib/config';
 import { cookies } from 'next/headers';
@@ -50,65 +51,60 @@ const operacaoSchema = z.object({
 
 // GET: Listar operações do usuário atual
 export async function GET(request: NextRequest) {
-  const supabase = createSupabaseClient(); // Criar cliente dentro da função
+  const supabase = createSupabaseClient();
   try {
-    // Obter o usuário diretamente do cliente Supabase criado para esta requisição
+    // Obter o usuário
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-
     if (authError || !user) {
-      // Logar o erro específico se houver
       if (authError) console.error("[API:operacoes:GET] Erro ao obter usuário:", authError.message);
-      // Retornar o erro 401
       return NextResponse.json({ error: "Usuário não autenticado ou não encontrado" }, { status: 401 });
     }
-    // Agora temos o 'user' autenticado
-    console.log(`[API:operacoes:GET] Usuário autenticado: ${user.id}`);
 
-    // --- Buscar Perfil do Usuário (Necessário para is_master e ID interno) ---
+    // Buscar Perfil do Usuário
     const { data: userProfile, error: profileError } = await supabase
-      .from('usuarios') // Sua tabela de perfis
-      .select('id, is_master, empresa_id') // <<< ADICIONADO empresa_id
-      .eq('auth_id', user.id) // Filtrar pelo ID de autenticação
+      .from('usuarios')
+      .select('id, is_master, empresa_id')
+      .eq('auth_id', user.id)
       .single();
-
     if (profileError || !userProfile) {
-      console.error(`[API:operacoes:GET] Erro ao buscar perfil para auth_id ${user.id} ou perfil não encontrado:`, profileError?.message);
-      return NextResponse.json({ error: "Perfil do usuário não encontrado ou erro ao buscar perfil" }, { status: 404 });
+      console.error(`[API:operacoes:GET] Erro ao buscar perfil para auth_id ${user.id}:`, profileError?.message);
+      return NextResponse.json({ error: "Perfil do usuário não encontrado" }, { status: 404 });
     }
-    console.log(`[API:operacoes:GET] Perfil encontrado: ID ${userProfile.id}, Master: ${userProfile.is_master}, Empresa: ${userProfile.empresa_id}`);
-    // --- Fim da Busca de Perfil ---
-    
+
     // Verificar se o usuário tem uma empresa associada
     if (!userProfile.empresa_id) {
         console.warn(`[API:operacoes:GET] Usuário ${userProfile.id} não está associado a nenhuma empresa.`);
         // Retornar array vazio se o usuário não tem empresa? Ou erro? Decidido retornar vazio.
-        return NextResponse.json([]); 
+        // Ajuste: Se buscando por ID específico, talvez retornar 403/404 aqui?
+        // return NextResponse.json([]); // Mantendo retorno vazio por enquanto para listagem
     }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
-    // <<< MODIFICAÇÃO DA QUERY PRINCIPAL >>>
+    // Construir a query base
     let query = supabase
       .from("crypto_operacoes")
-      // Usar INNER JOIN implícito para garantir que a operação tem um grupo
-      // e selecionar a empresa_id do grupo para filtragem
+      // CORRIGIDO: Usar string normal ou template string corretamente
       .select(`
         *,
         grupos!inner(id, nome, empresa_id)
-      `)
-      // Adicionar filtro pela empresa_id do usuário logado, vinda da tabela grupos
-      .eq('grupos.empresa_id', userProfile.empresa_id); 
+      `); // <<< String corrigida
 
-    // Manter filtro por ID se fornecido (para buscar uma operação específica)
+    // Aplicar filtros condicionais
     if (id) {
       query = query.eq('id', id);
     } else {
-      // Ordenar por data decrescente por padrão na listagem
+      // Aplicar filtro de empresa APENAS na listagem
+      if (userProfile.empresa_id) {
+         query = query.eq('grupos.empresa_id', userProfile.empresa_id);
+      } else {
+         console.warn("[API:operacoes:GET] Listagem sem filtro de empresa...");
+      }
       query = query.order('data_operacao', { ascending: false });
     }
-    // <<< FIM DA MODIFICAÇÃO DA QUERY >>>
 
+    // Executar a query
     let data, error;
     if (id) {
         const { data: singleData, error: singleError } = await query.single();
@@ -120,23 +116,33 @@ export async function GET(request: NextRequest) {
         error = listError;
     }
 
+    // Tratar erros da query
     if (error) {
-        if (id && error.code === 'PGRST116') { 
-             console.log(`[API:operacoes:GET] Operação com ID ${id} não encontrada.`);
+        if (id && error.code === 'PGRST116') {
              return NextResponse.json({ error: "Operação não encontrada" }, { status: 404 });
         }
-        console.error("[API:operacoes:GET] Erro na consulta:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error("[API:operacoes:GET] Erro na consulta Supabase:", error);
+        return NextResponse.json({ error: `Erro na consulta: ${error.message}` }, { status: 500 });
     }
 
-    // Log ADICIONAL: Ver o que está sendo retornado ANTES do NextResponse
-    console.log("[API:operacoes:GET] Dados a serem retornados:", JSON.stringify(data, null, 2)); 
+    // Lógica de Verificação de Permissão para ID específico
+    if (id && data) {
+        // @ts-ignore
+        const operacaoEmpresaId = data.grupos?.empresa_id;
+        if (operacaoEmpresaId !== userProfile.empresa_id && !userProfile.is_master) {
+             return NextResponse.json({ error: "Operação não encontrada" }, { status: 404 });
+        }
+    }
 
-    return NextResponse.json(data);
+    if (id) {
+      return NextResponse.json({ operacao: data });
+    } else {
+      return NextResponse.json(data);
+    }
 
   } catch (error: any) {
-    console.error("[API:operacoes:GET] Erro inesperado:", error);
-    return NextResponse.json({ error: `Erro interno: ${error.message}` }, { status: 500 });
+    console.error("[API:operacoes:GET] Erro inesperado (catch geral):", error);
+    return NextResponse.json({ error: `Erro interno do servidor: ${error.message}` }, { status: 500 });
   }
 }
 
@@ -151,7 +157,6 @@ export async function POST(request: NextRequest) {
       console.error("[API:operacoes:POST] Erro ao obter usuário autenticado:", authError?.message);
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
-    console.log(`[API:operacoes:POST] Usuário autenticado: ${authUser.id}`);
 
     // 2. Buscar perfil do usuário (incluindo is_master)
     const { data: userProfile, error: profileError } = await supabase
@@ -164,16 +169,18 @@ export async function POST(request: NextRequest) {
       console.error(`[API:operacoes:POST] Erro ao buscar perfil para auth_id ${authUser.id} ou perfil não encontrado:`, profileError?.message);
       return NextResponse.json({ error: "Perfil do usuário não encontrado" }, { status: 404 });
     }
-    console.log(`[API:operacoes:POST] Perfil do usuário: ID ${userProfile.id}, Master: ${userProfile.is_master}`);
 
     const body = await request.json();
-    console.log("[API:operacoes:POST] Body recebido:", body);
     const { nome, moeda_id, tipo, data_operacao, quantidade, preco_unitario, valor_total, exchange, notas, grupo_id, simbolo } = body;
 
     // Validação básica (poderia usar Zod aqui também)
     if (!nome || !moeda_id || !tipo || !data_operacao || !simbolo || quantidade === undefined || preco_unitario === undefined || valor_total === undefined || !grupo_id) {
       return NextResponse.json({ error: "Campos obrigatórios faltando (nome, moeda_id, tipo, data_operacao, simbolo, quantidade, preco_unitario, valor_total, grupo_id)" }, { status: 400 });
     }
+
+    // Converter data yyyy-MM-dd para ISO String UTC (yyyy-MM-ddT00:00:00Z)
+    // Isso garante que o Supabase/Postgres interprete como meia-noite UTC
+    const data_operacao_iso = `${data_operacao}T00:00:00Z`;
 
     // 3. Verificar se o usuário tem permissão para adicionar ao grupo_id (se não for master)
     if (!userProfile.is_master) {
@@ -194,7 +201,6 @@ export async function POST(request: NextRequest) {
             console.warn(`[API:operacoes:POST] Tentativa não autorizada: Usuário ${userProfile.id} tentando inserir no grupo ${grupo_id} ao qual não pertence.`);
             return NextResponse.json({ error: "Não autorizado a inserir operação neste grupo." }, { status: 403 });
         }
-         console.log(`[API:operacoes:POST] Verificação de grupo OK. Usuário ${userProfile.id} pertence ao grupo ${grupo_id}.`);
     } else {
          console.log(`[API:operacoes:POST] Usuário é master, permissão de grupo concedida.`);
     }
@@ -207,7 +213,7 @@ export async function POST(request: NextRequest) {
         moeda_id,
         simbolo,
         tipo,
-        data_operacao,
+        data_operacao: data_operacao_iso,
         quantidade,
         preco_unitario,
         valor_total,
@@ -227,7 +233,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log("[API:operacoes:POST] Operação criada com sucesso:", data.id);
     return NextResponse.json(data, { status: 201 });
 
   } catch (error: any) {
@@ -238,60 +243,59 @@ export async function POST(request: NextRequest) {
 
 // PATCH: Atualizar operação existente
 export async function PATCH(request: NextRequest) {
-    const supabase = createSupabaseClient(); // Criar cliente dentro da função
+    const supabase = createSupabaseClient();
     try {
-        const user = await getCurrentUser();
-        if (!user) { // Verificar usuário nulo
-            return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-        }
-        console.log(`[API:operacoes:PATCH] Recebida requisição de ${user.id}`);
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 
-        const { searchParams } = new URL(request.url);
-        const id = searchParams.get('id');
+        if (authError || !authUser) {
+            console.error("[API:operacoes:PATCH] Erro ao obter usuário autenticado:", authError?.message);
+            return NextResponse.json({ error: "Não autorizado" }, { status: 401 }); 
+        }
+
+        const { data: userProfile, error: profileError } = await supabase
+            .from('usuarios')
+            .select('id, is_master, empresa_id')
+            .eq('auth_id', authUser.id)
+            .single();
+
+        if (profileError || !userProfile) {
+            console.error(`[API:operacoes:PATCH] Erro ao buscar perfil para auth_id ${authUser.id} ou perfil não encontrado:`, profileError?.message);
+            return NextResponse.json({ error: "Perfil do usuário não encontrado para verificação de permissão" }, { status: 404 });
+        }
+        
+        const body = await request.json();
+        const id = body.id;
 
         if (!id) {
-            return NextResponse.json({ error: "ID da operação é obrigatório" }, { status: 400 });
+            console.error("[API:operacoes:PATCH] ID da operação não encontrado no body da requisição.");
+            return NextResponse.json({ error: "ID da operação é obrigatório no corpo da requisição" }, { status: 400 });
         }
 
-        const body = await request.json();
-        console.log(`[API:operacoes:PATCH] Body recebido para ID ${id}:`, body);
-
-        // Verificar permissão (se não for master, só pode editar operações do seu grupo)
-        if (!user.is_master) {
+        if (!userProfile.is_master) {
             const { data: operacao, error: fetchError } = await supabase
                 .from('crypto_operacoes')
-                .select('grupo_id')
+                .select('grupo_id, grupos!inner(empresa_id)')
                 .eq('id', id)
                 .single();
 
-            if (fetchError || !operacao) {
-                return NextResponse.json({ error: "Operação não encontrada ou erro ao buscar" }, { status: fetchError ? 500 : 404 });
+            if (fetchError) {
+                console.error(`[API:operacoes:PATCH] Erro ao buscar operação ${id} para verificar permissão:`, fetchError.message);
+                return NextResponse.json({ error: "Operação não encontrada ou erro ao buscar" }, { status: fetchError.code === 'PGRST116' ? 404 : 500 });
             }
-            
-            if (operacao.grupo_id) { // Só verificar se a operação pertence a um grupo
-                // Obter grupo_ids do usuário da tabela usuarios_grupos
-                const { data: userGroupLinks, error: groupsError } = await supabase
-                    .from('usuarios_grupos')
-                    .select('grupo_id')
-                    .eq('usuario_id', user.id); 
+            if (!operacao) {
+                 return NextResponse.json({ error: "Operação não encontrada" }, { status: 404 });
+            }
 
-                if (groupsError) {
-                     return NextResponse.json({ error: "Erro ao verificar permissão de grupo" }, { status: 500 });
-                }
-                const userGroupIds = userGroupLinks?.map((link: { grupo_id: string }) => link.grupo_id) ?? [];
-                if (!userGroupIds.includes(operacao.grupo_id)) {
-                    return NextResponse.json({ error: "Permissão negada para editar esta operação" }, { status: 403 });
-                }
-            } else {
-                 // Se a operação não tem grupo_id, um não-master não deveria poder editar?
-                 // Ou talvez possa se foi ele quem criou? Adicionar lógica de created_by?
-                 // Por segurança, vamos negar por enquanto se a operação não tem grupo.
-                 return NextResponse.json({ error: "Permissão negada (operação sem grupo)" }, { status: 403 });
+            const operacaoEmpresaId = operacao.grupos?.empresa_id;
+            if (operacaoEmpresaId !== userProfile.empresa_id) {
+                return NextResponse.json({ error: "Permissão negada para editar esta operação" }, { status: 403 });
             }
         }
         
-        // Remover campos que não devem ser atualizados diretamente (como IDs)
-        const { id: bodyId, criado_em, atualizado_em, ...updateData } = body;
+        const { id: bodyId, criado_em, atualizado_em, grupos, usuario_id, grupo_id, ...updateData } = body;
+        if (body.grupo_id) {
+          updateData.grupo_id = body.grupo_id;
+        }
 
         const { data, error } = await supabase
             .from("crypto_operacoes")
@@ -301,38 +305,49 @@ export async function PATCH(request: NextRequest) {
             .single();
 
         if (error) {
-            console.error("[API:operacoes:PATCH] Erro ao atualizar:", error);
-            return NextResponse.json({ error: error.message }, { status: 500 });
+            console.error("[API:operacoes:PATCH] Erro ao atualizar no Supabase:", error);
+            return NextResponse.json({ error: `Erro ao atualizar operação: ${error.message}` }, { status: 500 });
         }
 
-        console.log(`[API:operacoes:PATCH] Operação ${id} atualizada com sucesso.`);
         return NextResponse.json(data);
 
     } catch (error: any) {
-        console.error("[API:operacoes:PATCH] Erro inesperado:", error);
-        return NextResponse.json({ error: `Erro interno: ${error.message}` }, { status: 500 });
+        console.error("[API:operacoes:PATCH] Erro inesperado (catch geral):", error);
+        return NextResponse.json({ error: `Erro interno do servidor: ${error.message}` }, { status: 500 });
     }
 }
 
 // DELETE: Remover operação existente
 export async function DELETE(request: NextRequest) {
-    const supabase = createSupabaseClient(); // Criar cliente dentro da função
+    const supabase = createSupabaseClient();
     try {
-        const user = await getCurrentUser();
-        if (!user) { // Verificar usuário nulo
-            return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-        }
-        console.log(`[API:operacoes:DELETE] Recebida requisição de ${user.id}`);
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 
+        if (authError || !authUser) {
+            console.error("[API:operacoes:DELETE] Erro ao obter usuário autenticado via auth.getUser():", authError?.message);
+            return NextResponse.json({ error: "Não autorizado (auth)" }, { status: 401 }); 
+        }
+
+        const { data: userProfile, error: profileError } = await supabase
+            .from('usuarios')
+            .select('id, is_master')
+            .eq('auth_id', authUser.id)
+            .single();
+
+        if (profileError || !userProfile) {
+            console.error(`[API:operacoes:DELETE] Erro ao buscar perfil para auth_id ${authUser.id} ou perfil não encontrado:`, profileError?.message);
+            return NextResponse.json({ error: "Perfil do usuário não encontrado" }, { status: 404 });
+        }
+        
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
 
         if (!id) {
+            console.error("[API:operacoes:DELETE] ID da operação não fornecido na URL.");
             return NextResponse.json({ error: "ID da operação é obrigatório" }, { status: 400 });
         }
 
-        // Verificar permissão (se não for master, só pode deletar operações do seu grupo)
-        if (!user.is_master) {
+        if (!userProfile.is_master) {
             const { data: operacao, error: fetchError } = await supabase
                 .from('crypto_operacoes')
                 .select('grupo_id')
@@ -340,47 +355,50 @@ export async function DELETE(request: NextRequest) {
                 .single();
 
             if (fetchError || !operacao) {
-                return NextResponse.json({ error: "Operação não encontrada ou erro ao buscar" }, { status: fetchError ? 500 : 404 });
+                 console.error(`[API:operacoes:DELETE] Erro ao buscar operação ${id} ou não encontrada:`, fetchError?.message);
+                return NextResponse.json({ error: "Operação não encontrada ou erro ao buscar" }, { status: fetchError && fetchError.code !== 'PGRST116' ? 500 : 404 });
             }
             
-            if (operacao.grupo_id) { // Só verificar se a operação pertence a um grupo
-                // Obter grupo_ids do usuário da tabela usuarios_grupos
+            const operacaoGrupoId = operacao.grupo_id;
+
+            if (operacaoGrupoId) {
+                // @ts-ignore
                 const { data: userGroupLinks, error: groupsError } = await supabase
                     .from('usuarios_grupos')
                     .select('grupo_id')
-                    .eq('usuario_id', user.id); 
+                    .eq('usuario_id', userProfile.id); 
 
                 if (groupsError) {
+                     console.error("[API:operacoes:DELETE] Erro ao buscar grupos do usuário:", groupsError.message);
                      return NextResponse.json({ error: "Erro ao verificar permissão de grupo" }, { status: 500 });
                 }
+                // @ts-ignore
                 const userGroupIds = userGroupLinks?.map((link: { grupo_id: string }) => link.grupo_id) ?? [];
-                if (!userGroupIds.includes(operacao.grupo_id)) {
+                
+                if (!userGroupIds.includes(operacaoGrupoId)) {
+                    console.warn(`[API:operacoes:DELETE] Permissão negada: Usuário ${userProfile.id} não pertence ao grupo ${operacaoGrupoId}`);
                     return NextResponse.json({ error: "Permissão negada para deletar esta operação" }, { status: 403 });
                 }
             } else {
-                 // Se a operação não tem grupo_id, um não-master não deveria poder deletar?
-                 // Ou talvez possa se foi ele quem criou? Adicionar lógica de created_by?
-                 // Por segurança, vamos negar por enquanto se a operação não tem grupo.
+                 console.warn(`[API:operacoes:DELETE] Permissão negada: Usuário não-master tentando deletar operação sem grupo (ID: ${id})`);
                  return NextResponse.json({ error: "Permissão negada (operação sem grupo)" }, { status: 403 });
             }
         }
         
-        // Remover a operação
-        const { error } = await supabase
+        const { error: deleteError } = await supabase
             .from("crypto_operacoes")
             .delete()
             .eq('id', id);
 
-        if (error) {
-            console.error("[API:operacoes:DELETE] Erro ao deletar:", error);
-            return NextResponse.json({ error: error.message }, { status: 500 });
+        if (deleteError) {
+            console.error("[API:operacoes:DELETE] Erro ao deletar no Supabase:", deleteError);
+            return NextResponse.json({ error: deleteError.message }, { status: 500 });
         }
 
-        console.log(`[API:operacoes:DELETE] Operação ${id} deletada com sucesso.`);
         return NextResponse.json({ message: "Operação deletada com sucesso" });
 
     } catch (error: any) {
-        console.error("[API:operacoes:DELETE] Erro inesperado:", error);
+        console.error("[API:operacoes:DELETE] Erro inesperado (catch geral):", error);
         return NextResponse.json({ error: `Erro interno: ${error.message}` }, { status: 500 });
     }
 }
