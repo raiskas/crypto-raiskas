@@ -70,6 +70,7 @@ Documentação atualizada em: 09/04/2024
 **Status Atual e Problemas Conhecidos:**
 
 *   O sistema principal de autenticação e gerenciamento de usuários está funcional.
+*   **Preço de Criptomoedas:** Implementado sistema de cache (`/api/preco`) e compartilhamento de estado (`PriceContext` / `usePrice`) para exibição consistente do preço do Bitcoin no dashboard. Utilize `usePrice()` para acessar o valor em novos componentes.
 *   A edição de grupos carrega apenas dados parciais devido a limitações na API `GET /api/admin/groups` (requer correção no backend). Veja `guia-desenvolvimento.md` para detalhes.
 *   Consulte `guia-desenvolvimento.md` para outros problemas conhecidos e soluções pendentes.
 

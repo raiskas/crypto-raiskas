@@ -366,6 +366,8 @@ export async function GET(request) {
 
 ### Padrões de Código
 
+- **Estado Compartilhado (Ex: Preços Crypto)**: Para dados que precisam ser acessíveis em múltiplos componentes do dashboard (como preços de criptomoedas atualizados), utilize o padrão Context API. Exemplo implementado: `PriceProvider` e `usePrice` (em `src/lib/context/PriceContext.tsx`) para o preço do Bitcoin. Use `usePrice()` em qualquer Client Component dentro do `(dashboard)/layout.tsx` para acessar o valor.
+
 #### Componentes
 
 ```tsx

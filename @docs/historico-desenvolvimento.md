@@ -306,9 +306,17 @@ O projeto está funcional com as seguintes capacidades:
 *   **Qualidade de Código:**
     *   Comentários `// @ts-ignore` foram aplicados em `UserSection.tsx` e `GroupSection.tsx` para suprimir erros persistentes de tipagem relacionados ao `react-hook-form` e `zod`, como solução pragmática.
 
-## 2025-07-20
+## 2025-07-27 (Ou data atual)
 
-(...)
+*   **Correção (API CoinGecko):** Resolvido problema onde dados da CoinGecko não atualizavam na Vercel devido ao cache.
+    *   Implementada rota API intermediária (`/api/preco/route.ts`) para buscar dados da CoinGecko.
+    *   Utilizado cache `fetch` do Next.js com `revalidate: 60` na API route para garantir atualização periódica no servidor (Vercel).
+*   **Gerenciamento de Estado (Preço Crypto):** Implementado compartilhamento de estado para o preço do Bitcoin.
+    *   Criado `PriceContext` e `PriceProvider` (`src/lib/context/PriceContext.tsx`) usando Context API.
+    *   `PriceProvider` centraliza a lógica de busca periódica do preço via `/api/preco`.
+    *   Adicionado `PriceProvider` ao layout do dashboard (`src/app/(dashboard)/layout.tsx`).
+    *   Refatorada a página `/preco` e adicionado o uso do hook `usePrice` nas páginas `home` e `crypto` para consumir o preço compartilhado.
+    *   **Nota:** Para exibir preços de criptomoedas em novos componentes/páginas do dashboard, utilize o hook `usePrice()`.
 
 ---
 

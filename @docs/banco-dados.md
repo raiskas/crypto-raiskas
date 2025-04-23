@@ -81,6 +81,24 @@ vendas
   ├── usuario_id (FK -> usuarios.id)
   ├── criado_em
   └── atualizado_em
+
+crypto_operacoes
+  ├── id (PK)
+  ├── moeda_id (TEXT)
+  ├── simbolo (TEXT)
+  ├── nome (TEXT)
+  ├── tipo (TEXT)
+  ├── quantidade (NUMERIC)
+  ├── preco_unitario (NUMERIC)
+  ├── valor_total (NUMERIC)
+  ├── taxa (NUMERIC)
+  ├── data_operacao (TIMESTAMPZ)
+  ├── exchange (TEXT)
+  ├── notas (TEXT)
+  ├── usuario_id (FK -> usuarios.id)
+  ├── grupo_id (FK -> grupos.id)
+  ├── criado_em (TIMESTAMPZ)
+  └── atualizado_em (TIMESTAMPZ)
 ```
 
 -- Nota: A existência das colunas `empresa_id` (FK), `is_master` (boolean) e `telas_permitidas` (_text/TEXT[]) 
@@ -367,6 +385,50 @@ CREATE POLICY "Apenas usuários com permissão podem inserir"
     )
   );
 ```
+
+### Políticas para `crypto_operacoes` (Exemplo)
+
+```sql
+-- Habilitar RLS na tabela de operações
+ALTER TABLE crypto_operacoes ENABLE ROW LEVEL SECURITY;
+
+-- Política para SELECT: Usuários podem ver apenas suas próprias operações
+CREATE POLICY "Usuários podem ver suas operações" 
+  ON crypto_operacoes
+  FOR SELECT
+  USING (
+    auth.uid() = (SELECT auth_id FROM usuarios WHERE id = crypto_operacoes.usuario_id)
+  );
+
+-- Política para INSERT: Usuários podem inserir operações para si mesmos
+CREATE POLICY "Usuários podem inserir suas operações" 
+  ON crypto_operacoes
+  FOR INSERT
+  WITH CHECK (
+     auth.uid() = (SELECT auth_id FROM usuarios WHERE id = crypto_operacoes.usuario_id)
+  );
+
+-- Política para UPDATE: Usuários podem atualizar suas próprias operações
+CREATE POLICY "Usuários podem atualizar suas operações" 
+  ON crypto_operacoes
+  FOR UPDATE
+  USING (
+    auth.uid() = (SELECT auth_id FROM usuarios WHERE id = crypto_operacoes.usuario_id)
+  )
+  WITH CHECK (
+    auth.uid() = (SELECT auth_id FROM usuarios WHERE id = crypto_operacoes.usuario_id)
+  );
+
+-- Política para DELETE: Usuários podem deletar suas próprias operações
+CREATE POLICY "Usuários podem deletar suas operações" 
+  ON crypto_operacoes
+  FOR DELETE
+  USING (
+    auth.uid() = (SELECT auth_id FROM usuarios WHERE id = crypto_operacoes.usuario_id)
+  );
+```
+
+*Nota: Estes são exemplos de políticas RLS para `crypto_operacoes`. A implementação real pode precisar de ajustes dependendo dos requisitos específicos (ex: administradores poderem ver todas as operações da empresa).*
 
 ## Melhores Práticas
 

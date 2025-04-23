@@ -4,10 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/hooks/use-auth";
-import { Settings, TrendingUp, Wallet, CreditCard, TrendingDown, AlertCircle } from "lucide-react";
+import { Settings, TrendingUp, Wallet, CreditCard, TrendingDown, AlertCircle, Bitcoin } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Image from "next/image";
+import { usePrice } from '@/lib/context/PriceContext';
 
 interface TopMoeda {
   id: string;
@@ -53,6 +54,12 @@ export default function HomePage() {
   const [loadingTopMoedas, setLoadingTopMoedas] = useState(true);
   const [errorTopMoedas, setErrorTopMoedas] = useState<string | null>(null);
   
+  const { 
+    price: btcPrice, 
+    isLoading: isLoadingBtcPrice, 
+    error: errorBtcPrice 
+  } = usePrice();
+
   // Formatar valores monetários
   const formatarMoeda = (valor: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -157,6 +164,10 @@ export default function HomePage() {
       .sort((a, b) => b.valorAtualizado - a.valorAtualizado);
   };
 
+  const formattedBtcPrice = btcPrice !== null
+    ? btcPrice.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+    : '---';
+
   const carregarDados = useCallback(async (refreshTopOnly = false) => {
     console.log("[HomePage] Carregando dados...", { refreshTopOnly });
     if (!refreshTopOnly) {
@@ -236,17 +247,10 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    carregarDados();
-
-    const intervalId = setInterval(() => {
-      console.log("[HomePage] Atualizando Top Moedas automaticamente...");
-      carregarDados(true);
-    }, 2 * 60 * 1000);
-
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [carregarDados]);
+    if (user) {
+      carregarDados();
+    }
+  }, [user, carregarDados]);
   
   console.log("[HomePage] Renderização concluída.");
   return (
@@ -424,6 +428,25 @@ export default function HomePage() {
               </div>
             </>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="w-full md:w-auto md:max-w-sm">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Preço Bitcoin (USD)</CardTitle>
+          <Bitcoin className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          {isLoadingBtcPrice ? (
+            <div className="text-2xl font-bold animate-pulse">Carregando...</div>
+          ) : errorBtcPrice ? (
+            <div className="text-sm font-medium text-destructive">{errorBtcPrice}</div>
+          ) : (
+            <div className="text-2xl font-bold">{formattedBtcPrice}</div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Atualizado via PriceProvider
+          </p>
         </CardContent>
       </Card>
     </div>

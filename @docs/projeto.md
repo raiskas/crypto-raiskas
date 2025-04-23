@@ -2,7 +2,7 @@
 
 ## Visão Geral
 
-O Crypto Raiskas é uma aplicação web moderna construída para gerenciamento empresarial, focando em gestão de usuários, controle de permissões e módulo de vendas. A plataforma é desenvolvida utilizando tecnologias modernas e uma arquitetura escalável, permitindo a criação de um sistema seguro, eficiente e de fácil manutenção.
+O Crypto Raiskas é uma aplicação web moderna construída para gerenciamento empresarial, focando em gestão de usuários, controle de permissões, módulo de vendas e **gerenciamento de operações de criptomoedas**. A plataforma é desenvolvida utilizando tecnologias modernas e uma arquitetura escalável, permitindo a criação de um sistema seguro, eficiente e de fácil manutenção.
 
 ## Tecnologias Principais
 
@@ -24,26 +24,33 @@ src/
 │   │   ├── signin/          # Página de login
 │   │   └── signup/          # Página de cadastro
 │   ├── (dashboard)/         # Grupo de rotas protegidas (painel administrativo)
-│   │   ├── dashboard/       # Dashboard principal
-│   │   └── vendas/          # Módulo de vendas
+│   │   ├── admin/           # Área administrativa
+│   │   │   └── usuarios/    # Gerenciamento de usuários
+│   │   ├── crypto/          # Módulo de Criptomoedas
+│   │   ├── dashboard/       # Dashboard principal (ou /home?)
+│   │   ├── home/            # Página inicial após login
+│   │   └── vendas/          # Módulo de vendas (exemplo)
 │   ├── api/                 # Rotas da API (Server-side)
-│   │   └── auth/            # Endpoints de autenticação
-│   ├── home/                # Página inicial após login
+│   │   ├── admin/           # Endpoints administrativos
+│   │   │   └── users/       # CRUD de usuários
+│   │   ├── auth/            # Endpoints de autenticação
+│   │   ├── crypto/          # Endpoints do módulo de cripto
+│   │   │   ├── operacoes/   # CRUD de operações cripto
+│   │   │   └── top-moedas/  # Busca top moedas (CoinGecko)
+│   │   └── preco/           # Endpoint para preço do Bitcoin (cacheado)
 │   ├── layout.tsx           # Layout principal da aplicação
-│   └── page.tsx             # Página inicial (redireciona para home ou login)
+│   └── page.tsx             # Página inicial (redireciona)
 ├── components/              # Componentes reutilizáveis
-│   ├── layouts/             # Componentes de layout
-│   ├── ui/                  # Componentes de interface do usuário
-│   └── theme-toggle.tsx     # Alternador de tema claro/escuro
+│   ├── crypto/              # Componentes específicos do módulo crypto
+│   ├── layouts/             # Componentes de layout (Header, Sidebar, TopNav)
+│   ├── ui/                  # Componentes de interface (shadcn/ui)
+│   └── theme-toggle.tsx     # Alternador de tema
 ├── lib/                     # Funções utilitárias e bibliotecas
-│   ├── hooks/               # React hooks personalizados
-│   │   └── use-auth.ts      # Hook para gerenciamento de autenticação
+│   ├── context/             # Context API Providers
+│   │   └── PriceContext.tsx # Contexto para preço do Bitcoin
+│   ├── hooks/               # React hooks personalizados (useAuth, useUserData, usePrice)
 │   ├── supabase/            # Integrações com Supabase
-│   │   ├── client.ts        # Cliente Supabase para o navegador
-│   │   ├── client-helpers.ts # Funções auxiliares do cliente
-│   │   └── server.ts        # Cliente Supabase para o servidor
-│   └── utils/               # Funções utilitárias
-│       └── permissions.ts   # Utilitários para verificação de permissões
+│   └── utils/               # Funções utilitárias (permissions, etc)
 ├── types/                   # Definições de tipos TypeScript
 └── middleware.ts            # Middleware do Next.js para proteção de rotas
 ```
@@ -112,6 +119,24 @@ O projeto utiliza PostgreSQL hospedado no Supabase com o seguinte esquema:
    - `status` (VARCHAR)
    - `empresa_id` (UUID, FK)
    - `usuario_id` (UUID, FK, opcional)
+   - `criado_em` (TIMESTAMP)
+   - `atualizado_em` (TIMESTAMP)
+
+2. **crypto_operacoes** - Registro de operações de criptomoedas
+   - `id` (UUID, PK)
+   - `moeda_id` (TEXT) - ID da moeda (ex: 'bitcoin')
+   - `simbolo` (TEXT)
+   - `nome` (TEXT)
+   - `tipo` (TEXT) - "compra" ou "venda"
+   - `quantidade` (NUMERIC)
+   - `preco_unitario` (NUMERIC)
+   - `valor_total` (NUMERIC)
+   - `taxa` (NUMERIC, DEFAULT 0)
+   - `data_operacao` (TIMESTAMP WITH TIME ZONE)
+   - `exchange` (TEXT, opcional)
+   - `notas` (TEXT, opcional)
+   - `usuario_id` (UUID, FK -> usuarios.id)
+   - `grupo_id` (UUID, FK -> grupos.id, opcional)
    - `criado_em` (TIMESTAMP)
    - `atualizado_em` (TIMESTAMP)
 
@@ -202,6 +227,25 @@ SUPABASE_SERVICE_ROLE_KEY=sua_chave_service_role_do_supabase
 - Componentes acessíveis e responsivos
 - Implementação de formulários com validação
 
+### Gerenciamento de Estado Compartilhado
+- Uso da Context API para dados globais no dashboard, como o preço do Bitcoin (ver `PriceContext` e `usePrice`).
+
+### Gerenciamento de Usuários
+- Interface administrativa para listar, criar, editar e desativar/excluir usuários.
+- API dedicada (`/api/admin/users`) para operações CRUD.
+- Integração com Supabase Auth para gerenciamento de credenciais.
+
+### Módulo de Criptomoedas
+- Registro e visualização de operações de compra e venda de criptomoedas.
+- Cálculo de portfólio consolidado por moeda.
+- API (`/api/crypto/...`) para operações e busca de dados de mercado (CoinGecko).
+- Formulário modal para adicionar/editar operações.
+
+### Layout e Interface
+- Navegação principal via Menu Superior (TopNav) moderno e responsivo.
+- Suporte a temas claro e escuro (`next-themes`).
+- Design system consistente com componentes reutilizáveis (shadcn/ui).
+
 ## Guia de Desenvolvimento
 
 ### Adicionando Novas Páginas
@@ -250,9 +294,12 @@ Para suporte ou dúvidas sobre o projeto, entre em contato com:
 
 O projeto está funcional com as seguintes capacidades:
 *   Autenticação completa (Registro, Login, Proteção de Rotas).
-*   Layout de Dashboard com navegação (Menu Lateral e Superior) e suporte a Dark Mode.
-*   Estrutura de Banco de Dados implementada no Supabase.
+*   Layout de Dashboard com navegação via Menu Superior (TopNav) e suporte a Dark Mode.
+*   Estrutura de Banco de Dados implementada no Supabase, incluindo tabelas para usuários, grupos, permissões e operações de cripto.
 *   Módulo de Gerenciamento de Usuários funcional (CRUD completo).
+*   Módulo de Criptomoedas funcional (CRUD de operações, visualização de portfólio).
+*   API para buscar preço atualizado do Bitcoin com cache (`/api/preco`).
+*   Gerenciamento de estado global para preço do Bitcoin (`PriceContext`).
 
 **Problemas Conhecidos:**
 *   A funcionalidade de Edição de Grupo no módulo de administração está parcialmente funcional. O modal carrega o nome, mas devido a dados incompletos retornados pela API `GET /api/admin/groups` (lista inicial), os campos "Empresa" e "Telas Permitidas" não são pré-preenchidos. A correção requer ajuste na API do backend para retornar os dados completos. Veja `guia-desenvolvimento.md` para detalhes.
@@ -261,9 +308,10 @@ O projeto está funcional com as seguintes capacidades:
 ## Próximos Passos
 
 *   Implementar completamente o Módulo de Vendas.
-*   Desenvolver interface para gerenciamento de Permissões.
+*   Desenvolver interface para gerenciamento de Permissões e Grupos.
 *   Adicionar testes automatizados.
 *   Corrigir a API `GET /api/admin/groups` no backend.
+*   Expandir funcionalidades do Módulo de Criptomoedas (gráficos, mais métricas).
 
 ---
 

@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, ArrowUpDown, Plus, Trash2, Edit, Search, TrendingUp, Pencil, Wallet, CreditCard, TrendingDown } from "lucide-react";
+import { AlertCircle, ArrowUpDown, Plus, Trash2, Edit, Search, TrendingUp, Pencil, Wallet, CreditCard, TrendingDown, Bitcoin } from "lucide-react";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { useUserData } from "@/lib/hooks/use-user-data";
 import { format, parseISO } from "date-fns";
@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { OperacaoModal } from "@/components/crypto/OperacaoModal";
 import { toast } from "sonner";
 import { getSupabase } from "@/lib/supabase/client";
+import { usePrice } from '@/lib/context/PriceContext';
 
 // Tipo para as operações de cripto
 interface Operacao {
@@ -81,6 +82,13 @@ export default function CryptoPage() {
   const [currentUserGrupoId, setCurrentUserGrupoId] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
+
+  // <<< Obter dados do preço do Bitcoin do contexto
+  const { 
+    price: btcPrice, 
+    isLoading: isLoadingBtcPrice, 
+    error: errorBtcPrice 
+  } = usePrice();
 
   // LOG INICIAL PARA DEBUG
   console.log("[CryptoPage] Renderizando...", { 
@@ -693,6 +701,11 @@ export default function CryptoPage() {
     ? (totaisPortfolio.lucroTotal / totaisPortfolio.valorTotalInvestido) * 100
     : 0;
 
+  // <<< Formatar preço do Bitcoin
+  const formattedBtcPrice = btcPrice !== null
+    ? btcPrice.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+    : '---';
+
   return (
     <div className="w-full px-4 py-6">
       <div className="flex justify-between items-center mb-6">
@@ -1203,6 +1216,26 @@ export default function CryptoPage() {
           grupoIdUsuario={currentUserGrupoId}
         />
       )}
+
+      {/* Card do Preço do Bitcoin */}
+      <Card className="w-full md:w-auto md:max-w-sm">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Preço Bitcoin (USD)</CardTitle>
+          <Bitcoin className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          {isLoadingBtcPrice ? (
+            <div className="text-2xl font-bold animate-pulse">Carregando...</div>
+          ) : errorBtcPrice ? (
+            <div className="text-sm font-medium text-destructive">{errorBtcPrice}</div>
+          ) : (
+            <div className="text-2xl font-bold">{formattedBtcPrice}</div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Atualizado via PriceProvider
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 } 

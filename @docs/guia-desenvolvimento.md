@@ -69,6 +69,7 @@ Este guia fornece instruções detalhadas para desenvolvedores que estão começ
 - **CSS**: Use Tailwind CSS para estilos
 - **Formulários**: Use React Hook Form + Zod para validação
 - **Estado**: Gerenciamento local com hooks useState/useReducer
+- **Estado Compartilhado (Ex: Preços Crypto)**: Para dados que precisam ser acessíveis em múltiplos componentes do dashboard (como preços de criptomoedas atualizados), utilize o padrão Context API. Exemplo implementado: `PriceProvider` e `usePrice` (em `src/lib/context/PriceContext.tsx`) para o preço do Bitcoin. Use `usePrice()` em qualquer Client Component dentro do `(dashboard)/layout.tsx` para acessar o valor.
 - **Rotas**: Siga a convenção de nomenclatura do Next.js App Router
 - **Isolamento**: Coloque componentes específicos de página em seus diretórios
 
@@ -98,6 +99,7 @@ Este guia fornece instruções detalhadas para desenvolvedores que estão começ
 4. **Adicione rotas de API**:
    - Crie endpoints em `/src/app/api`
    - Use validação Zod para dados de entrada
+   - **Nota:** Já existem APIs para gerenciamento de usuários (`/api/admin/users`) e operações de cripto (`/api/crypto/...`). Verifique se pode reutilizar ou estender a lógica existente.
 
 5. **Atualize o middleware**:
    - Adicione a rota ao middleware se ela for protegida
@@ -107,6 +109,9 @@ Este guia fornece instruções detalhadas para desenvolvedores que estão começ
 1. **Use o hook `useAuth`** para interagir com a autenticação no cliente
 2. **Verifique permissões** antes de renderizar conteúdo sensível
 3. **Proteja rotas de API** com verificações de autenticação e permissões
+
+### Trabalhando com Estado Compartilhado (Preço Crypto)
+*   Para acessar o preço atualizado do Bitcoin em qualquer componente do dashboard, use o hook `usePrice()` importado de `@/lib/context/PriceContext`.
 
 ## Padrões de Código
 
@@ -336,17 +341,21 @@ Siga estas práticas para o controle de versão:
 Esta seção documenta problemas identificados que requerem atenção ou soluções que dependem de outras partes do sistema (como o backend).
 
 1.  **Edição de Grupo - Carregamento Incompleto de Dados:**
-    *   **Problema:** Ao clicar em "Editar" em um grupo na seção de administração, o modal carrega corretamente o nome do grupo, mas não pré-seleciona a "Empresa" associada nem marca as checkboxes correspondentes às "Telas Permitidas", mesmo que esses dados existam no banco de dados.
-    *   **Diagnóstico:** Após extensa depuração e comparação com a funcionalidade de edição de usuário (que funciona corretamente), a causa raiz foi identificada na API do backend. A API responsável por fornecer a lista inicial de grupos (provavelmente `GET /api/admin/groups`) retorna objetos de grupo incompletos, omitindo os campos `empresa_id` e `telas_permitidas` (selecionando apenas `id` e `nome`, por exemplo). O código frontend em `GroupSection.tsx` foi ajustado para usar os dados da lista inicial (espelhando a edição de usuário) e está pronto para exibir os dados completos assim que forem fornecidos.
-    *   **Solução Pendente (Backend):** É necessário modificar a API do backend (o handler para `GET /api/admin/groups`) para que a consulta SQL na tabela `grupos` inclua as colunas `empresa_id` e `telas_permitidas` nos resultados retornados para o frontend.
+    *   **Problema:** Ao editar um grupo (`/admin/grupos`), o modal não pré-seleciona a "Empresa" associada nem marca as "Telas Permitidas".
+    *   **Diagnóstico:** A API `GET /api/admin/groups` (ou similar) que busca a lista inicial de grupos não está retornando os campos `empresa_id` e `telas_permitidas`. O frontend (`GroupSection.tsx`) está preparado para recebê-los.
+    *   **Solução Pendente (Backend):** Modificar a API de listagem de grupos no backend para incluir `empresa_id` e `telas_permitidas` na consulta e na resposta.
 
 2.  **Erros de Tipo com React Hook Form / Zod:**
-    *   **Problema:** Ocasionalmente, ocorrem erros de tipo complexos na integração entre `react-hook-form`, `zod` e os componentes de UI, especialmente relacionados à prop `control` e à função `handleSubmit`.
-    *   **Solução Temporária (Pragmática):** Em vários locais (como nos modais de usuário e grupo), comentários `// @ts-ignore` foram adicionados para suprimir esses erros de lint e permitir o desenvolvimento. Uma investigação mais aprofundada das tipagens pode ser necessária no futuro, mas não é bloqueante no momento.
+    *   **Problema:** Ocasionalmente, ocorrem erros de tipo complexos na integração entre `react-hook-form`, `zod` e componentes de UI (shadcn/ui), especialmente em formulários de modais (usuários, grupos).
+    *   **Solução Temporária (Pragmática):** Comentários `// @ts-ignore` foram aplicados para suprimir esses erros e permitir o desenvolvimento. Uma revisão futura das tipagens pode ser necessária.
 
 3.  **Configuração de Imagens Externas (Next.js):**
-    *   **Problema:** Ao tentar exibir imagens de fontes externas (ex: ícones de criptomoedas) usando `<Image>` do Next.js, ocorreu um erro indicando que o hostname não estava configurado.
-    *   **Solução Aplicada:** O hostname `cryptoicons.org` foi adicionado à configuração `images.remotePatterns` no arquivo `next.config.js`. Lembre-se que após modificar `next.config.js`, o servidor de desenvolvimento precisa ser reiniciado.
+    *   **Problema:** Erro `hostname "..." is not configured...` ao usar `<Image>` com fontes externas (ex: `cryptoicons.org`).
+    *   **Solução Aplicada:** O hostname foi adicionado a `images.remotePatterns` em `next.config.js`. Lembre-se de reiniciar o servidor de dev após modificar `next.config.js`.
+
+4.  **Cache da API CoinGecko na Vercel (Resolvido):**
+    *   **Problema Anterio:** O preço do Bitcoin buscado da CoinGecko não atualizava na Vercel, exceto após um novo deploy.
+    *   **Solução Aplicada:** Foi criada uma API route intermediária (`/api/preco`) que usa o cache `fetch` do Next.js com `revalidate: 60` para garantir a atualização periódica no servidor.
 
 ## Contribuições
 

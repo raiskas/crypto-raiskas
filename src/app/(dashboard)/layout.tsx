@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import "../globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { DashboardHeader } from "@/components/layouts/dashboard-header";
+import { PriceProvider } from '@/lib/context/PriceContext';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,13 +20,15 @@ export default function DashboardLayout({
 }) {
   return (
     <AuthProvider requireAuth={true}>
-      <div className="flex min-h-screen flex-col">
-        <DashboardHeader />
-        <main className="flex-1 p-4 pt-6 md:p-6">
-          {children}
-        </main>
-        <Toaster />
-      </div>
+      <PriceProvider>
+        <div className="flex min-h-screen flex-col">
+          <DashboardHeader />
+          <main className="flex-1 p-4 pt-6 md:p-6">
+            {children}
+          </main>
+          <Toaster />
+        </div>
+      </PriceProvider>
     </AuthProvider>
   );
 } 
