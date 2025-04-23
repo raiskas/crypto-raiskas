@@ -11,102 +11,66 @@ interface TopMoeda {
   market_cap: number;
 }
 
-// Cache simples em memória para reduzir chamadas à API
-const CACHE_DURATION = 60 * 1000; // 1 minuto em milissegundos
-interface CacheItem {
-  timestamp: number;
-  data: any;
-}
-
-const apiCache: Record<string, CacheItem> = {};
-
-// Função auxiliar para buscar com cache
-async function fetchWithCache(url: string, options?: any) {
-  // Verificar se os dados estão em cache e são válidos
-  if (apiCache[url]) {
-    const now = Date.now();
-    if (now - apiCache[url].timestamp < CACHE_DURATION) {
-      console.log(`[API:top-moedas] Usando dados em cache para ${url}`);
-      return apiCache[url].data;
-    }
-  }
-
-  // Se não estiver em cache ou expirou, buscar novos dados
-  console.log(`[API:top-moedas] Buscando dados de ${url}`);
-  
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Accept': 'application/json',
-        ...(options?.headers || {})
-      },
-      timeout: 10000
-    });
-    
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`Erro na requisição: ${response.status} - ${text}`);
-    }
-    
-    const data = await response.json();
-    
-    // Armazenar em cache
-    apiCache[url] = {
-      timestamp: Date.now(),
-      data
-    };
-    
-    return data;
-  } catch (error) {
-    console.error(`[API:top-moedas] Erro ao buscar ${url}:`, error);
-    throw error;
-  }
-}
+// Tempo de revalidação do cache (igual ao /api/preco)
+const REVALIDATE_TIME = 60; 
 
 // Endpoint para buscar as top 10 criptomoedas
 export async function GET(request: NextRequest) {
+  console.log('[API:top-moedas] Recebendo requisição para listar top moedas');
+  const coingeckoUrl = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false&locale=en';
+  
   try {
-    console.log('[API:top-moedas] Recebendo requisição para listar top moedas');
+    console.log(`[API:top-moedas] Buscando dados de: ${coingeckoUrl}`);
     
-    try {
-      // Buscar direto na API do CoinGecko em vez da CoinCap
-      console.log('[API:top-moedas] Buscando no CoinGecko');
-      
-      const geckoResponse = await fetchWithCache(
-        'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false&locale=en'
-      );
-      
-      if (!Array.isArray(geckoResponse)) {
-        throw new Error('Formato de resposta inesperado');
-      }
-      
-      // Formatar para o padrão esperado pelo frontend
-      const moedas: TopMoeda[] = geckoResponse.map((coin: any) => ({
-        id: coin.id,
-        symbol: coin.symbol,
-        name: coin.name,
-        image: coin.image || "",
-        current_price: coin.current_price || 0,
-        price_change_percentage_24h: coin.price_change_percentage_24h || 0,
-        market_cap: coin.market_cap || 0
-      }));
-      
-      console.log('[API:top-moedas] Retornando resultado da busca');
-      return NextResponse.json(moedas);
-      
-    } catch (apiError: any) {
-      console.error('[API:top-moedas] Erro ao buscar moedas:', apiError);
-      return NextResponse.json(
-        { error: "Não foi possível buscar dados de criptomoedas no momento. Tente novamente mais tarde." },
-        { status: 503 }
-      );
+    // Usar fetch diretamente com revalidate do Next.js
+    const response = await fetch(coingeckoUrl, {
+      headers: {
+        'Accept': 'application/json',
+      },
+      next: { 
+        revalidate: REVALIDATE_TIME 
+      } // Cache gerenciado pelo Next.js/Vercel
+    });
+    
+    console.log(`[API:top-moedas] Resposta da CoinGecko recebida. Status: ${response.status}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[API:top-moedas] Erro da CoinGecko API: ${response.status} - ${errorText}`);
+      // Retornar um erro mais específico se possível, mas manter genérico para o usuário
+      throw new Error(`Falha ao buscar dados da CoinGecko: ${response.status}`); 
     }
-  } catch (error: any) {
-    console.error('[API:top-moedas] Erro ao buscar moedas:', error);
+    
+    const geckoResponse = await response.json();
+    console.log('[API:top-moedas] Dados da CoinGecko processados.');
+
+    if (!Array.isArray(geckoResponse)) {
+      console.error('[API:top-moedas] Formato de resposta inesperado da CoinGecko:', geckoResponse);
+      throw new Error('Formato de resposta inesperado da CoinGecko API');
+    }
+    
+    // Formatar para o padrão esperado pelo frontend (manter esta lógica)
+    const moedas: TopMoeda[] = geckoResponse.map((coin: any) => ({
+      id: coin.id,
+      symbol: coin.symbol,
+      name: coin.name,
+      image: coin.image || "", // Garantir que image seja sempre string
+      current_price: coin.current_price ?? 0, // Usar ?? para tratar null/undefined
+      price_change_percentage_24h: coin.price_change_percentage_24h ?? 0,
+      market_cap: coin.market_cap ?? 0
+    }));
+    
+    console.log('[API:top-moedas] Retornando ${moedas.length} moedas formatadas.');
+    return NextResponse.json(moedas);
+      
+  } catch (error: unknown) {
+    console.error('[API:top-moedas] Exceção ao buscar moedas:', error);
+    const errorMessage = error instanceof Error ? error.message : "Erro interno ao buscar top moedas.";
+    // Considerar retornar um status 503 (Service Unavailable) se o erro for da API externa
+    // Ou manter 500 para erro interno
     return NextResponse.json(
-      { error: error.message || "Erro interno do servidor" },
-      { status: 500 }
+      { error: "Não foi possível buscar dados de criptomoedas no momento." }, 
+      { status: 503 } // Indica que o problema pode ser externo
     );
   }
 } 
