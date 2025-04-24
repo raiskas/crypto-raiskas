@@ -4,6 +4,7 @@
   "description": "Aplicativo de controle Crypto Raiskas",
   "start_url": "/home",
   "display": "standalone",
+  "scope": "/",
   "background_color": "#0A0F1E",
   "theme_color": "#FAFAFA",
   "icons": [
