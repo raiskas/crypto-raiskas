@@ -32,6 +32,7 @@ import { OperacaoModal } from "@/components/crypto/OperacaoModal";
 import { toast } from "sonner";
 import { getSupabase } from "@/lib/supabase/client";
 import { usePrice } from '@/lib/context/PriceContext';
+import { MarketDataMap, FullCoinData } from "@/lib/coingecko";
 
 // Tipo para as operações de cripto
 interface Operacao {
@@ -63,6 +64,11 @@ interface TopMoeda {
   market_cap: number;
 }
 
+// <<< DEFINIR CHAVES ORDENÁVEIS >>>
+type SortableColumn = 'data_operacao' | 'nome' | 'quantidade' | 'valor_total' | 'valorAtualizado' | 'lucro' | 'percentual';
+type SortDirection = 'asc' | 'desc';
+// <<< FIM DEFINIÇÃO CHAVES >>>
+
 export default function CryptoPage() {
   const [operacoes, setOperacoes] = useState<Operacao[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,20 +81,27 @@ export default function CryptoPage() {
   const [filtro, setFiltro] = useState("");
   const [mounted, setMounted] = useState(false);
   const [topMoedas, setTopMoedas] = useState<TopMoeda[]>([]);
-  const [loadingTopMoedas, setLoadingTopMoedas] = useState(false);
-  const [errorTopMoedas, setErrorTopMoedas] = useState<string | null>(null);
+  const [loadingMarketData, setLoadingMarketData] = useState<boolean>(false);
+  const [errorMarketData, setErrorMarketData] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingOperation, setEditingOperation] = useState<Operacao | null>(null);
   const [currentUserGrupoId, setCurrentUserGrupoId] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
 
-  // <<< Obter dados do preço do Bitcoin do contexto
+  // <<< Obter o MAPA de preços do contexto
   const { 
-    price: btcPrice, 
-    isLoading: isLoadingBtcPrice, 
-    error: errorBtcPrice 
+    prices, 
+    isLoading: isLoadingPrices, // Renomear para clareza
+    error: errorPrices // Renomear para clareza
   } = usePrice();
+
+  // <<< ATUALIZAR ESTADO DE ORDENAÇÃO >>>
+  const [sortConfig, setSortConfig] = useState<{ key: SortableColumn | null, direction: SortDirection }>({ 
+    key: 'data_operacao', // Coluna inicial
+    direction: 'desc' 
+  });
+  // <<< FIM ATUALIZAÇÃO ESTADO >>>
 
   // LOG INICIAL PARA DEBUG
   console.log("[CryptoPage] Renderizando...", { 
@@ -194,92 +207,149 @@ export default function CryptoPage() {
     }
   };
 
-  // Função de carregamento de dados memoizada - sem dependência em mounted
+  // <<< ENVOLVER FUNÇÕES EM useCallback >>>
+  const getPrecoAtual = useCallback((moedaId: string): number => {
+    const moeda = topMoedas.find(m => m.id === moedaId);
+    return moeda ? moeda.current_price : 0;
+  }, [topMoedas]); // Dependência: topMoedas
+
+  const calcularValorAtualizado = useCallback((op: Operacao): number => {
+    const precoAtual = getPrecoAtual(op.moeda_id);
+    return op.quantidade * precoAtual;
+  }, [getPrecoAtual]); // Dependência: getPrecoAtual (memoizada)
+
+  const calcularLucroOuPrejuizo = useCallback((op: Operacao): {valor: number, percentual: number} => {
+    const valorAtualizado = calcularValorAtualizado(op);
+    let lucro = 0;
+    let percentual = 0;
+    
+    if (op.tipo === "compra") {
+      lucro = valorAtualizado - op.valor_total;
+      percentual = op.valor_total > 0 ? (lucro / op.valor_total) * 100 : 0;
+    } else {
+      const operacoesAnteriores = operacoes // <<< Acessa estado operacoes
+        .filter(o => o.moeda_id === op.moeda_id && o.tipo === "compra" && new Date(o.data_operacao) <= new Date(op.data_operacao))
+        .sort((a, b) => new Date(a.data_operacao).getTime() - new Date(b.data_operacao).getTime());
+      
+      let quantidadeRestante = op.quantidade;
+      let custoTotal = 0;
+      
+      for (const compra of operacoesAnteriores) {
+        if (quantidadeRestante <= 0) break;
+        const quantidadeUsada = Math.min(quantidadeRestante, compra.quantidade);
+        custoTotal += quantidadeUsada * compra.preco_unitario;
+        quantidadeRestante -= quantidadeUsada;
+      }
+      
+      lucro = op.valor_total - custoTotal;
+      percentual = custoTotal > 0 ? (lucro / custoTotal) * 100 : 0;
+    }
+    
+    return { valor: lucro, percentual };
+  // Dependências: calcularValorAtualizado (memoizada) e operacoes (estado)
+  }, [calcularValorAtualizado, operacoes]); 
+  // <<< FIM useCallback >>>
+
   const carregarDados = useCallback(async (forceLoading = false) => {
     console.log("[Crypto] Carregando dados da página");
+    if (forceLoading) {
+      setLoading(true);
+      setError(null);
+    }
+    setLoadingMarketData(true); // Inicia loading dos dados de mercado
+    setErrorMarketData(null);
+
+    let fetchedOperacoes: Operacao[] = []; // Armazenar operações buscadas
+
     try {
-      // Define loading se solicitado
-      if (forceLoading) {
-        setLoading(true);
-        setError(null);
-      }
-      
-      // Buscar dados diretamente - sem verificação de mounted
-      const [topMoedasResponse, operacoesResponse] = await Promise.all([
-        fetch("/api/crypto/top-moedas", {
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
-        }),
-        fetch("/api/crypto/operacoes", {
-          method: "GET",
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          },
-          cache: 'no-store'
-        })
-      ]);
-      
-      // Processar resposta das top moedas
-      if (topMoedasResponse.status === 429) {
-        console.error("[Crypto] Limite de requisições excedido para top moedas");
-        setErrorTopMoedas("Limite de requisições excedido. Tente novamente em alguns minutos.");
-      } else if (!topMoedasResponse.ok) {
-        console.error("[Crypto] Erro ao buscar top moedas:", topMoedasResponse.statusText);
-        setErrorTopMoedas("Erro ao buscar dados de criptomoedas.");
-      } else {
-        // Resposta OK, processar dados
-        const topMoedasData = await topMoedasResponse.json();
-        setTopMoedas(topMoedasData || []);
-        setErrorTopMoedas(null);
-      }
-      
-      // Processar resposta das operações
+      // 1. Buscar Operações Primeiro
+      console.log("[Crypto] Buscando operações...");
+      const operacoesResponse = await fetch("/api/crypto/operacoes", {
+        method: "GET",
+        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
+        cache: 'no-store'
+      });
+
       if (!operacoesResponse.ok) {
-        console.error(`[Crypto] Erro ao buscar operações: ${operacoesResponse.status} - ${operacoesResponse.statusText || 'Erro desconhecido'}`);
-        
-        // Tentar obter detalhes do erro
-        let mensagemErro = "Erro ao buscar operações. Verifique se a tabela crypto_operacoes existe no banco de dados.";
+        console.error(`[Crypto] Erro ao buscar operações: ${operacoesResponse.status}`);
+        let mensagemErro = "Erro ao buscar operações.";
         try {
           const errorData = await operacoesResponse.json();
-          console.error("[Crypto] Detalhes do erro:", errorData);
-          if (errorData.error) {
-            mensagemErro = `Erro: ${errorData.error}`;
-          }
-        } catch (e) {
-          console.error("[Crypto] Erro ao ler resposta de erro:", e);
-        }
-        
+          mensagemErro = errorData.error || mensagemErro;
+        } catch { /* ignora */ }
         setError(mensagemErro);
         setOperacoes([]);
+        // Não continuar se operações falharem
+        setLoading(false);
+        setLoadingMarketData(false);
+        return; 
       } else {
-        // Resposta OK, processar dados
         const operacoesData = await operacoesResponse.json();
-        
-        const operacoesApi = operacoesData || [];
-        if (!Array.isArray(operacoesApi)) {
-          console.error("[Crypto] Erro: A resposta da API não é um array como esperado.", operacoesApi);
-          setError("Formato inesperado da resposta da API.");
-          setOperacoes([]);
-        } else if (operacoesApi.length === 0) {
-          console.log("[Crypto] Nenhuma operação encontrada");
-          setError("Nenhuma operação encontrada. Verifique se você já cadastrou alguma operação.");
-        } else {
-          console.log(`[Crypto] ${operacoesApi.length} operações carregadas`);
-          setError(null);
-        }
-        
-        setOperacoes(operacoesApi);
+        fetchedOperacoes = Array.isArray(operacoesData) ? operacoesData : [];
+        console.log(`[Crypto] ${fetchedOperacoes.length} operações carregadas`);
+        setOperacoes(fetchedOperacoes);
+        setError(null); // Limpa erro principal se operações carregarem
       }
+
+      // 2. Extrair IDs Únicos das Operações
+      const idsDasOperacoes = [...new Set(fetchedOperacoes.map(op => op.moeda_id))];
+      console.log("[Crypto] IDs únicos das operações:", idsDasOperacoes);
+
+      if (idsDasOperacoes.length === 0) {
+        console.log("[Crypto] Nenhuma operação encontrada, não há IDs para buscar market data.");
+        setTopMoedas([]); // Limpar dados de moedas se não há operações
+        setLoadingMarketData(false);
+        // Definir loading principal como false aqui também
+        if (forceLoading) setLoading(false);
+        return; // Termina se não há IDs
+      }
+
+      // 3. Buscar Market Data para os IDs das Operações
+      const marketDataUrl = `/api/crypto/market-data?ids=${idsDasOperacoes.join(',')}`;
+      console.log("[Crypto] Buscando Market Data de:", marketDataUrl);
+      const marketDataResponse = await fetch(marketDataUrl);
+
+      if (marketDataResponse.status === 429) {
+        setErrorMarketData("Limite de requisições excedido. Tente novamente mais tarde.");
+        setTopMoedas([]);
+      } else if (!marketDataResponse.ok) {
+        const errorData = await marketDataResponse.json().catch(() => ({}));
+        console.error("[Crypto] Erro ao buscar market-data:", marketDataResponse.status, errorData);
+        setErrorMarketData(`Erro ${marketDataResponse.status} ao buscar dados das moedas.`);
+        setTopMoedas([]);
+      } else {
+        const marketDataMap: MarketDataMap = await marketDataResponse.json();
+        console.log("[Crypto] MarketDataMap recebido:", Object.keys(marketDataMap).length);
+
+        // Transformar o mapa em array TopMoeda para compatibilidade
+        const marketDataArray = idsDasOperacoes.map(id => {
+          const coinData: FullCoinData | null = marketDataMap[id];
+          if (coinData) {
+            return {
+              id: coinData.id,
+              symbol: coinData.symbol,
+              name: coinData.name,
+              image: coinData.image,
+              current_price: coinData.current_price,
+              price_change_percentage_24h: coinData.price_change_percentage_24h ?? 0,
+              market_cap: coinData.market_cap,
+            };
+          }
+          console.warn(`[Crypto] Moeda com ID "${id}" não encontrada no marketDataMap (esperado para cálculo).`);
+          return null;
+        }).filter((moeda): moeda is TopMoeda => moeda !== null);
+        
+        console.log("[Crypto] Dados de mercado processados para array:", marketDataArray.length);
+        setTopMoedas(marketDataArray); // Atualiza o estado usado por getPrecoAtual
+        setErrorMarketData(null);
+      }
+
     } catch (err) {
-      console.error("[Crypto] Erro ao carregar dados:", err);
-      setError("Erro ao carregar dados. Por favor, tente novamente mais tarde.");
+      console.error("[Crypto] Erro geral ao carregar dados:", err);
+      setError("Erro inesperado ao carregar dados."); // Erro genérico
     } finally {
-      // Resetar estados de loading
-      setLoading(false);
-      setLoadingTopMoedas(false);
+      setLoading(false); // Finaliza loading principal
+      setLoadingMarketData(false); // Finaliza loading de market data
     }
   }, []);
 
@@ -303,6 +373,7 @@ export default function CryptoPage() {
         if (isMounted) {
           setError("Erro ao carregar dados. Por favor, tente novamente mais tarde.");
           setLoading(false);
+          setLoadingMarketData(false);
         }
       }
     };
@@ -361,19 +432,80 @@ export default function CryptoPage() {
     };
   }, [mounted, topMoedas.length, operacoes.length, carregarDados]);
 
+  // <<< GENERALIZAR FUNÇÃO DE MUDAR ORDENAÇÃO >>>
+  const requestSort = (key: SortableColumn) => {
+    let direction: SortDirection = 'asc'; // Padrão ascendente para strings
+    if (key !== 'nome') { // Padrão descendente para números/datas
+      direction = 'desc';
+    }
+    // Se clicou na mesma coluna, inverte a direção
+    if (sortConfig.key === key) {
+      direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+    }
+    setSortConfig({ key, direction });
+    console.log(`[CryptoPage] Ordenação alterada para: ${key} ${direction}`);
+  };
+  // <<< FIM GENERALIZAÇÃO FUNÇÃO >>>
+
   // Filtrar operações com base no tipo e texto de busca
   const operacoesFiltradas = operacoes.filter((op) => {
-    // Filtrar por tipo (compra/venda/todas)
     const tipoMatch = activeTab === "todas" || op.tipo === activeTab;
-    
-    // Filtrar por texto (nome, símbolo ou exchange)
-    const textMatch = filtro === "" || 
-      op.nome.toLowerCase().includes(filtro.toLowerCase()) ||
-      op.simbolo.toLowerCase().includes(filtro.toLowerCase()) ||
-      op.exchange.toLowerCase().includes(filtro.toLowerCase());
+
+    // Sanitizar o termo de busca
+    const filtroLimpo = filtro.trim().toLowerCase();
+
+    // Filtrar por texto (nome, símbolo ou exchange), verificando se campos existem
+    const textMatch = filtroLimpo === "" || 
+      (op.nome && op.nome.toLowerCase().includes(filtroLimpo)) ||
+      (op.simbolo && op.simbolo.toLowerCase().includes(filtroLimpo)) ||
+      (op.exchange && op.exchange.toLowerCase().includes(filtroLimpo));
     
     return tipoMatch && textMatch;
   });
+
+  // <<< PRÉ-CALCULAR VALORES PARA ORDENAÇÃO >>>
+  const operacoesParaOrdenar = operacoesFiltradas.map(op => {
+    const valorAtualizado = calcularValorAtualizado(op);
+    const { valor: lucro, percentual } = calcularLucroOuPrejuizo(op);
+    return {
+      ...op, // Inclui todos os campos originais da operação
+      valorAtualizado, 
+      lucro,
+      percentual
+    };
+  });
+  // <<< FIM PRÉ-CÁLCULO >>>
+
+  // <<< EXPANDIR LÓGICA DE ORDENAÇÃO >>>
+  const operacoesOrdenadas = [...operacoesParaOrdenar].sort((a, b) => {
+    if (!sortConfig.key) return 0; // Não ordenar se a chave for null
+
+    const key = sortConfig.key;
+    let comparison = 0;
+
+    // Lógica de comparação baseada na chave
+    switch (key) {
+      case 'data_operacao':
+        comparison = new Date(a.data_operacao).getTime() - new Date(b.data_operacao).getTime();
+        break;
+      case 'nome':
+        comparison = a.nome.localeCompare(b.nome);
+        break;
+      case 'quantidade':
+      case 'valor_total':
+      case 'valorAtualizado':
+      case 'lucro':
+      case 'percentual':
+        comparison = a[key] - b[key];
+        break;
+      default:
+        return 0;
+    }
+
+    // Aplicar direção
+    return sortConfig.direction === 'asc' ? comparison : comparison * -1;
+  });
+  // <<< FIM EXPANSÃO LÓGICA >>>
 
   // Calcular totais de investimento
   const calcularTotais = () => {
@@ -415,53 +547,6 @@ export default function CryptoPage() {
       console.error("Erro ao formatar data (string split):", dataStr, e);
       return dataStr; // Retorna original em caso de erro
     }
-  };
-
-  // Obter o preço atual de uma moeda a partir do ID
-  const getPrecoAtual = (moedaId: string): number => {
-    const moeda = topMoedas.find(m => m.id === moedaId);
-    return moeda?.current_price || 0;
-  };
-
-  // Calcular valor total atualizado
-  const calcularValorAtualizado = (op: Operacao): number => {
-    const precoAtual = getPrecoAtual(op.moeda_id);
-    return op.quantidade * precoAtual;
-  };
-
-  // Calcular lucro/prejuízo e sua porcentagem
-  const calcularLucroOuPrejuizo = (op: Operacao): {valor: number, percentual: number} => {
-    const valorAtualizado = calcularValorAtualizado(op);
-    let lucro = 0;
-    let percentual = 0;
-    
-    if (op.tipo === "compra") {
-      // Para compras: lucro não realizado = valor atual - valor de compra
-      lucro = valorAtualizado - op.valor_total;
-      percentual = op.valor_total > 0 ? (lucro / op.valor_total) * 100 : 0;
-    } else {
-      // Para vendas: lucro realizado = valor de venda - custo médio das moedas
-      // Encontrar o custo médio das moedas vendidas usando FIFO
-      const operacoesAnteriores = operacoes
-        .filter(o => o.moeda_id === op.moeda_id && o.tipo === "compra" && new Date(o.data_operacao) <= new Date(op.data_operacao))
-        .sort((a, b) => new Date(a.data_operacao).getTime() - new Date(b.data_operacao).getTime());
-      
-      let quantidadeRestante = op.quantidade;
-      let custoTotal = 0;
-      
-      for (const compra of operacoesAnteriores) {
-        if (quantidadeRestante <= 0) break;
-        
-        const quantidadeUsada = Math.min(quantidadeRestante, compra.quantidade);
-        custoTotal += quantidadeUsada * compra.preco_unitario;
-        quantidadeRestante -= quantidadeUsada;
-      }
-      
-      lucro = op.valor_total - custoTotal;
-      percentual = custoTotal > 0 ? (lucro / custoTotal) * 100 : 0;
-    }
-    
-    return { valor: lucro, percentual };
   };
 
   // Formatar valores monetários
@@ -701,10 +786,21 @@ export default function CryptoPage() {
     ? (totaisPortfolio.lucroTotal / totaisPortfolio.valorTotalInvestido) * 100
     : 0;
 
-  // <<< Formatar preço do Bitcoin
-  const formattedBtcPrice = btcPrice !== null
-    ? btcPrice.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+  // <<< Usar o preço do Bitcoin do MAPA
+  const btcPriceFromContext = prices ? prices['bitcoin'] : null;
+  const formattedBtcPrice = btcPriceFromContext !== null && btcPriceFromContext !== undefined
+    ? btcPriceFromContext.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
     : '---';
+
+  // Função auxiliar para renderizar ícone de ordenação
+  const renderSortArrow = (columnKey: SortableColumn) => {
+    if (sortConfig.key !== columnKey) {
+      return <ArrowUpDown className="ml-2 h-3 w-3 opacity-30" />;
+    }
+    return sortConfig.direction === 'asc' ? 
+      <span className="ml-1">▲</span> : 
+      <span className="ml-1">▼</span>;
+  };
 
   return (
     <div className="w-full px-4 py-6">
@@ -1018,7 +1114,7 @@ export default function CryptoPage() {
             <div className="flex justify-center items-center py-12">
               <p>Carregando operações...</p>
             </div>
-          ) : operacoesFiltradas.length === 0 ? (
+          ) : operacoesOrdenadas.length === 0 ? (
             <div className="flex flex-col justify-center items-center py-12">
               <p className="text-muted-foreground mb-4">Nenhuma operação encontrada</p>
               <Button onClick={novaOperacao}>
@@ -1033,26 +1129,53 @@ export default function CryptoPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Data</TableHead>
+                      <TableHead>
+                        <Button variant="ghost" onClick={() => requestSort('data_operacao')} className="px-2 py-1 h-auto -ml-2">
+                          Data {renderSortArrow('data_operacao')}
+                        </Button>
+                      </TableHead>
                       <TableHead>Tipo</TableHead>
-                      <TableHead>Moeda</TableHead>
-                      <TableHead>Qtde</TableHead>
+                      <TableHead>
+                        <Button variant="ghost" onClick={() => requestSort('nome')} className="px-2 py-1 h-auto -ml-2">
+                          Moeda {renderSortArrow('nome')}
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button variant="ghost" onClick={() => requestSort('quantidade')} className="px-2 py-1 h-auto -ml-2">
+                          Qtde {renderSortArrow('quantidade')}
+                        </Button>
+                      </TableHead>
                       <TableHead>Valor Op.</TableHead>
-                      <TableHead>Total Op.</TableHead>
+                      <TableHead>
+                        <Button variant="ghost" onClick={() => requestSort('valor_total')} className="px-2 py-1 h-auto -ml-2">
+                          Total Op. {renderSortArrow('valor_total')}
+                        </Button>
+                      </TableHead>
                       <TableHead>Valor Atual</TableHead>
-                      <TableHead>Valor Total Atual</TableHead>
-                      <TableHead>Lucro/Prejuízo</TableHead>
-                      <TableHead>%</TableHead>
+                      <TableHead>
+                        <Button variant="ghost" onClick={() => requestSort('valorAtualizado')} className="px-2 py-1 h-auto -ml-2">
+                          Valor Total Atual {renderSortArrow('valorAtualizado')}
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button variant="ghost" onClick={() => requestSort('lucro')} className="px-2 py-1 h-auto -ml-2">
+                          Lucro/Prejuízo {renderSortArrow('lucro')}
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button variant="ghost" onClick={() => requestSort('percentual')} className="px-2 py-1 h-auto -ml-2">
+                          % {renderSortArrow('percentual')}
+                        </Button>
+                      </TableHead>
                       <TableHead>Exchange</TableHead>
                       <TableHead className="text-left">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {operacoesFiltradas.map((op) => {
-                      const precoAtual = getPrecoAtual(op.moeda_id);
-                      const valorAtualizado = calcularValorAtualizado(op);
-                      const { valor: lucroPrejuizo, percentual } = calcularLucroOuPrejuizo(op);
+                    {operacoesOrdenadas.map((op) => {
+                      const { valorAtualizado, lucro: lucroPrejuizo, percentual } = op;
                       const moeda = topMoedas.find(m => m.id === op.moeda_id);
+                      const precoAtual = getPrecoAtual(op.moeda_id);
                       
                       return (
                         <TableRow key={op.id}>
@@ -1077,7 +1200,7 @@ export default function CryptoPage() {
                                     }}
                                   />
                                 </div>
-                                <span>{moeda.name}</span>
+                                <span className="font-medium">{moeda.name}</span>
                               </>
                             ) : (
                               <span>Moeda não encontrada</span>
@@ -1088,14 +1211,10 @@ export default function CryptoPage() {
                           <TableCell>{formatarMoeda(op.valor_total)}</TableCell>
                           <TableCell>{formatarMoeda(precoAtual)}</TableCell>
                           <TableCell>{formatarMoeda(valorAtualizado)}</TableCell>
-                          <TableCell className={cn(
-                            lucroPrejuizo > 0 ? "text-green-600" : lucroPrejuizo < 0 ? "text-red-600" : ""
-                          )}>
+                          <TableCell className={cn(lucroPrejuizo > 0 ? "text-green-600" : lucroPrejuizo < 0 ? "text-red-600" : "")}>
                             {formatarMoeda(lucroPrejuizo)}
                           </TableCell>
-                          <TableCell className={cn(
-                            percentual > 0 ? "text-green-600" : percentual < 0 ? "text-red-600" : ""
-                          )}>
+                          <TableCell className={cn(percentual > 0 ? "text-green-600" : percentual < 0 ? "text-red-600" : "")}>
                             {formatarPercentual(percentual)}
                           </TableCell>
                           <TableCell>{op.exchange}</TableCell>
@@ -1123,14 +1242,12 @@ export default function CryptoPage() {
                 </Table>
               </div>
               
-              {/* Versão para mobile */}
+              {/* Versão para mobile (usa a mesma lista `operacoesOrdenadas`) */}
               <div className="md:hidden">
-                {operacoesFiltradas.map((op) => {
-                  const precoAtual = getPrecoAtual(op.moeda_id);
-                  const valorAtualizado = calcularValorAtualizado(op);
-                  const { valor: lucroPrejuizo, percentual } = calcularLucroOuPrejuizo(op);
+                {operacoesOrdenadas.map((op) => {
+                  const { valorAtualizado, lucro: lucroPrejuizo, percentual } = op;
                   const moeda = topMoedas.find(m => m.id === op.moeda_id);
-                  
+                  const precoAtual = getPrecoAtual(op.moeda_id);
                   return (
                     <div key={op.id} className="border-t border-border p-4">
                       <div className="flex justify-between items-start mb-2">
@@ -1217,25 +1334,6 @@ export default function CryptoPage() {
         />
       )}
 
-      {/* Card do Preço do Bitcoin */}
-      <Card className="w-full md:w-auto md:max-w-sm">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Preço Bitcoin (USD)</CardTitle>
-          <Bitcoin className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          {isLoadingBtcPrice ? (
-            <div className="text-2xl font-bold animate-pulse">Carregando...</div>
-          ) : errorBtcPrice ? (
-            <div className="text-sm font-medium text-destructive">{errorBtcPrice}</div>
-          ) : (
-            <div className="text-2xl font-bold">{formattedBtcPrice}</div>
-          )}
-          <p className="text-xs text-muted-foreground">
-            Atualizado via PriceProvider
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 } 

@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useRouter } from "next/navigation";
+import { MarketDataMap, FullCoinData } from "@/lib/coingecko";
 
 // Tipo para top moedas
 interface TopMoeda {
@@ -111,36 +112,84 @@ export function OperacoesWidget({ compact = false, className }: OperacoesWidgetP
     try {
       setLoading(true);
       setError(null);
+      setOperacoes([]); // Limpar dados antigos
+      setTopMoedas([]);
       
-      const [topMoedasResponse, operacoesResponse] = await Promise.all([
-        fetch("/api/crypto/top-moedas", {
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
-        }),
-        fetch("/api/crypto/operacoes", {
-          method: "GET",
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
-        })
-      ]);
+      // 1. Buscar Operações
+      console.log("[OperacoesWidget] Buscando operações...");
+      const operacoesResponse = await fetch("/api/crypto/operacoes", {
+        method: "GET",
+        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+      });
       
-      if (!topMoedasResponse.ok || !operacoesResponse.ok) {
-        throw new Error("Erro ao carregar dados de criptomoedas");
+      if (!operacoesResponse.ok) {
+        throw new Error(`Erro ${operacoesResponse.status} ao buscar operações`);
       }
       
-      const topMoedasData = await topMoedasResponse.json();
       const operacoesData = await operacoesResponse.json();
+      // A API /operacoes parece retornar { operacoes: [] }
+      const fetchedOperacoes = operacoesData?.operacoes || []; 
       
-      setTopMoedas(topMoedasData || []);
-      setOperacoes(operacoesData.operacoes || []);
+      if (!Array.isArray(fetchedOperacoes)) {
+          console.error("[OperacoesWidget] Formato inesperado de operações:", fetchedOperacoes);
+          throw new Error("Formato inválido de operações recebido.");
+      }
+      console.log(`[OperacoesWidget] ${fetchedOperacoes.length} operações carregadas.`);
+      setOperacoes(fetchedOperacoes); // Define as operações
+
+      // 2. Extrair IDs Únicos das Operações Carregadas
+      const idsDasOperacoes = [...new Set(fetchedOperacoes.map(op => op.moeda_id))];
+      console.log("[OperacoesWidget] IDs únicos das operações:", idsDasOperacoes);
+
+      if (idsDasOperacoes.length === 0) {
+        console.log("[OperacoesWidget] Nenhuma operação, não precisa buscar market data.");
+        setLoading(false);
+        return; 
+      }
+
+      // 3. Buscar Market Data
+      const marketDataUrl = `/api/crypto/market-data?ids=${idsDasOperacoes.join(',')}`;
+      console.log("[OperacoesWidget] Buscando Market Data de:", marketDataUrl);
+      const marketDataResponse = await fetch(marketDataUrl);
+
+      if (!marketDataResponse.ok) {
+         const errorText = await marketDataResponse.text().catch(() => "Erro desconhecido");
+         console.error(`[OperacoesWidget] Erro ${marketDataResponse.status} ao buscar market data: ${errorText}`);
+         // Definir um erro geral, ou um específico para preços?
+         // Por simplicidade, usaremos o erro geral do widget.
+         throw new Error(`Erro ${marketDataResponse.status} ao buscar preços das moedas.`);
+      }
+      
+      const marketDataMap: MarketDataMap = await marketDataResponse.json();
+      console.log("[OperacoesWidget] MarketDataMap recebido:", Object.keys(marketDataMap).length);
+
+      // Transformar e armazenar no estado topMoedas
+      const marketDataArray = idsDasOperacoes.map(id => {
+        const coinData: FullCoinData | null = marketDataMap[id];
+        if (coinData) {
+          return { // Mapear para a interface TopMoeda existente no widget
+            id: coinData.id,
+            symbol: coinData.symbol,
+            name: coinData.name,
+            image: coinData.image,
+            current_price: coinData.current_price,
+            price_change_percentage_24h: coinData.price_change_percentage_24h ?? 0,
+            market_cap: coinData.market_cap,
+          };
+        }
+        console.warn(`[OperacoesWidget] Moeda com ID "${id}" não encontrada no marketDataMap.`);
+        return null;
+      }).filter((moeda): moeda is TopMoeda => moeda !== null);
+
+      setTopMoedas(marketDataArray); // Armazena os dados de mercado para uso em getPrecoAtual
+      setError(null); // Limpa erro se tudo correu bem
       
     } catch (err) {
-      console.error("Erro ao carregar operações:", err);
-      setError("Erro ao carregar dados de operações");
+      console.error("[OperacoesWidget] Erro ao carregar dados:", err);
+      const errorMessage = err instanceof Error ? err.message : "Erro ao carregar dados de operações";
+      setError(errorMessage);
+      setOperacoes([]); // Limpar em caso de erro
+      setTopMoedas([]);
     } finally {
       setLoading(false);
     }

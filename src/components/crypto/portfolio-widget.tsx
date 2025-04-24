@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { TrendingUp, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MarketDataMap, FullCoinData } from "@/lib/coingecko";
 
 // Tipo para top moedas
 interface TopMoeda {
@@ -84,37 +85,81 @@ export function PortfolioWidget({ compact = false, className }: PortfolioWidgetP
     try {
       setLoading(true);
       setError(null);
+      setTopMoedas([]);
+      setPortfolio([]);
       
-      const [topMoedasResponse, operacoesResponse] = await Promise.all([
-        fetch("/api/crypto/top-moedas", {
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
-        }),
-        fetch("/api/crypto/operacoes", {
-          method: "GET",
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
-        })
-      ]);
-      
-      if (!topMoedasResponse.ok || !operacoesResponse.ok) {
-        throw new Error("Erro ao carregar dados de criptomoedas");
+      // 1. Buscar Operações
+      console.log("[PortfolioWidget] Buscando operações...");
+      const operacoesResponse = await fetch("/api/crypto/operacoes", {
+        method: "GET",
+        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+      });
+
+      if (!operacoesResponse.ok) {
+        throw new Error(`Erro ${operacoesResponse.status} ao buscar operações`);
       }
       
-      const topMoedasData = await topMoedasResponse.json();
       const operacoesData = await operacoesResponse.json();
+      const fetchedOperacoes = operacoesData?.operacoes || [];
       
-      setTopMoedas(topMoedasData || []);
+      if (!Array.isArray(fetchedOperacoes)) {
+          console.error("[PortfolioWidget] Formato inesperado de operações:", fetchedOperacoes);
+          throw new Error("Formato inválido de operações recebido.");
+      }
+      console.log(`[PortfolioWidget] ${fetchedOperacoes.length} operações carregadas.`);
+
+      // 2. Extrair IDs Únicos
+      const idsDasOperacoes = [...new Set(fetchedOperacoes.map(op => op.moeda_id))];
+      console.log("[PortfolioWidget] IDs únicos das operações:", idsDasOperacoes);
+
+      if (idsDasOperacoes.length === 0) {
+        console.log("[PortfolioWidget] Nenhuma operação, nada para exibir.");
+        setTotaisPortfolio({ valorTotalInvestido: 0, valorTotalAtualizado: 0, lucroTotal: 0 });
+        setPercentualTotalPortfolio(0);
+        setLoading(false);
+        return; 
+      }
+
+      // 3. Buscar Market Data
+      const marketDataUrl = `/api/crypto/market-data?ids=${idsDasOperacoes.join(',')}`;
+      console.log("[PortfolioWidget] Buscando Market Data de:", marketDataUrl);
+      const marketDataResponse = await fetch(marketDataUrl);
+
+      if (!marketDataResponse.ok) {
+         // Tratar erro específico de market data (ex: 429)
+         const errorText = await marketDataResponse.text().catch(() => "Erro desconhecido");
+         console.error(`[PortfolioWidget] Erro ${marketDataResponse.status} ao buscar market data: ${errorText}`);
+         throw new Error(`Erro ${marketDataResponse.status} ao buscar preços das moedas.`);
+      }
       
-      // Calcular portfólio
-      const portfolioCalculado = calcularPortfolio(operacoesData.operacoes || [], topMoedasData);
+      const marketDataMap: MarketDataMap = await marketDataResponse.json();
+      console.log("[PortfolioWidget] MarketDataMap recebido:", Object.keys(marketDataMap).length);
+
+      // Transformar o mapa em array TopMoeda para compatibilidade
+      const marketDataArray = idsDasOperacoes.map(id => {
+        const coinData: FullCoinData | null = marketDataMap[id];
+        if (coinData) {
+          return {
+            id: coinData.id,
+            symbol: coinData.symbol,
+            name: coinData.name,
+            image: coinData.image,
+            current_price: coinData.current_price,
+            price_change_percentage_24h: coinData.price_change_percentage_24h ?? 0,
+            market_cap: coinData.market_cap,
+          };
+        }
+        console.warn(`[PortfolioWidget] Moeda com ID "${id}" não encontrada no marketDataMap.`);
+        return null;
+      }).filter((moeda): moeda is TopMoeda => moeda !== null);
+
+      setTopMoedas(marketDataArray);
+      
+      // 4. Calcular portfólio usando os dados de mercado buscados
+      const portfolioCalculado = calcularPortfolio(fetchedOperacoes, marketDataArray);
       setPortfolio(portfolioCalculado);
       
-      // Calcular totais
+      // 5. Calcular totais (usando o portfólio calculado)
       const totais = portfolioCalculado.reduce(
         (acc, item) => {
           acc.valorTotalInvestido += item.valorTotal;
@@ -135,8 +180,13 @@ export function PortfolioWidget({ compact = false, className }: PortfolioWidgetP
       setPercentualTotalPortfolio(percentual);
       
     } catch (err) {
-      console.error("Erro ao carregar portfólio:", err);
-      setError("Erro ao carregar dados do portfólio");
+      console.error("[PortfolioWidget] Erro ao carregar dados:", err);
+      const errorMessage = err instanceof Error ? err.message : "Erro ao carregar dados do portfólio";
+      setError(errorMessage);
+      setPortfolio([]);
+      setTopMoedas([]);
+      setTotaisPortfolio({ valorTotalInvestido: 0, valorTotalAtualizado: 0, lucroTotal: 0 });
+      setPercentualTotalPortfolio(0);
     } finally {
       setLoading(false);
     }
@@ -149,56 +199,48 @@ export function PortfolioWidget({ compact = false, className }: PortfolioWidgetP
   };
 
   // Calcular portfólio consolidado (agrupado por moeda)
-  const calcularPortfolio = (operacoes: any[], moedas: TopMoeda[]) => {
-    // Criar um mapa para armazenar as informações por moeda
+  const calcularPortfolio = (operacoes: any[], moedas: TopMoeda[]): PortfolioItem[] => {
     const portfolioMap = new Map<string, PortfolioItem>();
     
-    // Processar cada operação
     operacoes.forEach((op) => {
-      const moeda = moedas.find(m => m.id === op.moeda_id);
-      const precoAtual = getPrecoAtual(op.moeda_id, moedas);
+      const moedaInfo = moedas.find(m => m.id === op.moeda_id);
+      const precoAtual = moedaInfo?.current_price || 0;
       
-      // Se a moeda já existe no mapa, atualizar os valores
+      let item: PortfolioItem;
       if (portfolioMap.has(op.moeda_id)) {
-        const item = portfolioMap.get(op.moeda_id)!;
-        
-        // Atualizar quantidade (adicionar para compras, subtrair para vendas)
-        if (op.tipo === "compra") {
-          item.quantidade += op.quantidade;
-          item.valorTotal += op.valor_total;
-        } else {
-          item.quantidade -= op.quantidade;
-        }
-        
-        // Atualizar valores calculados
-        item.valorAtualizado = item.quantidade * precoAtual;
-        item.lucro = item.valorAtualizado - item.valorTotal;
-        item.percentual = item.valorTotal > 0 ? (item.lucro / item.valorTotal) * 100 : 0;
-        
-        portfolioMap.set(op.moeda_id, item);
+         item = portfolioMap.get(op.moeda_id)!;
       } else {
-        // Se a moeda não existe no mapa e for uma compra, adicionar
-        if (op.tipo === "compra") {
-          portfolioMap.set(op.moeda_id, {
-            moeda_id: op.moeda_id,
-            nome: op.nome,
-            simbolo: op.simbolo,
-            quantidade: op.quantidade,
-            valorTotal: op.valor_total,
-            valorAtualizado: op.quantidade * precoAtual,
-            lucro: (op.quantidade * precoAtual) - op.valor_total,
-            percentual: op.valor_total > 0 ? (((op.quantidade * precoAtual) - op.valor_total) / op.valor_total) * 100 : 0,
-            image: moeda?.image
-          });
-        }
+         item = {
+           moeda_id: op.moeda_id,
+           nome: op.nome,
+           simbolo: op.simbolo,
+           quantidade: 0,
+           valorTotal: 0,
+           valorAtualizado: 0,
+           lucro: 0,
+           percentual: 0,
+           image: moedaInfo?.image
+         };
       }
+
+      if (op.tipo === "compra") {
+        item.quantidade += op.quantidade;
+        item.valorTotal += op.valor_total;
+      } else {
+        item.quantidade -= op.quantidade;
+      }
+
+      item.valorAtualizado = item.quantidade * precoAtual;
+      item.lucro = item.valorAtualizado - item.valorTotal;
+      item.percentual = item.valorTotal > 0 ? (item.lucro / item.valorTotal) * 100 : (item.valorAtualizado > 0 ? Infinity : 0);
+
+      portfolioMap.set(op.moeda_id, item);
+      
     });
     
-    // Filtrar portfólio para remover moedas com quantidade zero ou negativa
-    // e converter para array
     return Array.from(portfolioMap.values())
-      .filter(item => item.quantidade > 0)
-      .sort((a, b) => b.valorAtualizado - a.valorAtualizado); // Ordenar por valor atualizado
+      .filter(item => item.quantidade > 0.00000001)
+      .sort((a, b) => b.valorAtualizado - a.valorAtualizado);
   };
 
   useEffect(() => {

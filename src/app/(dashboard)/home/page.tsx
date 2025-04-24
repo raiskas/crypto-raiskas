@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Image from "next/image";
 import { usePrice } from '@/lib/context/PriceContext';
+import { MarketDataMap, FullCoinData } from "@/lib/coingecko";
 
 interface TopMoeda {
   id: string;
@@ -38,15 +39,58 @@ interface Operacao {
   grupo_id?: string;
 }
 
+// Interface para TopMoeda (manter)
+interface TopMoeda { /* ... */ }
+// Interface para Operacao (manter)
+interface Operacao { /* ... */ }
+
+// --- Novas Interfaces para Tipagem ---
+interface PortfolioItem {
+  moeda_id: string;
+  nome: string;
+  simbolo: string;
+  quantidade: number;
+  valorTotal: number; // Usado no reduce
+  valorMedio: number;
+  valorAtualizado: number; // Usado no reduce
+  lucro: number; // Usado no reduce
+  percentual: number;
+  image?: string;
+  custoMedio: number;
+  quantidadeDisponivel: number;
+  lucroRealizado: number
+}
+
+interface TotaisPortfolio {
+  valorTotalInvestido: number;
+  valorTotalAtualizado: number;
+  lucroTotal: number;
+}
+// --- Fim Novas Interfaces ---
+
+// Definir os IDs das Top 10 moedas (ajuste conforme necessário)
+const TOP_10_COIN_IDS = [
+  'bitcoin', 
+  'ethereum', 
+  'tether', 
+  'binancecoin', 
+  'solana', 
+  'usd-coin', 
+  'ripple', 
+  'staked-ether', // steth -> staked-ether (ID correto na CoinGecko)
+  'dogecoin', 
+  'cardano'
+];
+
 export default function HomePage() {
   console.log("[HomePage] Iniciando renderização...");
   const router = useRouter();
   const { user } = useAuth();
   const [loadingPortfolio, setLoadingPortfolio] = useState(true);
-  const [totaisPortfolio, setTotaisPortfolio] = useState({
-    valorTotalInvestido: 0,
-    valorTotalAtualizado: 0,
-    lucroTotal: 0,
+  const [totaisPortfolio, setTotaisPortfolio] = useState<TotaisPortfolio>({ 
+    valorTotalInvestido: 0, 
+    valorTotalAtualizado: 0, 
+    lucroTotal: 0 
   });
   const [percentualTotalPortfolio, setPercentualTotalPortfolio] = useState(0);
   
@@ -55,9 +99,9 @@ export default function HomePage() {
   const [errorTopMoedas, setErrorTopMoedas] = useState<string | null>(null);
   
   const { 
-    price: btcPrice, 
-    isLoading: isLoadingBtcPrice, 
-    error: errorBtcPrice 
+    prices, 
+    isLoading: isLoadingPrices,
+    error: errorPrices
   } = usePrice();
 
   // Formatar valores monetários
@@ -77,96 +121,82 @@ export default function HomePage() {
     }).format(valor / 100);
   };
 
-  const getPrecoAtual = (moedaId: string, moedas: TopMoeda[]): number => {
-    const moeda = moedas.find(m => m.id === moedaId);
-    return moeda?.current_price || 0;
+  const getPrecoAtual = (moedaId: string, moedasApi: TopMoeda[]): number => {
+    const moeda = moedasApi.find(m => m.id === moedaId);
+    return moeda ? moeda.current_price : 0;
   };
 
-  const calcularPortfolio = (operacoes: Operacao[], moedas: TopMoeda[]) => {
-    const portfolioMap = new Map<string, {
-      moeda_id: string;
-      nome: string;
-      simbolo: string;
-      quantidade: number;
-      valorTotal: number;
-      valorMedio: number;
-      valorAtualizado: number;
-      lucro: number;
-      percentual: number;
-      image?: string;
-      custoMedio: number;
-      quantidadeDisponivel: number;
-      lucroRealizado: number
-    }>();
-    
+  const calcularPortfolio = (operacoes: Operacao[], moedasApi: TopMoeda[]): PortfolioItem[] => { 
+    console.log("[HomePage] Calculando portfólio com", operacoes.length, "operações e", moedasApi.length, "preços de referência.");
+    const portfolioMap = new Map<string, PortfolioItem>(); // Usar a interface
+
     operacoes
       .sort((a, b) => new Date(a.data_operacao).getTime() - new Date(b.data_operacao).getTime())
       .forEach((op) => {
-        const moeda = moedas.find(m => m.id === op.moeda_id);
-        const precoAtual = getPrecoAtual(op.moeda_id, moedas);
-        
+        const moeda = moedasApi.find(m => m.id === op.moeda_id);
+        const precoAtual = getPrecoAtual(op.moeda_id, moedasApi);
+
+        let item: PortfolioItem;
         if (portfolioMap.has(op.moeda_id)) {
-          const item = portfolioMap.get(op.moeda_id)!;
-          
-          if (op.tipo === "compra") {
-            const novaQuantidade = item.quantidadeDisponivel + op.quantidade;
-            const novoCustoMedio = novaQuantidade > 0 
-              ? ((item.custoMedio * item.quantidadeDisponivel) + (op.preco_unitario * op.quantidade)) / novaQuantidade 
-              : 0;
-            
-            item.quantidadeDisponivel = novaQuantidade;
-            item.custoMedio = novoCustoMedio;
-            item.quantidade += op.quantidade;
-            item.valorTotal += op.valor_total;
-          } else { 
-            if (item.quantidadeDisponivel >= op.quantidade) {
-              const lucroVenda = (op.preco_unitario - item.custoMedio) * op.quantidade;
-              item.lucroRealizado += lucroVenda;
-              item.quantidadeDisponivel -= op.quantidade;
-              item.quantidade -= op.quantidade;
-              item.valorTotal -= (item.custoMedio * op.quantidade); 
-            }
-          }
-          
-          item.valorAtualizado = item.quantidadeDisponivel * precoAtual;
-          item.valorMedio = item.custoMedio;
-          item.lucro = item.lucroRealizado + (item.valorAtualizado - (item.quantidadeDisponivel * item.custoMedio));
-          const valorCustoAtual = item.quantidadeDisponivel * item.custoMedio;
-          item.percentual = valorCustoAtual > 0 ? (item.lucro / valorCustoAtual) * 100 : 0;
-          
-          portfolioMap.set(op.moeda_id, item);
+          item = portfolioMap.get(op.moeda_id)!;
         } else {
-          if(op.tipo === "compra") { 
-            const novoItem = {
-              moeda_id: op.moeda_id,
-              nome: op.nome,
-              simbolo: op.simbolo,
-              quantidade: op.quantidade,
-              quantidadeDisponivel: op.quantidade,
-              valorTotal: op.valor_total,
-              valorMedio: op.preco_unitario,
-              custoMedio: op.preco_unitario,
-              valorAtualizado: op.quantidade * precoAtual,
-              lucro: 0,
-              lucroRealizado: 0,
-              percentual: 0,
-              image: moeda?.image
-            };
-            novoItem.lucro = novoItem.valorAtualizado - novoItem.valorTotal;
-            novoItem.percentual = novoItem.valorTotal > 0 ? (novoItem.lucro / novoItem.valorTotal) * 100 : 0;
-            portfolioMap.set(op.moeda_id, novoItem);
+          // Inicializar com valores padrão se for a primeira operação da moeda
+          item = {
+            moeda_id: op.moeda_id,
+            nome: op.nome,
+            simbolo: op.simbolo,
+            quantidade: 0,
+            quantidadeDisponivel: 0,
+            valorTotal: 0,
+            valorMedio: 0,
+            custoMedio: 0,
+            valorAtualizado: 0,
+            lucro: 0,
+            lucroRealizado: 0,
+            percentual: 0,
+            image: moeda?.image
+          };
+        }
+
+        if (op.tipo === "compra") {
+          const novaQuantidade = item.quantidadeDisponivel + op.quantidade;
+          const novoCustoMedio = novaQuantidade > 0
+            ? ((item.custoMedio * item.quantidadeDisponivel) + (op.preco_unitario * op.quantidade)) / novaQuantidade
+            : 0;
+
+          item.quantidadeDisponivel = novaQuantidade;
+          item.custoMedio = novoCustoMedio;
+          item.quantidade += op.quantidade; // Quantidade total comprada (histórico)
+          item.valorTotal += op.valor_total; // Valor total investido (histórico)
+        } else { // Venda
+          if (item.quantidadeDisponivel >= op.quantidade) {
+            const custoDaVenda = item.custoMedio * op.quantidade;
+            const lucroVenda = (op.preco_unitario * op.quantidade) - custoDaVenda;
+            item.lucroRealizado += lucroVenda;
+            item.quantidadeDisponivel -= op.quantidade;
+            // Não decrementamos item.quantidade ou item.valorTotal para manter histórico
+          } else {
+            console.warn(`[HomePage] Tentativa de vender mais ${op.simbolo} do que disponível.`);
+            // Tratar como venda parcial ou ignorar? Por ora, ignora venda inválida.
           }
         }
-      });
-    
-    return Array.from(portfolioMap.values())
-      .filter(item => item.quantidadeDisponivel > 0.00000001)
-      .sort((a, b) => b.valorAtualizado - a.valorAtualizado);
-  };
 
-  const formattedBtcPrice = btcPrice !== null
-    ? btcPrice.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
-    : '---';
+        // Recalcular valores atuais com base na quantidade disponível
+        item.valorAtualizado = item.quantidadeDisponivel * precoAtual;
+        const custoAtualDisponivel = item.quantidadeDisponivel * item.custoMedio;
+        const lucroNaoRealizado = item.valorAtualizado - custoAtualDisponivel;
+        
+        item.lucro = item.lucroRealizado + lucroNaoRealizado;
+        item.percentual = custoAtualDisponivel > 0 ? (item.lucro / custoAtualDisponivel) * 100 : (item.valorAtualizado > 0 ? Infinity : 0);
+        item.valorMedio = item.custoMedio; // Renomear para custoMedio? Já existe.
+        
+        portfolioMap.set(op.moeda_id, item);
+      });
+
+    return Array.from(portfolioMap.values())
+       .filter(item => item.quantidadeDisponivel > 0.00000001) // Filtrar moedas zeradas
+       .sort((a, b) => b.valorAtualizado - a.valorAtualizado);
+  };
 
   const carregarDados = useCallback(async (refreshTopOnly = false) => {
     console.log("[HomePage] Carregando dados...", { refreshTopOnly });
@@ -177,14 +207,15 @@ export default function HomePage() {
     setErrorTopMoedas(null);
 
     try {
-      let localTopMoedasData: TopMoeda[] = [];
+      const topMoedasUrl = `/api/crypto/market-data?ids=${TOP_10_COIN_IDS.join(',')}`;
+      console.log("[HomePage] Buscando Top Moedas de:", topMoedasUrl);
 
       const fetchPromises = [
-        fetch("/api/crypto/top-moedas", { headers: { /* ... */ } })
+        fetch(topMoedasUrl)
       ];
       if (!refreshTopOnly) {
         fetchPromises.push(
-          fetch("/api/crypto/operacoes", { method: "GET", headers: { /* ... */ } })
+          fetch("/api/crypto/operacoes", { method: "GET" })
         );
       }
 
@@ -192,57 +223,85 @@ export default function HomePage() {
       const topMoedasResponse = responses[0];
       const operacoesResponse = responses.length > 1 ? responses[1] : null;
 
+      let localTopMoedasData: TopMoeda[] = []; 
+
       if (topMoedasResponse.status === 429) {
-        setErrorTopMoedas("Limite de requisições excedido. Tente novamente em alguns minutos."); 
-        setTopMoedas([]);
+         setErrorTopMoedas("Limite de requisições excedido. Tente novamente em alguns minutos.");
+         setTopMoedas([]);
       } else if (!topMoedasResponse.ok) {
-        setErrorTopMoedas("Erro ao buscar dados de criptomoedas."); 
-        setTopMoedas([]);
+         const errorData = await topMoedasResponse.json().catch(() => ({}));
+         console.error("[HomePage] Erro ao buscar market-data:", topMoedasResponse.status, errorData);
+         setErrorTopMoedas(`Erro ${topMoedasResponse.status} ao buscar dados das moedas.`);
+         setTopMoedas([]); 
       } else {
-        const fetchedData = await topMoedasResponse.json();
-        localTopMoedasData = fetchedData || [];
-        console.log("[HomePage] Dados de Top Moedas recebidos:", localTopMoedasData.length);
-        setTopMoedas(localTopMoedasData);
-        setErrorTopMoedas(null);
+         const marketDataMap: MarketDataMap = await topMoedasResponse.json();
+         console.log("[HomePage] Dados de MarketDataMap recebidos:", Object.keys(marketDataMap).length, "moedas no mapa.");
+        
+         localTopMoedasData = TOP_10_COIN_IDS.map(id => {
+           const coinData: FullCoinData | null = marketDataMap[id];
+           if (coinData) {
+             return {
+               id: coinData.id,
+               symbol: coinData.symbol,
+               name: coinData.name,
+               image: coinData.image,
+               current_price: coinData.current_price,
+               price_change_percentage_24h: coinData.price_change_percentage_24h ?? 0, 
+               market_cap: coinData.market_cap,
+             };
+           }
+           console.warn(`[HomePage] Moeda com ID "${id}" não encontrada no marketDataMap.`);
+           return null; 
+         }).filter((moeda): moeda is TopMoeda => moeda !== null);
+
+         console.log("[HomePage] Dados de Top Moedas processados:", localTopMoedasData.length);
+         setTopMoedas(localTopMoedasData);
+         setErrorTopMoedas(null);
       }
       
       if (operacoesResponse) {
         if (!operacoesResponse.ok) {
-           console.error(/* ... */);
+            console.error("[HomePage] Erro ao buscar operações:", operacoesResponse.status);
         } else {
           const operacoesData = await operacoesResponse.json();
           console.log("[HomePage] Dados de Operações recebidos:", operacoesData?.length);
           if (!Array.isArray(operacoesData)) {
-            console.error(/* ... */);
+              console.error("[HomePage] Formato inesperado para operações:", operacoesData);
           } else {
-            const portfolioCalculado = calcularPortfolio(operacoesData || [], localTopMoedasData);
-            console.log("[HomePage] Portfólio Calculado:", portfolioCalculado);
-            const totais = portfolioCalculado.reduce(
-              (acc, item) => {
-                acc.valorTotalInvestido += item.valorTotal;
+             const portfolioCalculado: PortfolioItem[] = calcularPortfolio(operacoesData || [], localTopMoedasData);
+             console.log("[HomePage] Portfólio Calculado:", portfolioCalculado);
+             // Adicionar tipos ao reduce
+             const totaisCalculados: TotaisPortfolio = portfolioCalculado.reduce(
+              (acc: TotaisPortfolio, item: PortfolioItem) => {
+                // Usar valorTotal da operação histórica ou custoAtualDisponivel?
+                // A lógica anterior parecia usar o custo baseado no custo médio.
+                // Para corresponder aos cards, precisamos do valor atualizado total e do lucro/prejuízo total.
+                // Valor Investido Total: Soma do (custoMedio * quantidadeDisponivel) ? Ou soma do valor_total das compras?
+                // Vamos usar o custo atual para consistência com o lucro.
+                const custoAtualDisponivelItem = item.quantidadeDisponivel * item.custoMedio;
+                acc.valorTotalInvestido += custoAtualDisponivelItem; // Custo atual do que está em carteira
                 acc.valorTotalAtualizado += item.valorAtualizado;
                 acc.lucroTotal += item.lucro;
                 return acc;
               },
+              // Inicializar com a estrutura TotaisPortfolio
               { valorTotalInvestido: 0, valorTotalAtualizado: 0, lucroTotal: 0 }
             );
-            
-            setTotaisPortfolio(totais);
-            
-            const percentual = totais.valorTotalInvestido > 0
-              ? (totais.lucroTotal / totais.valorTotalInvestido) * 100
+            setTotaisPortfolio(totaisCalculados); // Usar o resultado tipado
+            const percentual = totaisCalculados.valorTotalInvestido > 0
+              ? (totaisCalculados.lucroTotal / totaisCalculados.valorTotalInvestido) * 100
               : 0;
-              
             setPercentualTotalPortfolio(percentual);
           }
         }
       }
     } catch (err) {
-      console.error("Erro geral ao carregar dados:", err);
-      if (!errorTopMoedas) setErrorTopMoedas("Erro ao carregar dados.");
+       console.error("[HomePage] Erro geral ao carregar dados:", err);
+       if (!errorTopMoedas) setErrorTopMoedas("Erro ao carregar dados.");
+       setTopMoedas([]);
     } finally {
-      setLoadingPortfolio(false);
-      setLoadingTopMoedas(false);
+       setLoadingPortfolio(false);
+       setLoadingTopMoedas(false);
     }
   }, []);
 
@@ -359,40 +418,44 @@ export default function HomePage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {topMoedas.map((moeda, index) => (
-                      <TableRow key={moeda.id}>
-                        <TableCell className="font-medium">{index + 1}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            {moeda.image && (
-                              <div className="relative w-6 h-6 mr-2">
-                                <Image
-                                  src={moeda.image}
-                                  alt={moeda.name}
-                                  fill
-                                  className="object-contain"
-                                />
-                              </div>
-                            )}
-                            <span className="font-medium">{moeda.name}</span>
-                            <span className="ml-2 text-xs text-muted-foreground uppercase">
-                              {moeda.symbol}
+                    {topMoedas.map((moeda, index) => {
+                      const displayPrice = getPrecoAtual(moeda.id, topMoedas);
+                      
+                      return (
+                        <TableRow key={moeda.id}>
+                          <TableCell className="font-medium">{index + 1}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center">
+                              {moeda.image && (
+                                <div className="relative w-6 h-6 mr-2">
+                                  <Image
+                                    src={moeda.image}
+                                    alt={moeda.name}
+                                    fill
+                                    className="object-contain"
+                                  />
+                                </div>
+                              )}
+                              <span className="font-medium">{moeda.name}</span>
+                              <span className="ml-2 text-xs text-muted-foreground uppercase">
+                                {moeda.symbol}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatarMoeda(displayPrice)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className={moeda.price_change_percentage_24h >= 0 ? 'text-green-600' : 'text-red-600'}>
+                              {moeda.price_change_percentage_24h.toFixed(2)}%
                             </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatarMoeda(moeda.current_price)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span className={moeda.price_change_percentage_24h >= 0 ? 'text-green-600' : 'text-red-600'}>
-                            {moeda.price_change_percentage_24h.toFixed(2)}%
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatarMoeda(moeda.market_cap)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatarMoeda(moeda.market_cap)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -418,7 +481,7 @@ export default function HomePage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-medium">{formatarMoeda(moeda.current_price)}</div>
+                      <div className="font-medium">{formatarMoeda(getPrecoAtual(moeda.id, topMoedas))}</div>
                       <div className={moeda.price_change_percentage_24h >= 0 ? 'text-green-600 text-xs' : 'text-red-600 text-xs'}>
                         {moeda.price_change_percentage_24h.toFixed(2)}%
                       </div>
@@ -428,25 +491,6 @@ export default function HomePage() {
               </div>
             </>
           )}
-        </CardContent>
-      </Card>
-
-      <Card className="w-full md:w-auto md:max-w-sm">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Preço Bitcoin (USD)</CardTitle>
-          <Bitcoin className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          {isLoadingBtcPrice ? (
-            <div className="text-2xl font-bold animate-pulse">Carregando...</div>
-          ) : errorBtcPrice ? (
-            <div className="text-sm font-medium text-destructive">{errorBtcPrice}</div>
-          ) : (
-            <div className="text-2xl font-bold">{formattedBtcPrice}</div>
-          )}
-          <p className="text-xs text-muted-foreground">
-            Atualizado via PriceProvider
-          </p>
         </CardContent>
       </Card>
     </div>
