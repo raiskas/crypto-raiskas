@@ -21,6 +21,12 @@ import { useAuth } from "@/lib/hooks/use-auth";
 import { useUserData } from "@/lib/hooks/use-user-data";
 import { toast } from "sonner";
 import { useState } from "react";
+import { 
+  Accordion, 
+  AccordionContent, 
+  AccordionItem, 
+  AccordionTrigger 
+} from "@/components/ui/accordion";
 
 const navItems = [
   { href: "/home", label: "Home" },
@@ -75,13 +81,13 @@ export function DashboardHeader() {
                 <span className="sr-only">Abrir menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left">
-              <nav className="grid gap-4 py-6">
+            <SheetContent side="left" className="w-full sm:w-[300px]">
+              <nav className="flex flex-col gap-2 pt-6">
                 {navItems.map((item) => (
-                  <SheetClose asChild key={item.href}>
+                  <SheetClose asChild key={`${item.href}-mobile`}>
                     <Link
                       href={item.href}
-                      className={`flex w-full items-center py-2 px-4 rounded-md text-sm font-medium transition-colors ${ 
+                      className={`flex w-full items-center py-2 px-3 rounded-md text-base font-medium transition-colors ${ 
                         pathname === item.href 
                           ? 'bg-accent text-accent-foreground' 
                           : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
@@ -91,6 +97,30 @@ export function DashboardHeader() {
                     </Link>
                   </SheetClose>
                 ))}
+                
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="admin-links" className="border-b-0">
+                    <AccordionTrigger className="py-2 px-3 text-base font-medium text-muted-foreground hover:bg-accent/50 hover:text-foreground hover:no-underline rounded-md">
+                      Painel Administrativo
+                    </AccordionTrigger>
+                    <AccordionContent className="pl-6 pb-0 pt-1 flex flex-col gap-1">
+                      {adminNavItems.map((item) => (
+                        <SheetClose asChild key={`${item.href}-mobile`}>
+                          <Link
+                            href={item.href}
+                            className={`flex w-full items-center py-1.5 px-3 rounded-md text-sm font-medium transition-colors ${ 
+                              pathname === item.href 
+                                ? 'bg-accent/80 text-accent-foreground'
+                                : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                            }`}
+                          >
+                            {item.label}
+                          </Link>
+                        </SheetClose>
+                      ))}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </nav>
             </SheetContent>
           </Sheet>
