@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, ChevronDown } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { LogOut, ChevronDown, Menu } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,15 +11,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetTrigger, 
+  SheetClose
+} from "@/components/ui/sheet";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { useUserData } from "@/lib/hooks/use-user-data";
 import { toast } from "sonner";
+import { useState } from "react";
 
 const navItems = [
   { href: "/home", label: "Home" },
-  // { href: "/dashboard", label: "Dashboard" }, // REMOVIDO
   { href: "/crypto", label: "Crypto" },
-  // { href: "/vendas", label: "Vendas" }, // REMOVIDO
 ];
 
 const adminNavItems = [
@@ -30,8 +35,10 @@ const adminNavItems = [
 
 export function DashboardHeader() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user } = useAuth();
   const { userData, loading } = useUserData();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     console.log("[Header] handleLogout iniciado.");
@@ -60,7 +67,34 @@ export function DashboardHeader() {
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 h-16">
       <div className="container flex h-full items-center justify-between px-4 md:px-6">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 md:gap-6">
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="md:hidden">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Abrir menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left">
+              <nav className="grid gap-4 py-6">
+                {navItems.map((item) => (
+                  <SheetClose asChild key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={`flex w-full items-center py-2 px-4 rounded-md text-sm font-medium transition-colors ${ 
+                        pathname === item.href 
+                          ? 'bg-accent text-accent-foreground' 
+                          : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  </SheetClose>
+                ))}
+              </nav>
+            </SheetContent>
+          </Sheet>
+
           <Link href="/" className="flex items-center space-x-2">
             <img 
               src="/logo-no-background.png" 
@@ -74,7 +108,11 @@ export function DashboardHeader() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                className={`text-sm font-medium transition-colors hover:text-primary ${ 
+                  pathname === item.href 
+                    ? 'text-primary' 
+                    : 'text-muted-foreground'
+                }`}
               >
                 {item.label}
               </Link>
@@ -96,7 +134,7 @@ export function DashboardHeader() {
           </nav>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           {userData && (
             <div className="hidden md:flex flex-col items-end">
               <span className="text-sm font-medium">{userData.nome || "Usuário"}</span>
@@ -104,9 +142,13 @@ export function DashboardHeader() {
             </div>
           )}
           <ThemeToggle />
-          <Button variant="outline" size="sm" onClick={handleLogout}>
+          <Button variant="outline" size="icon" onClick={handleLogout} className="md:hidden">
+            <LogOut className="h-5 w-5" />
+            <span className="sr-only">Sair</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleLogout} className="hidden md:inline-flex">
             <LogOut className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Sair</span>
+            Sair
           </Button>
         </div>
       </div>
