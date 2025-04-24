@@ -17,6 +17,13 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Crypto Raiskas",
   description: "Plataforma financeira",
+  manifest: "/manifest.json",
+  themeColor: "#000000",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Crypto Raiskas",
+  },
 };
 
 // Layout MÁXIMAMENTE SIMPLIFICADO
@@ -45,6 +52,11 @@ export default function RootLayout({
 
   return (
     <html lang="pt-BR" suppressHydrationWarning>
+      <head>
+        <meta name="theme-color" content="#000000" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+      </head>
       <body className={inter.className}>
         {/* Usar ThemeProvider com as props corretas */}
         <ThemeProvider

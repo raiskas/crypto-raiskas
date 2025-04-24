@@ -1,0 +1,21 @@
+{
+  "name": "Crypto Raiskas",
+  "short_name": "CryptoRaiskas",
+  "description": "Aplicativo de controle Crypto Raiskas",
+  "start_url": "/home",
+  "display": "standalone",
+  "background_color": "#0A0F1E",
+  "theme_color": "#FAFAFA",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+} 
