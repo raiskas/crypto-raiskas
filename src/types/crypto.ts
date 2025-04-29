@@ -1,3 +1,22 @@
+import type { PerformanceMetrics } from "@/lib/crypto/fifoCalculations";
+
+// Re-exportar de fifoCalculations para centralizar tipos relacionados a performance
+export type { PerformanceMetrics } from "@/lib/crypto/fifoCalculations"; 
+
+// Definir estado geral da performance retornado pela API
+export interface PerformanceSummary {
+  totalRealizado: number;
+  totalNaoRealizado: number;
+  valorTotalAtual: number;
+}
+
+export interface CryptoPerformanceState {
+  performance: { [key: string]: PerformanceMetrics }; // Usar tipo importado
+  summary: PerformanceSummary;
+}
+
+// Definir tipo Operacao (se não definido globalmente em outro lugar)
+// Se já existir em, por exemplo, @/types/index.ts, remover esta definição daqui.
 export interface Operacao {
   id: string;
   moeda_id: string;
@@ -13,7 +32,7 @@ export interface Operacao {
   notas: string | null;
   criado_em: string;
   atualizado_em: string;
-  usuario_id: string; // Adicionar explicitamente se necessário
+  usuario_id: string; // Adicionado usuario_id
   grupo_id?: string;
 }
 
