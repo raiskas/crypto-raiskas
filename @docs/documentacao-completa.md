@@ -10,11 +10,12 @@ Este documento contém a documentação completa do projeto Crypto Raiskas, um s
 4. [Banco de Dados](#4-banco-de-dados)
 5. [Sistema de Autenticação e Permissões](#5-sistema-de-autenticação-e-permissões)
 6. [Guia de Desenvolvimento](#6-guia-de-desenvolvimento)
-7. [Fluxo de Trabalho Git](#7-fluxo-de-trabalho-git)
-8. [Implantação](#8-implantação)
-9. [Troubleshooting](#9-troubleshooting)
-10. [Módulo de Gerenciamento de Usuários](#10-módulo-de-gerenciamento-de-usuários)
-11. [Contato e Suporte](#11-contato-e-suporte)
+7. [Módulo de Criptomoedas](#7-módulo-de-criptomoedas)
+8. [Fluxo de Trabalho Git](#8-fluxo-de-trabalho-git)
+9. [Implantação](#9-implantação)
+10. [Troubleshooting](#10-troubleshooting)
+11. [Módulo de Gerenciamento de Usuários](#11-módulo-de-gerenciamento-de-usuários)
+12. [Contato e Suporte](#12-contato-e-suporte)
 
 ---
 
@@ -25,6 +26,7 @@ O Crypto Raiskas é uma aplicação web moderna para gerenciamento empresarial, 
 - Sistema robusto de permissões baseado em grupos
 - Arquitetura multi-tenant para suportar múltiplas empresas
 - Módulo de vendas como exemplo funcional
+- **Módulo de gerenciamento de operações de criptomoedas com cálculo de performance FIFO.**
 - Interface administrativa para gestão de usuários
 
 A plataforma foi desenvolvida com foco em segurança, escalabilidade e facilidade de manutenção, utilizando tecnologias modernas do ecossistema JavaScript/TypeScript.
@@ -55,40 +57,51 @@ src/
 │   │   ├── signin/          # Página de login
 │   │   └── signup/          # Página de cadastro
 │   ├── (dashboard)/         # Grupo de rotas protegidas (painel administrativo)
-│   │   ├── home/            # Página inicial após login
-│   │   ├── dashboard/       # Dashboard principal
 │   │   ├── admin/           # Área administrativa
 │   │   │   ├── page.tsx     # Painel principal admin
 │   │   │   └── usuarios/    # Gerenciamento de usuários
+│   │   ├── crypto/          # <<< Módulo de Criptomoedas
+│   │   │   └── page.tsx     # <<< Página principal do módulo
+│   │   ├── dashboard/       # Dashboard principal
+│   │   ├── home/            # Página inicial após login
 │   │   └── vendas/          # Módulo de vendas
 │   ├── api/                 # Rotas da API (Server-side)
 │   │   ├── auth/            # Endpoints de autenticação
 │   │   │   ├── register/    # Registro de usuários
 │   │   │   └── debug/       # Ferramentas de depuração
-│   │   └── admin/           # Endpoints administrativos
-│   │       └── users/       # Gerenciamento de usuários (CRUD)
+│   │   ├── admin/           # Endpoints administrativos
+│   │   │   └── users/       # Gerenciamento de usuários (CRUD)
+│   │   ├── crypto/          # <<< Endpoints do módulo de cripto
+│   │   │   ├── operacoes/   # <<< CRUD de operações cripto
+│   │   │   ├── performance/ # <<< Cálculo de performance FIFO
+│   │   │   ├── relevant-coin-ids/ # <<< Busca IDs de moedas relevantes
+│   │   │   └── market-data/ # <<< Busca dados de mercado (CoinGecko via lib)
+│   │   └── preco/           # Endpoint para preço do Bitcoin (cacheado) - OBS: Revisar se ainda relevante
 │   └── page.tsx             # Página inicial (redireciona para home ou login)
 ├── components/              # Componentes reutilizáveis
+│   ├── crypto/              # <<< Componentes específicos do módulo crypto (OperacaoModal, etc)
 │   ├── layouts/             # Componentes de layout
 │   ├── ui/                  # Componentes de interface do usuário
-│   │   ├── button.tsx       # Botões padronizados
-│   │   ├── card.tsx         # Cards para layout
-│   │   ├── dialog.tsx       # Modais e diálogos
-│   │   ├── form.tsx         # Componentes de formulário
-│   │   ├── table.tsx        # Tabelas de dados
-│   │   └── badge.tsx        # Emblemas para status
 │   └── theme-toggle.tsx     # Alternador de tema claro/escuro
 ├── lib/                     # Funções utilitárias e bibliotecas
+│   ├── context/             # <<< Context API Providers
+│   │   └── PriceContext.tsx # <<< Contexto para preços de criptomoedas
+│   ├── crypto/              # <<< Lógica específica de cripto
+│   │   └── fifoCalculations.ts # <<< Implementação do cálculo FIFO
 │   ├── hooks/               # React hooks personalizados
 │   │   ├── use-auth.ts      # Hook para gerenciamento de autenticação
-│   │   └── use-user-data.ts # Hook para dados do usuário
+│   │   ├── use-user-data.ts # Hook para dados do usuário
+│   │   └── usePrice.ts      # <<< Hook para consumir o PriceContext
 │   ├── supabase/            # Integrações com Supabase
 │   │   ├── client.ts        # Cliente Supabase para o navegador
 │   │   ├── client-helpers.ts # Funções auxiliares do cliente
 │   │   └── server.ts        # Cliente Supabase para o servidor
-│   └── utils/               # Funções utilitárias
-│       └── permissions.ts   # Utilitários para verificação de permissões
+│   ├── utils/               # Funções utilitárias
+│   │   └── permissions.ts   # Utilitários para verificação de permissões
+│   └── coingecko.ts         # <<< Funções para interagir com a API CoinGecko
 ├── types/                   # Definições de tipos TypeScript
+│   ├── crypto.ts            # <<< Tipos específicos do módulo crypto (Operacao, PerformanceMetrics, etc)
+│   └── supabase.ts          # <<< Tipos gerados do esquema Supabase
 └── middleware.ts            # Middleware do Next.js para proteção de rotas
 ```
 
@@ -130,6 +143,8 @@ grupos
   ├── nome
   ├── descricao
   ├── empresa_id (FK -> empresas.id)
+  ├── is_master (BOOLEAN)
+  ├── telas_permitidas (TEXT[])
   ├── criado_em
   └── atualizado_em
      │
@@ -164,6 +179,24 @@ vendas
   ├── usuario_id (FK -> usuarios.id)
   ├── criado_em
   └── atualizado_em
+
+crypto_operacoes
+  ├── id (PK, UUID)
+  ├── moeda_id (TEXT, NOT NULL) - ID da moeda (ex: 'bitcoin', 'ethereum')
+  ├── simbolo (TEXT, NOT NULL) - Símbolo da moeda (ex: 'btc', 'eth')
+  ├── nome (TEXT, NOT NULL) - Nome da moeda (ex: 'Bitcoin', 'Ethereum')
+  ├── tipo (TEXT, NOT NULL, CHECK tipo IN ('compra', 'venda')) - Tipo da operação
+  ├── quantidade (NUMERIC, NOT NULL) - Quantidade de moedas negociadas
+  ├── preco_unitario (NUMERIC, NOT NULL) - Preço por unidade da moeda na operação
+  ├── valor_total (NUMERIC, NOT NULL) - Valor total da operação (quantidade * preco_unitario)
+  ├── taxa (NUMERIC, DEFAULT 0) - Taxas associadas à operação
+  ├── data_operacao (TIMESTAMP WITH TIME ZONE, NOT NULL) - Data e hora da operação
+  ├── exchange (TEXT) - Exchange onde a operação ocorreu (opcional)
+  ├── notas (TEXT) - Notas adicionais (opcional)
+  ├── usuario_id (UUID, FK -> usuarios.id, NOT NULL) - Usuário que realizou a operação
+  ├── grupo_id (UUID, FK -> grupos.id) - Grupo associado à operação (opcional)
+  ├── criado_em (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
+  └── atualizado_em (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
 ```
 
 ### Restrições e Consistência
@@ -215,6 +248,13 @@ CREATE INDEX idx_vendas_empresa_id ON vendas(empresa_id);
 CREATE INDEX idx_vendas_usuario_id ON vendas(usuario_id);
 ```
 
+Adicionar índices relevantes para `crypto_operacoes`:
+```sql
+CREATE INDEX idx_crypto_operacoes_usuario_id ON crypto_operacoes(usuario_id);
+CREATE INDEX idx_crypto_operacoes_moeda_id ON crypto_operacoes(moeda_id);
+CREATE INDEX idx_crypto_operacoes_data_operacao ON crypto_operacoes(data_operacao);
+```
+
 ### Políticas de Segurança (RLS)
 
 ```sql
@@ -231,6 +271,23 @@ CREATE POLICY "Usuários podem ver apenas usuários da mesma empresa"
       FROM usuarios u 
       WHERE u.empresa_id = usuarios.empresa_id
     )
+  );
+```
+
+Adicionar política para `crypto_operacoes`:
+```sql
+-- Habilitar RLS
+ALTER TABLE crypto_operacoes ENABLE ROW LEVEL SECURITY;
+
+-- Criar política para que usuários vejam/modifiquem apenas suas próprias operações
+CREATE POLICY "Usuários podem gerenciar apenas suas próprias operações de cripto"
+  ON crypto_operacoes
+  FOR ALL
+  USING (
+    auth.uid() = (SELECT auth_id FROM usuarios WHERE id = usuario_id)
+  )
+  WITH CHECK (
+    auth.uid() = (SELECT auth_id FROM usuarios WHERE id = usuario_id)
   );
 ```
 
@@ -528,7 +585,74 @@ export async function POST(request: NextRequest) {
 5. **Atualize o middleware**:
    - Adicione a rota ao middleware se ela for protegida
 
-## 7. Fluxo de Trabalho Git
+## 7. Módulo de Criptomoedas
+
+Este módulo permite aos usuários registrar suas operações de compra e venda de criptomoedas e visualizar a performance de seu portfólio calculado usando o método FIFO (First-In, First-Out).
+
+### Funcionalidades
+
+- **Registro de Operações:** Formulário modal (`OperacaoModal`) para adicionar ou editar operações de compra/venda, incluindo moeda, quantidade, preço, data, taxas, etc.
+- **Listagem de Operações:** Tabela na página `/crypto` exibindo o histórico de operações do usuário, com filtros e ordenação.
+- **Visualização de Portfólio:** Tabela consolidada na página `/crypto` mostrando a posição atual em cada moeda:
+    - Quantidade Atual
+    - Custo Médio (FIFO)
+    - Custo Base Atual (FIFO)
+    - Preço Atual (via `PriceContext`)
+    - Valor Total Atual (recalculado no frontend)
+    - L/P Não Realizado (recalculado no frontend)
+    - % Não Realizado (recalculado no frontend)
+    - L/P Realizado Total (FIFO)
+- **Cards de Resumo:** Exibição dos totais do portfólio (Valor Total, Custo Base, P/L Não Realizado, P/L Realizado).
+
+### Lógica de Cálculo FIFO
+
+- **Função Principal:** `calcularPerformanceFifo` em `src/lib/crypto/fifoCalculations.ts`.
+- **Entrada:** Recebe um array de operações (compras/vendas) para **uma única moeda**, ordenadas por data, e o preço de mercado atual dessa moeda.
+- **Processamento:**
+    1.  Mantém uma lista de "lotes" de compra abertos (`lotesCompraAbertos`), armazenando quantidade, preço de custo unitário e data de cada compra.
+    2.  Itera sobre as operações ordenadas:
+        - **Compra:** Adiciona um novo lote à lista.
+        - **Venda:** Consome os lotes da lista na ordem FIFO (primeiro que entrou). Para cada lote consumido (total ou parcialmente), calcula o custo base proporcional dessa parte vendida. A diferença entre o valor da venda (quantidade vendida * preço de venda) e o custo base dos lotes consumidos é o lucro/prejuízo realizado para aquela venda.
+    3.  Acumula o `lucroPrejuizoRealizadoTotal`.
+- **Saída:** Retorna um objeto `PerformanceMetrics` contendo:
+    - `quantidadeAtual`: Soma das quantidades restantes nos lotes de compra abertos.
+    - `custoBaseTotalAtual`: Custo total dos lotes restantes.
+    - `custoMedioAtual`: Custo médio ponderado dos lotes restantes.
+    - `lucroPrejuizoRealizadoTotal`: Lucro/prejuízo acumulado de todas as vendas processadas.
+    - `valorDeMercadoAtual`: Calculado usando o `precoAtualMercado` fornecido como argumento.
+    - `lucroPrejuizoNaoRealizado`: Diferença entre `valorDeMercadoAtual` e `custoBaseTotalAtual`.
+    - `lucroPrejuizoNaoRealizadoPercentual`.
+
+### API de Performance (`GET /api/crypto/performance`)
+
+- **Responsabilidade:** Orquestrar o cálculo FIFO para todas as moedas do usuário.
+- **Fluxo:**
+    1.  Obtém o ID do usuário autenticado.
+    2.  Busca todas as operações (`crypto_operacoes`) do usuário no banco de dados.
+    3.  Agrupa as operações por `moeda_id`.
+    4.  Busca os preços de mercado atuais para todas as `moeda_id`s encontradas usando `fetchMarketDataByIds` (`src/lib/coingecko.ts`).
+    5.  Itera sobre cada `moeda_id`:
+        - **Cria uma cópia profunda** (`JSON.parse(JSON.stringify(...))`) do array de operações daquela moeda para garantir isolamento.
+        - Chama `calcularPerformanceFifo` passando a cópia profunda das operações e o preço de mercado atual da moeda.
+        - Armazena o resultado (`PerformanceMetrics`) para aquela moeda.
+    6.  Calcula um sumário geral (total realizado, não realizado, valor de mercado).
+    7.  Retorna um JSON contendo o objeto `performance` (com a performance detalhada por moeda) e o objeto `summary`.
+
+### Fluxo de Dados no Frontend (`CryptoPage`)
+
+1.  **Busca de Dados:** O componente busca dados de duas fontes principais:
+    - Performance FIFO: Chama a API `/api/crypto/performance` para obter os cálculos base (quantidade, custo base, P/L realizado).
+    - Preços Atuais: Usa o hook `usePrice` para obter o mapa de preços mais recentes do `PriceContext`.
+    - Operações: Chama a API `/api/crypto/operacoes` para popular a tabela de histórico.
+2.  **Processamento (`calcularPortfolio`):**
+    - Itera sobre os dados de performance recebidos da API.
+    - Para cada moeda, pega os valores FIFO fundamentais (quantidade, custo base, P/L realizado).
+    - Obtém o `precoAtual` do `PriceContext`.
+    - **Recalcula** o `valorAtualizado` (valor de mercado) e `lucro` (P/L não realizado) usando a `quantidadeAtual` (da API) e o `precoAtual` (do Context).
+    - Monta o objeto final para exibição na tabela do portfólio.
+3.  **Renderização:** Exibe os dados processados nas tabelas e cards, usando funções de formatação (`formatarMoeda`, `formatarQuantidade`, etc.).
+
+## 8. Fluxo de Trabalho Git
 
 ### Branches
 
@@ -560,7 +684,7 @@ Tipos comuns:
 - Referencie issues relacionadas
 - Solicite revisão de pelo menos um colega de equipe
 
-## 8. Implantação
+## 9. Implantação
 
 ### Ambiente de Desenvolvimento
 
@@ -579,7 +703,7 @@ Tipos comuns:
   pnpm start
   ```
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 ### Problemas Comuns
 
@@ -601,7 +725,7 @@ Tipos comuns:
     *   **Causa Raiz:** A API do backend que retorna a lista inicial de grupos (provavelmente `GET /api/admin/groups`) não está incluindo os campos `empresa_id` e `telas_permitidas` em sua resposta, mesmo que eles existam no banco.
     *   **Solução:** A correção **deve ser feita no backend**, modificando a consulta SQL da API para incluir esses campos. O código frontend (`GroupSection.tsx`) já está preparado para usá-los quando fornecidos.
 
-## 10. Módulo de Gerenciamento de Usuários e Grupos
+## 11. Módulo de Gerenciamento de Usuários
 
 ### Edição de Grupos
 
@@ -609,7 +733,7 @@ Tipos comuns:
 *   **Implementação:** Modal acessado pela tabela de grupos (`GroupSection.tsx`).
 *   **Observação Importante:** Atualmente, devido a dados incompletos retornados pela API que carrega a lista inicial de grupos (falta de `empresa_id` e `telas_permitidas`), o modal de edição só consegue pré-preencher o nome do grupo. A funcionalidade completa depende da correção da API no backend. Veja a seção Troubleshooting para mais detalhes.
 
-## 11. Contato e Suporte
+## 12. Contato e Suporte
 
 Para suporte ou dúvidas sobre o projeto, entre em contato com:
 
@@ -618,4 +742,4 @@ Para suporte ou dúvidas sobre o projeto, entre em contato com:
 
 ---
 
-Documentação atualizada em: 10/04/2024 
+Documentação atualizada em: DD/MM/YYYY - Preencher Data Atual 

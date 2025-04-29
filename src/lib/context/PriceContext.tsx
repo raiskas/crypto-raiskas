@@ -46,18 +46,21 @@ export function PriceProvider({ children }: PriceProviderProps) {
   // <<< useEffect para buscar os IDs relevantes
   useEffect(() => {
     const fetchRelevantIds = async () => {
-      console.log("[PriceProvider] Buscando IDs de moedas relevantes...");
+      console.log('[PriceProvider] Buscando IDs de moedas relevantes...');
       setIsLoadingIds(true);
       try {
         const response = await fetch('/api/crypto/relevant-coin-ids', {
-          credentials: 'include' // Incluir cookies de autenticação
+          credentials: 'include'
         });
+        console.log(`[PriceProvider] Resposta de relevant-coin-ids status: ${response.status}`);
+        const ids = await response.json();
+        console.log('[PriceProvider] IDs recebidos de relevant-coin-ids:', ids);
+
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
+          const errorMsg = ids?.error || `Erro ${response.status}: ${response.statusText}`;
+          throw new Error(errorMsg); 
         }
-        const ids: string[] = await response.json();
-        console.log("[PriceProvider] IDs relevantes recebidos:", ids);
+
         setTrackedCoinIds(ids);
         // Não definimos erro aqui, pois a busca de preços pode funcionar mesmo sem todos os IDs
       } catch (err) {

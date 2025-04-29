@@ -83,22 +83,22 @@ vendas
   └── atualizado_em
 
 crypto_operacoes
-  ├── id (PK)
-  ├── moeda_id (TEXT)
-  ├── simbolo (TEXT)
-  ├── nome (TEXT)
-  ├── tipo (TEXT)
-  ├── quantidade (NUMERIC)
-  ├── preco_unitario (NUMERIC)
-  ├── valor_total (NUMERIC)
-  ├── taxa (NUMERIC)
-  ├── data_operacao (TIMESTAMPZ)
-  ├── exchange (TEXT)
-  ├── notas (TEXT)
-  ├── usuario_id (FK -> usuarios.id)
-  ├── grupo_id (FK -> grupos.id)
-  ├── criado_em (TIMESTAMPZ)
-  └── atualizado_em (TIMESTAMPZ)
+  ├── id (PK, UUID, DEFAULT uuid_generate_v4())
+  ├── moeda_id (TEXT, NOT NULL) - ID da moeda (ex: 'bitcoin', 'ethereum')
+  ├── simbolo (TEXT, NOT NULL) - Símbolo da moeda (ex: 'btc', 'eth')
+  ├── nome (TEXT, NOT NULL) - Nome da moeda (ex: 'Bitcoin', 'Ethereum')
+  ├── tipo (TEXT, NOT NULL, CHECK tipo IN ('compra', 'venda')) - Tipo da operação
+  ├── quantidade (NUMERIC, NOT NULL) - Quantidade de moedas negociadas
+  ├── preco_unitario (NUMERIC, NOT NULL) - Preço por unidade da moeda na operação
+  ├── valor_total (NUMERIC, NOT NULL) - Valor total da operação (quantidade * preco_unitario)
+  ├── taxa (NUMERIC, DEFAULT 0) - Taxas associadas à operação (opcional)
+  ├── data_operacao (TIMESTAMP WITH TIME ZONE, NOT NULL) - Data e hora da operação
+  ├── exchange (TEXT) - Exchange onde a operação ocorreu (opcional)
+  ├── notas (TEXT) - Notas adicionais (opcional)
+  ├── usuario_id (UUID, FK -> usuarios.id, NOT NULL) - Usuário que realizou a operação
+  ├── grupo_id (UUID, FK -> grupos.id) - Grupo associado à operação (opcional)
+  ├── criado_em (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
+  └── atualizado_em (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
 ```
 
 -- Nota: A existência das colunas `empresa_id` (FK), `is_master` (boolean) e `telas_permitidas` (_text/TEXT[]) 
@@ -229,6 +229,11 @@ CREATE INDEX idx_usuarios_empresa_id ON usuarios(empresa_id);
 CREATE INDEX idx_grupos_empresa_id ON grupos(empresa_id);
 CREATE INDEX idx_vendas_empresa_id ON vendas(empresa_id);
 CREATE INDEX idx_vendas_usuario_id ON vendas(usuario_id);
+
+-- Índices para crypto_operacoes
+CREATE INDEX idx_crypto_operacoes_usuario_id ON crypto_operacoes(usuario_id);
+CREATE INDEX idx_crypto_operacoes_moeda_id ON crypto_operacoes(moeda_id);
+CREATE INDEX idx_crypto_operacoes_data_operacao ON crypto_operacoes(data_operacao);
 ```
 
 ### Diretrizes para Índices

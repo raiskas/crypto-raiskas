@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server'; // Assumindo que esta função existe e funciona
+import { cookies } from 'next/headers';
+// <<< CORRIGIR IMPORT: Gerar tipos com `supabase gen types typescript --local > src/lib/database.types.ts` ou ajustar caminho >>>
+import { Database } from '@/lib/database.types'; 
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
 // Lista base de IDs (Top 10 da CoinGecko - pode ser atualizada)
 const BASE_COIN_IDS = [
@@ -10,54 +13,75 @@ const BASE_COIN_IDS = [
 export async function GET() {
   console.log('[API /relevant-coin-ids] Recebida requisição GET');
   try {
-    const supabase = await createServerSupabaseClient();
+    const cookieStore = cookies();
+    console.log('[API /relevant-coin-ids] Cookies recebidos:', JSON.stringify(cookieStore.getAll()));
 
-    // 1. Obter ID do usuário autenticado
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          // NOTA: set e remove podem não ser estritamente necessários em uma API GET,
+          // mas incluí-los para completude e caso a biblioteca os utilize internamente.
+          set(name: string, value: string, options: CookieOptions) {
+            cookieStore.set({ name, value, ...options })
+          },
+          remove(name: string, options: CookieOptions) {
+            cookieStore.delete({ name, ...options })
+          },
+        },
+      }
+    )
+
+    // 1. Obter ID do usuário autenticado (a partir dos cookies)
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
       console.error('[API /relevant-coin-ids] Erro de autenticação:', authError);
       return NextResponse.json({ error: 'Usuário não autenticado' }, { status: 401 });
     }
-    const userId = user.id;
-    console.log(`[API /relevant-coin-ids] Usuário autenticado: ${userId}`);
+    const authUserId = user.id; // <<< Renomear para clareza (ID de autenticação)
+    console.log(`[API /relevant-coin-ids] Usuário autenticado (Auth ID): ${authUserId}`);
 
-    // 2. Buscar IDs distintos das operações do usuário
-    // Precisamos buscar o ID do usuário na nossa tabela 'usuarios' a partir do auth_id
+    // 2. Buscar ID do usuário na tabela 'usuarios'
     const { data: userData, error: userError } = await supabase
       .from('usuarios')
       .select('id')
-      .eq('auth_id', userId)
+      .eq('auth_id', authUserId) // <<< Usar authUserId aqui
       .single();
 
     if (userError || !userData) {
-      console.error(`[API /relevant-coin-ids] Erro ao buscar usuário na tabela 'usuarios' para auth_id ${userId}:`, userError);
-      return NextResponse.json({ error: 'Usuário não encontrado no sistema' }, { status: 404 });
+      console.error(`[API /relevant-coin-ids] Erro ao buscar usuário na tabela 'usuarios' para auth_id ${authUserId}:`, userError);
+      // Retornar 404 se o usuário autenticado não existir na nossa tabela 'usuarios'
+      return NextResponse.json({ error: 'Usuário autenticado não encontrado no sistema' }, { status: 404 });
     }
-    const appUserId = userData.id;
+    const appUserId = userData.id; // <<< ID da tabela 'usuarios'
     console.log(`[API /relevant-coin-ids] ID do usuário na tabela 'usuarios': ${appUserId}`);
 
+    // 3. Buscar IDs distintos das operações do usuário
     const { data: operacoesIds, error: operacoesError } = await supabase
       .from('crypto_operacoes')
-      .select('moeda_id') // Seleciona apenas a coluna moeda_id
-      .eq('usuario_id', appUserId); // Filtra pelo ID do usuário da tabela 'usuarios'
-      // Não precisamos de distinct aqui ainda, vamos tratar no código
+      .select('moeda_id')
+      .eq('usuario_id', appUserId); // <<< Usar appUserId (ID da tabela 'usuarios')
 
     if (operacoesError) {
       console.error('[API /relevant-coin-ids] Erro ao buscar IDs de operações:', operacoesError);
       throw new Error('Erro ao buscar operações do usuário');
     }
 
-    const userCoinIds = operacoesIds 
-                        ? [...new Set(operacoesIds.map(op => op.moeda_id))] 
-                        : []; // Usa Set para garantir IDs únicos
+    const userCoinIds = operacoesIds
+                        ? [...new Set(operacoesIds.map(op => op.moeda_id))]
+                        : [];
     console.log(`[API /relevant-coin-ids] IDs das moedas do usuário:`, userCoinIds);
 
-    // 3. Combinar com a lista base e garantir unicidade
+    // 4. Combinar com a lista base e garantir unicidade
     const combinedIds = [...new Set([...BASE_COIN_IDS, ...userCoinIds])];
     console.log(`[API /relevant-coin-ids] IDs combinados e únicos:`, combinedIds);
 
-    // 4. Retornar a lista de IDs
+    // 5. Retornar a lista de IDs
     return NextResponse.json(combinedIds);
 
   } catch (error: unknown) {

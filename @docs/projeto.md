@@ -2,7 +2,7 @@
 
 ## Visão Geral
 
-O Crypto Raiskas é uma aplicação web moderna construída para gerenciamento empresarial, focando em gestão de usuários, controle de permissões, módulo de vendas e **gerenciamento de operações de criptomoedas**. A plataforma é desenvolvida utilizando tecnologias modernas e uma arquitetura escalável, permitindo a criação de um sistema seguro, eficiente e de fácil manutenção.
+O Crypto Raiskas é uma aplicação web moderna construída para gerenciamento empresarial, focando em gestão de usuários, controle de permissões, módulo de vendas e **gerenciamento de operações de criptomoedas, incluindo cálculo de performance com método FIFO**. A plataforma é desenvolvida utilizando tecnologias modernas e uma arquitetura escalável, permitindo a criação de um sistema seguro, eficiente e de fácil manutenção.
 
 ## Tecnologias Principais
 
@@ -27,18 +27,18 @@ src/
 │   │   ├── admin/           # Área administrativa
 │   │   │   └── usuarios/    # Gerenciamento de usuários
 │   │   ├── crypto/          # Módulo de Criptomoedas
-│   │   ├── dashboard/       # Dashboard principal (ou /home?)
+│   │   │   └── page.tsx     # Página principal do módulo
+│   │   ├── dashboard/       # Dashboard principal
 │   │   ├── home/            # Página inicial após login
-│   │   └── vendas/          # Módulo de vendas (exemplo)
+│   │   └── vendas/          # Módulo de vendas
 │   ├── api/                 # Rotas da API (Server-side)
-│   │   ├── admin/           # Endpoints administrativos
-│   │   │   └── users/       # CRUD de usuários
 │   │   ├── auth/            # Endpoints de autenticação
+│   │   ├── admin/           # Endpoints administrativos
 │   │   ├── crypto/          # Endpoints do módulo de cripto
 │   │   │   ├── operacoes/   # CRUD de operações cripto
-│   │   │   └── top-moedas/  # Busca top moedas (CoinGecko)
+│   │   │   ├── performance/ # Cálculo de performance FIFO
+│   │   │   └── ...          # Outras APIs relacionadas
 │   │   └── preco/           # Endpoint para preço do Bitcoin (cacheado)
-│   ├── layout.tsx           # Layout principal da aplicação
 │   └── page.tsx             # Página inicial (redireciona)
 ├── components/              # Componentes reutilizáveis
 │   ├── crypto/              # Componentes específicos do módulo crypto
@@ -47,11 +47,16 @@ src/
 │   └── theme-toggle.tsx     # Alternador de tema
 ├── lib/                     # Funções utilitárias e bibliotecas
 │   ├── context/             # Context API Providers
-│   │   └── PriceContext.tsx # Contexto para preço do Bitcoin
+│   │   └── PriceContext.tsx # Contexto para preços de criptomoedas
+│   ├── crypto/              # Lógica específica de cripto
+│   │   └── fifoCalculations.ts # Implementação do cálculo FIFO
 │   ├── hooks/               # React hooks personalizados (useAuth, useUserData, usePrice)
 │   ├── supabase/            # Integrações com Supabase
 │   └── utils/               # Funções utilitárias (permissions, etc)
+│   └── coingecko.ts         # Funções para interagir com a API CoinGecko
 ├── types/                   # Definições de tipos TypeScript
+│   ├── crypto.ts            # Tipos específicos do módulo crypto
+│   └── supabase.ts          # Tipos gerados do esquema Supabase
 └── middleware.ts            # Middleware do Next.js para proteção de rotas
 ```
 
@@ -228,7 +233,7 @@ SUPABASE_SERVICE_ROLE_KEY=sua_chave_service_role_do_supabase
 - Implementação de formulários com validação
 
 ### Gerenciamento de Estado Compartilhado
-- Uso da Context API para dados globais no dashboard, como o preço do Bitcoin (ver `PriceContext` e `usePrice`).
+- Uso da Context API (`PriceContext`) para fornecer preços atualizados de criptomoedas aos componentes do dashboard.
 
 ### Gerenciamento de Usuários
 - Interface administrativa para listar, criar, editar e desativar/excluir usuários.
@@ -236,9 +241,10 @@ SUPABASE_SERVICE_ROLE_KEY=sua_chave_service_role_do_supabase
 - Integração com Supabase Auth para gerenciamento de credenciais.
 
 ### Módulo de Criptomoedas
-- Registro e visualização de operações de compra e venda de criptomoedas.
-- Cálculo de portfólio consolidado por moeda.
-- API (`/api/crypto/...`) para operações e busca de dados de mercado (CoinGecko).
+- Registro e visualização de operações de compra e venda.
+- **Cálculo de performance do portfólio utilizando o método FIFO (First-In, First-Out)** para custo base, custo médio e lucro/prejuízo realizado.
+- API (`/api/crypto/performance`) que orquestra o cálculo FIFO de forma isolada por moeda e busca preços de mercado.
+- Frontend (`/crypto`) exibe o portfólio consolidado, histórico de operações e utiliza preços do `PriceContext` para valorização atual.
 - Formulário modal para adicionar/editar operações.
 
 ### Layout e Interface

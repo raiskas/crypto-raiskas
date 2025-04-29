@@ -1,13 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { Database } from '@/lib/database.types';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { Database } from '@/types/supabase'; // Garantir que esta linha exista
-import { supabaseConfig } from '@/lib/config'; // Manter se usado para outras lógicas, senão remover
-import { AUTH_ROUTES, HOME_ROUTE, PUBLIC_ROUTES } from '@/lib/config/routes'; // Importar constantes
-
-// --- Configuração das Rotas ---
-// REMOVIDO: const PUBLIC_ROUTES = ['/signin', '/signup'];
-// REMOVIDO: const AUTH_ROUTES = ['/signin', '/signup']; // Rotas que um usuário logado não deve acessar
-// REMOVIDO: const HOME_ROUTE = '/home';
+import { AUTH_ROUTES, HOME_ROUTE, PUBLIC_ROUTES } from '@/lib/config/routes';
 
 // Mapeamento de rotas para módulos de permissão necessários
 const PERMISSION_MAP: { [key: string]: string } = {
@@ -66,8 +60,8 @@ export async function middleware(request: NextRequest) {
   // Criar cliente Supabase (APENAS para rotas não públicas)
   console.log("[Middleware] Criando cliente Supabase...");
   const supabase = createServerClient<Database>(
-    supabaseConfig.url!,
-    supabaseConfig.anonKey!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         get(name: string) {

@@ -263,6 +263,44 @@ O projeto está funcional com as seguintes capacidades:
    - Implementação de tratamento de erros mais robustos nas APIs
    - Simplificação da interface de autenticação para melhor experiência do usuário
 
+## Implementação Módulo Cripto e Cálculo FIFO (DD/MM/YYYY - Preencher Data Atual)
+
+1. **Estrutura Inicial do Módulo Crypto**
+   - Criação da página principal em `/src/app/(dashboard)/crypto/page.tsx` para visualização do portfólio e operações.
+   - Definição da estrutura da tabela `crypto_operacoes` no banco de dados para registrar compras e vendas.
+   - Criação de API inicial para CRUD de operações (`/api/crypto/operacoes`).
+
+2. **Implementação do Cálculo FIFO**
+   - Criação da função `calcularPerformanceFifo` em `src/lib/crypto/fifoCalculations.ts`.
+   - Lógica implementada para processar operações (ordenadas por data) de uma única moeda, aplicando o método First-In, First-Out para:
+       - Calcular a quantidade atual restante (`quantidadeAtual`).
+       - Determinar o custo base dos lotes restantes (`custoBaseTotalAtual`).
+       - Calcular o custo médio ponderado dos lotes restantes (`custoMedioAtual`).
+       - Calcular o lucro/prejuízo realizado total (`lucroPrejuizoRealizadoTotal`) acumulado das vendas.
+
+3. **Criação da API de Performance (`/api/crypto/performance`)**
+   - Implementação da rota `GET /api/crypto/performance/route.ts`.
+   - Lógica para:
+       - Buscar todas as operações do usuário autenticado.
+       - Agrupar as operações por `moeda_id`.
+       - Buscar os preços de mercado atuais para todas as moedas envolvidas via CoinGecko (`fetchMarketDataByIds`).
+       - Iterar sobre cada moeda, chamando `calcularPerformanceFifo` com os dados isolados daquela moeda e seu preço atual.
+       - Retornar um objeto com a performance calculada para cada moeda e um sumário total.
+
+4. **Integração Frontend (`CryptoPage`)**
+   - A página busca os dados de performance da API `/api/crypto/performance`.
+   - Utiliza o `PriceContext` (`usePrice`) para obter os preços de mercado mais recentes disponíveis no cliente.
+   - A função `calcularPortfolio` processa os dados:
+       - Utiliza `quantidadeAtual`, `custoBaseTotalAtual`, `custoMedioAtual` e `lucroPrejuizoRealizadoTotal` vindos da API.
+       - Usa o `precoAtual` do `PriceContext`.
+       - Recalcula `valorDeMercadoAtual` e `lucroPrejuizoNaoRealizado` localmente usando o `precoAtual` do contexto para garantir consistência visual na tabela.
+   - Exibe o portfólio consolidado e os totais na interface.
+
+5. **Correção de Bug de Interação FIFO (DD/MM/YYYY - Preencher Data Atual)**
+   - **Problema:** Identificado que a realização de uma venda de uma moeda (ex: XRP) estava afetando incorretamente o cálculo da quantidade atual de outra moeda (ex: BTC) na mesma requisição da API `/api/crypto/performance`. Isso indicava um efeito colateral (mutação de dados) entre as iterações do loop que calculava a performance para cada moeda.
+   - **Solução:** Modificada a rota da API (`/api/crypto/performance/route.ts`) para garantir isolamento completo entre os cálculos. Antes de chamar `calcularPerformanceFifo` para cada moeda, agora é criada uma **cópia profunda (deep copy)** do array de operações daquela moeda usando `JSON.parse(JSON.stringify(operacoesPorMoeda[moedaId]))`.
+   - **Resultado:** A cópia profunda impede qualquer possibilidade de mutação acidental dos dados de uma moeda afetar o cálculo das moedas subsequentes, corrigindo o bug e garantindo a independência dos cálculos FIFO por moeda.
+
 ## Próximos Passos Sugeridos
 
 1. **Interface de Usuário**

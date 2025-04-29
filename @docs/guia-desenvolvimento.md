@@ -69,16 +69,25 @@ Este guia fornece instruções detalhadas para desenvolvedores que estão começ
 - **CSS**: Use Tailwind CSS para estilos
 - **Formulários**: Use React Hook Form + Zod para validação
 - **Estado**: Gerenciamento local com hooks useState/useReducer
-- **Estado Compartilhado (Ex: Preços Crypto)**: Para dados que precisam ser acessíveis em múltiplos componentes do dashboard (como preços de criptomoedas atualizados), utilize o padrão Context API. Exemplo implementado: `PriceProvider` e `usePrice` (em `src/lib/context/PriceContext.tsx`) para o preço do Bitcoin. Use `usePrice()` em qualquer Client Component dentro do `(dashboard)/layout.tsx` para acessar o valor.
+- **Estado Compartilhado (Preços Crypto)**: Para dados que precisam ser acessíveis em múltiplos componentes do dashboard (como preços de criptomoedas atualizados), utilize o padrão Context API. Exemplo implementado: `PriceProvider` e `usePrice` (em `src/lib/context/PriceContext.tsx`). Use `usePrice()` em qualquer Client Component dentro do `(dashboard)/layout.tsx` para acessar o mapa de preços atualizados.
 - **Rotas**: Siga a convenção de nomenclatura do Next.js App Router
 - **Isolamento**: Coloque componentes específicos de página em seus diretórios
 
 ### Principais Diretórios
 
 - **`/src/app`**: Páginas e layout da aplicação
+    - **`/src/app/(dashboard)/crypto`**: Página principal do módulo de criptomoedas.
+    - **`/src/app/api/crypto`**: APIs relacionadas ao módulo de criptomoedas (operações, performance, market-data).
 - **`/src/components`**: Componentes reutilizáveis
+    - **`/src/components/crypto`**: Componentes específicos do módulo crypto (ex: `OperacaoModal`).
 - **`/src/lib`**: Funções utilitárias e bibliotecas
+    - **`/src/lib/crypto`**: Lógica específica do módulo crypto (ex: `fifoCalculations.ts`).
+    - **`/src/lib/context`**: Context Providers (ex: `PriceContext.tsx`).
+    - **`/src/lib/hooks`**: Hooks personalizados (ex: `usePrice.ts`).
+    - **`/src/lib/coingecko.ts`**: Funções para interagir com a API CoinGecko.
 - **`/src/types`**: Definições de tipos TypeScript
+    - **`/src/types/crypto.ts`**: Tipos específicos do módulo crypto.
+    - **`/src/types/supabase.ts`**: Tipos gerados do Supabase.
 
 ## Fluxo de Trabalho de Desenvolvimento
 
@@ -111,7 +120,7 @@ Este guia fornece instruções detalhadas para desenvolvedores que estão começ
 3. **Proteja rotas de API** com verificações de autenticação e permissões
 
 ### Trabalhando com Estado Compartilhado (Preço Crypto)
-*   Para acessar o preço atualizado do Bitcoin em qualquer componente do dashboard, use o hook `usePrice()` importado de `@/lib/context/PriceContext`.
+*   Para acessar os preços atuais das criptomoedas em qualquer componente do dashboard, use o hook `usePrice()` importado de `@/lib/hooks/usePrice` (que consome o `PriceContext`). Ele retorna um mapa onde as chaves são os IDs das moedas (ex: 'bitcoin') e os valores são os preços numéricos.
 
 ## Padrões de Código
 
@@ -356,6 +365,10 @@ Esta seção documenta problemas identificados que requerem atenção ou soluç�
 4.  **Cache da API CoinGecko na Vercel (Resolvido):**
     *   **Problema Anterio:** O preço do Bitcoin buscado da CoinGecko não atualizava na Vercel, exceto após um novo deploy.
     *   **Solução Aplicada:** Foi criada uma API route intermediária (`/api/preco`) que usa o cache `fetch` do Next.js com `revalidate: 60` para garantir a atualização periódica no servidor.
+
+5.  **Precisão dos Cálculos Crypto:**
+    *   **Problema:** A precisão dos cálculos de performance FIFO depende inteiramente da **exatidão e completude dos dados de operações registrados na tabela `crypto_operacoes`**. Garanta que todas as compras e vendas estejam registradas corretamente.
+    *   **Solução:** Verifique a lógica existente em `src/lib/crypto/fifoCalculations.ts` e as APIs em `/src/app/api/crypto/` (especialmente `/performance`) antes de adicionar novas funcionalidades relacionadas ao cálculo de portfólio.
 
 ## Contribuições
 

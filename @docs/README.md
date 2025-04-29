@@ -60,7 +60,7 @@ Para suporte ou dúvidas sobre o projeto, entre em contato com:
 
 ---
 
-Documentação atualizada em: 09/04/2024 
+Documentação atualizada em: DD/MM/YYYY - Preencher Data Atual
 
 *   `docs/menu-sidebar.md`: Detalhes sobre o menu lateral.
 *   `docs/menu-superior.md`: Detalhes sobre o menu superior.
@@ -70,8 +70,9 @@ Documentação atualizada em: 09/04/2024
 **Status Atual e Problemas Conhecidos:**
 
 *   O sistema principal de autenticação e gerenciamento de usuários está funcional.
-*   **Preço de Criptomoedas:** Implementado sistema de cache (`/api/preco`) e compartilhamento de estado (`PriceContext` / `usePrice`) para exibição consistente do preço do Bitcoin no dashboard. Utilize `usePrice()` para acessar o valor em novos componentes.
-*   A edição de grupos carrega apenas dados parciais devido a limitações na API `GET /api/admin/groups` (requer correção no backend). Veja `guia-desenvolvimento.md` para detalhes.
+*   **Módulo de Criptomoedas:** Implementado com registro de operações e cálculo de performance de portfólio usando método FIFO. O bug de interação entre cálculos de moedas diferentes foi corrigido (ver histórico).
+*   **Gerenciamento de Preços Crypto:** Implementado sistema de cache (`/api/preco` - *revisar relevância*) e compartilhamento de estado (`PriceContext` / `usePrice`) para preços consistentes no dashboard. API `/api/crypto/market-data` busca dados via CoinGecko.
+*   **Edição de Grupos (Admin):** A API `GET /api/admin/groups` retorna dados incompletos (omitindo `empresa_id` e `telas_permitidas`), impedindo o pré-preenchimento completo do modal de edição. Requer correção no backend.
 *   Consulte `guia-desenvolvimento.md` para outros problemas conhecidos e soluções pendentes.
 
 ## Como Contribuir
