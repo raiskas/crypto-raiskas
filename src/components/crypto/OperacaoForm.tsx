@@ -1,7 +1,7 @@
 "use client"; // Formulário interativo, precisa ser client component
 
 import { useState, useEffect, useCallback } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Image from "next/image";
@@ -29,6 +29,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { NumericFormat } from 'react-number-format';
 
 // --- Tipos ---
 interface Moeda {
@@ -98,8 +99,6 @@ export const OperacaoForm: React.FC<OperacaoFormProps> = ({
   const [coinSearchError, setCoinSearchError] = useState<string | null>(null);
   const [selectedCoin, setSelectedCoin] = useState<Moeda | null>(null);
   const isEditing = !!initialData;
-
-  // Renomeado para clareza
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [displayValue, setDisplayValue] = useState("");
 
@@ -169,7 +168,6 @@ export const OperacaoForm: React.FC<OperacaoFormProps> = ({
         form.setValue("grupo_id", grupoIdUsuario);
     }
   }, [isEditing, initialData, form, grupoIdUsuario]); // Adicionar grupoIdUsuario como dependência
-
 
   // Cálculo do valor total
   const quantidade = form.watch("quantidade");
@@ -358,9 +356,82 @@ export const OperacaoForm: React.FC<OperacaoFormProps> = ({
 
         {/* --- Quantidade, Preço, Valor Total --- */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField control={form.control} name="quantidade" render={({ field }) => (<FormItem><FormLabel>Quantidade</FormLabel><FormControl><Input type="number" step="any" placeholder="0.00000000" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-          <FormField control={form.control} name="preco_unitario" render={({ field }) => (<FormItem><FormLabel>Preço Unitário (USD)</FormLabel><FormControl><Input type="number" step="any" placeholder="0.00" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-          <FormField control={form.control} name="valor_total" render={({ field }) => (<FormItem><FormLabel>Valor Total (USD)</FormLabel><FormControl><Input type="number" step="any" placeholder="0.00" {...field} readOnly/></FormControl><FormDescription>Calculado</FormDescription><FormMessage /></FormItem>)}/>
+          <FormField
+            control={form.control}
+            name="quantidade"
+            render={({ field }) => (
+              <FormItem className="flex-1">
+                <FormLabel>Quantidade</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    step="any"
+                    placeholder="0.00"
+                    {...field}
+                    onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
+                    disabled={isLoading}
+                    className="hide-number-spinners"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="preco_unitario"
+            render={({ field }) => (
+              <FormItem className="flex-1">
+                <FormLabel>Preço Unitário (USD)</FormLabel>
+                <FormControl>
+                  <NumericFormat
+                    customInput={Input}
+                    placeholder="0.00"
+                    value={field.value}
+                    onValueChange={(values) => {
+                      field.onChange(values.floatValue === undefined ? 0 : values.floatValue);
+                    }}
+                    thousandSeparator=","
+                    decimalSeparator="."
+                    decimalScale={8}
+                    allowNegative={false}
+                    disabled={isLoading}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="valor_total"
+            render={({ field }) => (
+              <FormItem className="flex-1">
+                <FormLabel>Valor Total (USD)</FormLabel>
+                <FormControl>
+                  <NumericFormat
+                    customInput={Input}
+                    placeholder="Calculado"
+                    value={field.value} // Usa o valor numérico direto do form
+                    thousandSeparator=","
+                    decimalSeparator="."
+                    decimalScale={2} // Total geralmente exibido com 2 casas decimais
+                    fixedDecimalScale={true} // Força as 2 casas decimais
+                    allowNegative={false}
+                    readOnly // Campo calculado
+                    disabled={isLoading}
+                    name={field.name}
+                    // Não precisa de onValueChange aqui, pois é readOnly
+                    // Não precisa de hide-number-spinners
+                  />
+                </FormControl>
+                <FormDescription>Calculado</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
         {/* --- Data e Exchange --- */}

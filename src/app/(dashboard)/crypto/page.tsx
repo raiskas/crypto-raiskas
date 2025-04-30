@@ -26,7 +26,7 @@ import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
+import { cn, formatDate, formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { OperacaoModal } from "@/components/crypto/OperacaoModal";
 import { toast } from "sonner";
@@ -594,38 +594,7 @@ export default function CryptoPage() {
 
   const totais = calcularTotais();
 
-  // Formatar data (String Split para evitar timezone)
-  const formatarData = (dataStr: string | null | undefined): string => {
-    if (!dataStr || typeof dataStr !== 'string' || !dataStr.includes('T')) {
-      // Retorna um valor padrão ou a string original se o formato for inesperado
-      return dataStr || "Data inválida";
-    }
-    try {
-      // Pega a parte antes do 'T' -> "YYYY-MM-DD"
-      const datePart = dataStr.split('T')[0];
-      // Divide em ano, mês, dia
-      const [year, month, day] = datePart.split('-');
-      // Valida se temos 3 partes
-      if (!year || !month || !day) {
-        return dataStr; // Retorna original se o split falhar
-      }
-      // Remonta como "DD/MM/YYYY"
-      return `${day}/${month}/${year}`;
-    } catch (e) {
-      console.error("Erro ao formatar data (string split):", dataStr, e);
-      return dataStr; // Retorna original em caso de erro
-    }
-  };
-
-  // Formatar valores monetários
-  const formatarMoeda = (valor: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(valor);
-  };
-
-  // Formatar valores percentuais
+  // Função para formatar percentual (mantida)
   const formatarPercentual = (valor: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'percent',
@@ -634,14 +603,15 @@ export default function CryptoPage() {
     }).format(valor / 100);
   };
 
-  // Formatar quantidade
+  // Função para formatar quantidade (RESTAURADA para lógica não monetária)
   const formatarQuantidade = (valor: number) => {
-    // Se o valor for inteiro, não mostra casas decimais
-    if (Number.isInteger(valor)) {
-      return valor.toString();
-    }
-    // Se tiver casas decimais, mostra até 8 casas
-    return valor.toFixed(8).replace(/\.?0+$/, '');
+     if (typeof valor !== 'number' || isNaN(valor)) {
+        return "0"; // Ou "" dependendo do que faz mais sentido para valor inválido
+     }
+     // Formata com até 8 decimais, removendo zeros finais não significativos
+     return Number(valor.toFixed(8)).toString();
+     // Alternativa: Intl.NumberFormat sem estilo currency/decimal, só para locale US
+     // return new Intl.NumberFormat('en-US', { maximumFractionDigits: 8 }).format(valor);
   };
 
   // MODIFICAR: Função para lidar com clique em "Nova Operação"
@@ -853,7 +823,7 @@ export default function CryptoPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatarMoeda(totaisPortfolioAtualizado.valorTotalAtualizado)}
+              {formatCurrency(totaisPortfolioAtualizado.valorTotalAtualizado)}
             </div>
           </CardContent>
         </Card>
@@ -864,7 +834,7 @@ export default function CryptoPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatarMoeda(totaisPortfolioAtualizado.valorTotalInvestido)}
+              {formatCurrency(totaisPortfolioAtualizado.valorTotalInvestido)}
             </div>
           </CardContent>
         </Card>
@@ -879,7 +849,7 @@ export default function CryptoPage() {
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${totaisPortfolioAtualizado.lucroTotalNaoRealizado >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {formatarMoeda(totaisPortfolioAtualizado.lucroTotalNaoRealizado)}
+              {formatCurrency(totaisPortfolioAtualizado.lucroTotalNaoRealizado)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               ({formatarPercentual(totaisPortfolioAtualizado.valorTotalInvestido > 0 ? (totaisPortfolioAtualizado.lucroTotalNaoRealizado / totaisPortfolioAtualizado.valorTotalInvestido) * 100 : 0)})
@@ -897,7 +867,7 @@ export default function CryptoPage() {
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${totaisPortfolioAtualizado.lucroTotalRealizado >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {formatarMoeda(totaisPortfolioAtualizado.lucroTotalRealizado)}
+              {formatCurrency(totaisPortfolioAtualizado.lucroTotalRealizado)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Total desde o início
@@ -992,18 +962,18 @@ export default function CryptoPage() {
                           )}
                         </TableCell>
                         <TableCell>{formatarQuantidade(item.quantidade)}</TableCell>
-                        <TableCell>{formatarMoeda(item.valorMedio)}</TableCell>
-                        <TableCell>{formatarMoeda(item.valorTotal)}</TableCell>
-                        <TableCell>{formatarMoeda(item.precoAtual)}</TableCell>
-                        <TableCell>{formatarMoeda(item.valorAtualizado)}</TableCell>
+                        <TableCell>{formatCurrency(item.valorMedio)}</TableCell>
+                        <TableCell>{formatCurrency(item.valorTotal)}</TableCell>
+                        <TableCell>{formatCurrency(item.precoAtual)}</TableCell>
+                        <TableCell>{formatCurrency(item.valorAtualizado)}</TableCell>
                         <TableCell className={cn(item.lucro >= 0 ? "text-green-600" : "text-red-600")}>
-                          {formatarMoeda(item.lucro)}
+                          {formatCurrency(item.lucro)}
                         </TableCell>
                         <TableCell className={cn(item.percentual >= 0 ? "text-green-600" : "text-red-600")}>
                           {formatarPercentual(item.percentual)}
                         </TableCell>
                         <TableCell className={cn(item.lucroRealizado >= 0 ? "text-green-600" : "text-red-600")}>
-                          {formatarMoeda(item.lucroRealizado)}
+                          {formatCurrency(item.lucroRealizado)}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1012,17 +982,17 @@ export default function CryptoPage() {
                       <TableCell>Total</TableCell>
                       <TableCell></TableCell>
                       <TableCell></TableCell>
-                      <TableCell>{formatarMoeda(totaisPortfolioAtualizado.valorTotalInvestido)}</TableCell>
+                      <TableCell>{formatCurrency(totaisPortfolioAtualizado.valorTotalInvestido)}</TableCell>
                       <TableCell></TableCell>
-                      <TableCell>{formatarMoeda(totaisPortfolioAtualizado.valorTotalAtualizado)}</TableCell>
+                      <TableCell>{formatCurrency(totaisPortfolioAtualizado.valorTotalAtualizado)}</TableCell>
                       <TableCell className={cn(totaisPortfolioAtualizado.lucroTotalNaoRealizado >= 0 ? "text-green-600" : "text-red-600")}>
-                        {formatarMoeda(totaisPortfolioAtualizado.lucroTotalNaoRealizado)}
+                        {formatCurrency(totaisPortfolioAtualizado.lucroTotalNaoRealizado)}
                       </TableCell>
                       <TableCell className={cn(percentualTotalPortfolio > 0 ? "text-green-600" : "text-red-600")}>
                         {formatarPercentual(percentualTotalPortfolio)}
                       </TableCell>
                       <TableCell className={cn(totaisPortfolioAtualizado.lucroTotalRealizado >= 0 ? "text-green-600" : "text-red-600")}>
-                        {formatarMoeda(totaisPortfolioAtualizado.lucroTotalRealizado)}
+                        {formatCurrency(totaisPortfolioAtualizado.lucroTotalRealizado)}
                       </TableCell>
                     </TableRow>
                   </TableBody>
@@ -1047,18 +1017,18 @@ export default function CryptoPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div><span className="text-muted-foreground">Qtde Atual:</span> {formatarQuantidade(item.quantidade)}</div>
-                      <div><span className="text-muted-foreground">Custo Médio:</span> {formatarMoeda(item.valorMedio)}</div>
-                      <div><span className="text-muted-foreground">Custo Base:</span> {formatarMoeda(item.valorTotal)}</div>
-                      <div><span className="text-muted-foreground">Preço Atual:</span> {formatarMoeda(item.precoAtual)}</div>
-                      <div><span className="text-muted-foreground">Valor Atual:</span> {formatarMoeda(item.valorAtualizado)}</div>
+                      <div><span className="text-muted-foreground">Custo Médio:</span> {formatCurrency(item.valorMedio)}</div>
+                      <div><span className="text-muted-foreground">Custo Base:</span> {formatCurrency(item.valorTotal)}</div>
+                      <div><span className="text-muted-foreground">Preço Atual:</span> {formatCurrency(item.precoAtual)}</div>
+                      <div><span className="text-muted-foreground">Valor Atual:</span> {formatCurrency(item.valorAtualizado)}</div>
                       <div className={cn(item.lucro >= 0 ? "text-green-600" : "text-red-600")}>
-                        <span className="text-muted-foreground">L/P Não Real.:</span> {formatarMoeda(item.lucro)}
+                        <span className="text-muted-foreground">L/P Não Real.:</span> {formatCurrency(item.lucro)}
                       </div>
                       <div className={cn(item.percentual >= 0 ? "text-green-600" : "text-red-600")}>
                         ({formatarPercentual(item.percentual)})
                       </div>
                       <div className={cn(item.lucroRealizado >= 0 ? "text-green-600" : "text-red-600")}>
-                        <span className="text-muted-foreground">L/P Realizado:</span> {formatarMoeda(item.lucroRealizado)}
+                        <span className="text-muted-foreground">L/P Realizado:</span> {formatCurrency(item.lucroRealizado)}
                       </div>
                     </div>
                   </div>
@@ -1067,13 +1037,13 @@ export default function CryptoPage() {
                 <div className="border-t-2 border-border p-4">
                   <div className="font-semibold mb-2">Total Portfólio</div>
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div><span className="text-muted-foreground">Custo Base:</span> {formatarMoeda(totaisPortfolioAtualizado.valorTotalInvestido)}</div>
-                    <div><span className="text-muted-foreground">Valor Atual:</span> {formatarMoeda(totaisPortfolioAtualizado.valorTotalAtualizado)}</div>
+                    <div><span className="text-muted-foreground">Custo Base:</span> {formatCurrency(totaisPortfolioAtualizado.valorTotalInvestido)}</div>
+                    <div><span className="text-muted-foreground">Valor Atual:</span> {formatCurrency(totaisPortfolioAtualizado.valorTotalAtualizado)}</div>
                     <div className={cn(totaisPortfolioAtualizado.lucroTotalNaoRealizado >= 0 ? "text-green-600" : "text-red-600")}>
-                      <span className="text-muted-foreground">L/P Não Real.:</span> {formatarMoeda(totaisPortfolioAtualizado.lucroTotalNaoRealizado)}
+                      <span className="text-muted-foreground">L/P Não Real.:</span> {formatCurrency(totaisPortfolioAtualizado.lucroTotalNaoRealizado)}
                     </div>
                     <div className={cn(totaisPortfolioAtualizado.lucroTotalRealizado >= 0 ? "text-green-600" : "text-red-600")}>
-                      <span className="text-muted-foreground">L/P Realizado:</span> {formatarMoeda(totaisPortfolioAtualizado.lucroTotalRealizado)}
+                      <span className="text-muted-foreground">L/P Realizado:</span> {formatCurrency(totaisPortfolioAtualizado.lucroTotalRealizado)}
                     </div>
                   </div>
                 </div>
@@ -1230,7 +1200,7 @@ export default function CryptoPage() {
                           {activeTab === 'venda' ? (
                             <>
                               {/* Células permitidas para Venda */}
-                              {true && <TableCell>{formatarData(op.data_operacao)}</TableCell>}
+                              {true && <TableCell>{formatDate(op.data_operacao)}</TableCell>}
                               {true && (
                                 <TableCell>
                                   <Badge variant={"destructive"}> {/* Sempre Venda aqui */}
@@ -1254,8 +1224,8 @@ export default function CryptoPage() {
                                 </TableCell>
                               )}
                               {true && <TableCell>{formatarQuantidade(op.quantidade)}</TableCell>}
-                              {true && <TableCell>{formatarMoeda(op.preco_unitario)}</TableCell>}
-                              {true && <TableCell>{formatarMoeda(op.valor_total)}</TableCell>}
+                              {true && <TableCell>{formatCurrency(op.preco_unitario)}</TableCell>}
+                              {true && <TableCell>{formatCurrency(op.valor_total)}</TableCell>}
                               {/* Colunas ocultas para Venda: Valor Atual, Valor Total Atual, Lucro/Prejuízo, % */}
                               {true && <TableCell>{op.exchange}</TableCell>}
                               {true && (
@@ -1272,7 +1242,7 @@ export default function CryptoPage() {
                             <>
                               {/* Células para Compras ou Todas */}
                               {/* Células Comuns - Sempre mostrar */}
-                              <TableCell>{formatarData(op.data_operacao)}</TableCell>
+                              <TableCell>{formatDate(op.data_operacao)}</TableCell>
                               <TableCell>
                                 <Badge variant={op.tipo === "compra" ? "success" : "destructive"}>
                                   {op.tipo.charAt(0).toUpperCase() + op.tipo.slice(1)}
@@ -1291,16 +1261,16 @@ export default function CryptoPage() {
                                 )}
                               </TableCell>
                               <TableCell>{formatarQuantidade(op.quantidade)}</TableCell>
-                              <TableCell>{formatarMoeda(op.preco_unitario)}</TableCell>
-                              <TableCell>{formatarMoeda(op.valor_total)}</TableCell>
+                              <TableCell>{formatCurrency(op.preco_unitario)}</TableCell>
+                              <TableCell>{formatCurrency(op.valor_total)}</TableCell>
 
                               {/* Células Específicas - Mostrar apenas em Compras */}
                               {activeTab === 'compra' && (
                                 <>
-                                  <TableCell>{formatarMoeda(precoAtual)}</TableCell>
-                                  <TableCell>{formatarMoeda(valorAtualizado)}</TableCell>
+                                  <TableCell>{formatCurrency(precoAtual)}</TableCell>
+                                  <TableCell>{formatCurrency(valorAtualizado)}</TableCell>
                                   <TableCell className={cn(lucroPrejuizo > 0 ? "text-green-600" : lucroPrejuizo < 0 ? "text-red-600" : "")}>
-                                    {formatarMoeda(lucroPrejuizo)}
+                                    {formatCurrency(lucroPrejuizo)}
                                   </TableCell>
                                   <TableCell className={cn(percentual > 0 ? "text-green-600" : percentual < 0 ? "text-red-600" : "")}>
                                     {formatarPercentual(percentual)}
@@ -1338,7 +1308,7 @@ export default function CryptoPage() {
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <div className="font-medium">{op.nome} ({op.simbolo.toUpperCase()})</div>
-                            <div className="text-sm text-muted-foreground">{formatarData(op.data_operacao)}</div>
+                            <div className="text-sm text-muted-foreground">{formatDate(op.data_operacao)}</div>
                           </div>
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                             op.tipo === "compra" 
@@ -1360,13 +1330,13 @@ export default function CryptoPage() {
                         {/* Valor Op. */}
                         {true && (
                           <div>
-                            <span className="text-muted-foreground">Valor Op.:</span> {formatarMoeda(op.preco_unitario)}
+                            <span className="text-muted-foreground">Valor Op.:</span> {formatCurrency(op.preco_unitario)}
                           </div>
                         )}
                         {/* Total Op. */}
                         {true && (
                           <div>
-                            <span className="text-muted-foreground">Total Op.:</span> {formatarMoeda(op.valor_total)}
+                            <span className="text-muted-foreground">Total Op.:</span> {formatCurrency(op.valor_total)}
                           </div>
                         )}
                         {/* Exchange */}
@@ -1378,13 +1348,13 @@ export default function CryptoPage() {
                         {/* Preço Atual */}
                         {activeTab === 'compra' && (
                           <div>
-                            <span className="text-muted-foreground">Preço Atual:</span> {formatarMoeda(precoAtual)}
+                            <span className="text-muted-foreground">Preço Atual:</span> {formatCurrency(precoAtual)}
                           </div>
                         )}
                         {/* Valor Atual */}
                         {activeTab === 'compra' && (
                           <div>
-                            <span className="text-muted-foreground">Valor Atual:</span> {formatarMoeda(valorAtualizado)}
+                            <span className="text-muted-foreground">Valor Atual:</span> {formatCurrency(valorAtualizado)}
                           </div>
                         )}
                         {/* Lucro/Prejuízo */}
@@ -1392,7 +1362,7 @@ export default function CryptoPage() {
                           <div className={cn(
                             lucroPrejuizo > 0 ? "text-green-600" : lucroPrejuizo < 0 ? "text-red-600" : ""
                           )}>
-                            <span className="text-muted-foreground">Lucro/Prejuízo:</span> {formatarMoeda(lucroPrejuizo)}
+                            <span className="text-muted-foreground">Lucro/Prejuízo:</span> {formatCurrency(lucroPrejuizo)}
                           </div>
                         )}
                         {/* % */}

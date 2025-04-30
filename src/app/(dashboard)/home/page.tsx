@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Image from "next/image";
 import { MarketDataMap, FullCoinData } from "@/lib/coingecko";
-import { cn } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import type { CryptoPerformanceState, PerformanceSummary } from "@/types/crypto";
 
 interface TopMoeda {
@@ -47,13 +47,6 @@ export default function HomePage() {
   const [topMoedas, setTopMoedas] = useState<TopMoeda[]>([]);
   const [loadingTopMoedas, setLoadingTopMoedas] = useState(true);
   const [errorTopMoedas, setErrorTopMoedas] = useState<string | null>(null);
-
-  const formatarMoeda = (valor: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(valor);
-  };
 
   const formatarPercentual = (valor: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -180,8 +173,6 @@ export default function HomePage() {
   const totalInvestido = summary ? (summary.valorTotalAtual - summary.totalNaoRealizado) : 0;
   const lucroNaoRealizado = summary?.totalNaoRealizado ?? 0;
   const lucroRealizado = summary?.totalRealizado ?? 0;
-  const lucroTotal = lucroNaoRealizado + lucroRealizado;
-  const percentualTotal = totalInvestido > 0 ? (lucroTotal / totalInvestido) * 100 : 0;
 
   return (
     <div className="w-full px-4 py-10">
@@ -210,7 +201,7 @@ export default function HomePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {loadingPerformance ? "Carregando..." : formatarMoeda(valorTotalAtual)}
+              $ {loadingPerformance ? "Carregando..." : formatCurrency(valorTotalAtual)}
             </div>
              <p className="text-xs text-muted-foreground">
                 Valor atual de mercado
@@ -226,7 +217,7 @@ export default function HomePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {loadingPerformance ? "Carregando..." : formatarMoeda(totalInvestido)}
+              $ {loadingPerformance ? "Carregando..." : formatCurrency(totalInvestido)}
             </div>
              <p className="text-xs text-muted-foreground">
                 Custo total de aquisição
@@ -246,7 +237,7 @@ export default function HomePage() {
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${lucroNaoRealizado >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {loadingPerformance ? "Carregando..." : formatarMoeda(lucroNaoRealizado)}
+              {lucroNaoRealizado >= 0 ? '+' : '-'} $ {loadingPerformance ? "Carregando..." : formatCurrency(Math.abs(lucroNaoRealizado))}
             </div>
              <p className="text-xs text-muted-foreground">
                 Ganhos/Perdas em ativos atuais
@@ -262,7 +253,7 @@ export default function HomePage() {
           </CardHeader>
           <CardContent>
              <div className={`text-2xl font-bold ${lucroRealizado >= 0 ? '' : 'text-red-500'}`}>
-              {loadingPerformance ? "Carregando..." : formatarMoeda(lucroRealizado)}
+               {lucroRealizado >= 0 ? '+' : '-'} $ {loadingPerformance ? "Carregando..." : formatCurrency(Math.abs(lucroRealizado))}
             </div>
              <p className="text-xs text-muted-foreground">
                Ganhos/Perdas de vendas
@@ -344,7 +335,7 @@ export default function HomePage() {
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
-                            {formatarMoeda(displayPrice)}
+                            $ {formatCurrency(displayPrice)}
                           </TableCell>
                           <TableCell className="text-right">
                             <span className={moeda.price_change_percentage_24h >= 0 ? 'text-green-600' : 'text-red-600'}>
@@ -352,7 +343,7 @@ export default function HomePage() {
                             </span>
                           </TableCell>
                           <TableCell className="text-right">
-                            {moeda.market_cap ? formatarMoeda(moeda.market_cap) : '-'}
+                            $ {moeda.market_cap ? formatCurrency(moeda.market_cap) : '-'}
                           </TableCell>
                         </TableRow>
                       );
@@ -382,7 +373,7 @@ export default function HomePage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-medium">{formatarMoeda(getPrecoAtual(moeda.id, topMoedas))}</div>
+                      <div className="font-medium">$ {formatCurrency(getPrecoAtual(moeda.id, topMoedas))}</div>
                       <div className={moeda.price_change_percentage_24h >= 0 ? 'text-green-600 text-xs' : 'text-red-600 text-xs'}>
                         {moeda.price_change_percentage_24h?.toFixed(2) ?? '0.00'}%
                       </div>
