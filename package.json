@@ -8,8 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "db:init": "node scripts/init-db.js",
-    "setup": "pnpm install && pnpm db:init",
-    "crypto-middleware:dashboard": "python3 tools/crypto-middleware/web_dashboard.py"
+    "setup": "pnpm install && pnpm db:init"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",

@@ -15,7 +15,15 @@ export async function GET() {
 
   const data = await getBacktestSweep();
   if (!data) {
-    return NextResponse.json({ error: "backtest_sweep.json não encontrado" }, { status: 404 });
+    return NextResponse.json(
+      {
+        status: "sem_dados",
+        generated_at: new Date().toISOString(),
+        results: [],
+        reason: "backtest_sweep.json não encontrado",
+      },
+      { status: 200 }
+    );
   }
 
   return NextResponse.json(data);

@@ -367,6 +367,25 @@ O projeto está funcional com as seguintes capacidades:
     *   Criado documento dedicado: `@docs/crypto-middleware.md`.
     *   Atualizados os documentos de índice e visão geral para refletir o módulo unificado.
 
+## 2026-02-14
+
+*   **Crypto Middleware - Unificação de Runtime no Projeto Principal:**
+    *   Removida dependência de dashboard externo em `127.0.0.1:8000`.
+    *   Página `/crypto-middleware` passou a carregar dashboard interno em `/crypto-middleware/index.html` (mesmo projeto).
+    *   UI do middleware publicada em:
+        *   `public/crypto-middleware/index.html`
+        *   `public/crypto-middleware/app.js`
+        *   `public/crypto-middleware/styles.css`
+    *   `app.js` ajustado para consumir endpoints internos:
+        *   `/api/crypto-middleware/*`
+    *   Script legado `crypto-middleware:dashboard` removido do `package.json`.
+    *   Fluxo oficial de execução consolidado em:
+        *   `pnpm dev`
+
+*   **Documentação:**
+    *   Documento `@docs/crypto-middleware.md` reescrito com arquitetura final unificada.
+    *   Índice `@docs/README.md` atualizado para refletir o modo sem servidor externo.
+
 ---
 
 Documentação atualizada em: 15/04/2024 

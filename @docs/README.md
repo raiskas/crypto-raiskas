@@ -10,7 +10,7 @@ Este diretório contém a documentação completa do projeto Crypto Raiskas, um 
 - [**Guia de Desenvolvimento**](guia-desenvolvimento.md) - Instruções para desenvolvedores que estão começando a trabalhar no projeto
 - [**Sistema de Autenticação e Permissões**](autenticacao-permissoes.md) - Detalhes sobre o sistema de autenticação e controle de acesso
 - [**Guia do Banco de Dados**](banco-dados.md) - Informações sobre o banco de dados, migrações e melhores práticas
-- [**Crypto Middleware (Unificado)**](crypto-middleware.md) - Arquitetura, APIs e operação do módulo nativo de sinais tático/macro
+- [**Crypto Middleware (Unificado)**](crypto-middleware.md) - Arquitetura final no próprio Next.js (sem servidor externo), APIs internas e operação
 - [**Documentação Completa**](documentacao-completa.md) - Versão consolidada de toda a documentação em um único arquivo
 - [**Histórico de Desenvolvimento**](historico-desenvolvimento.md) - Registro das implementações, correções e próximos passos sugeridos
 

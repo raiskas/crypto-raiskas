@@ -1,5 +1,6 @@
 import { spawn } from "child_process";
 import path from "path";
+import fs from "fs";
 import { CRYPTO_MW_BASE_DIR } from "@/lib/crypto-middleware/paths";
 
 interface RefreshState {
@@ -50,7 +51,10 @@ export function startRefreshRun() {
   state.message = "executando middleware.py...";
 
   const scriptPath = path.join(CRYPTO_MW_BASE_DIR, "middleware.py");
-  const child = spawn("python3", [scriptPath], {
+  const venvPython = path.join(CRYPTO_MW_BASE_DIR, ".venv312", "bin", "python");
+  const pythonExec = fs.existsSync(venvPython) ? venvPython : "python3";
+
+  const child = spawn(pythonExec, [scriptPath], {
     cwd: CRYPTO_MW_BASE_DIR,
     stdio: ["ignore", "pipe", "pipe"],
   });
