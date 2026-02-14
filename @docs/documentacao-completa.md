@@ -373,7 +373,7 @@ export async function GET(request) {
 
 ## 6. Guia de Desenvolvimento
 
-### Configuração do Ambiente
+### Configuração do Ambiente de Desenvolvimento
 
 1. **Requisitos**:
    - Node.js v18+ (preferencialmente v20+)
@@ -401,256 +401,73 @@ export async function GET(request) {
    pnpm dev
    ```
 
-### Rotas Principais
+### Convenções e Padrões
 
-| Rota | Descrição |
-|------|-----------|
-| `/signin` | Login de usuários |
-| `/signup` | Registro de novos usuários |
-| `/home` | Página inicial após login |
-| `/admin` | Painel de administração |
-| `/admin/usuarios` | Gerenciamento de usuários |
+- **Formatação de Moeda**: Utilize a função utilitária `formatCurrency` (definida em `src/lib/utils.ts`) para formatar valores monetários. Ela usa `Intl.NumberFormat` com padrão `en-US`, 2 decimais e sem símbolo. Permite sobrescrever opções (`{ maximumFractionDigits: 8 }`).
+- **Formatação de Inputs Numéricos**: Para inputs que exigem formatação complexa (como moeda), use o componente `NumericFormat` da biblioteca `react-number-format`. Exemplo em `OperacaoForm.tsx`.
+- **Inputs Numéricos Simples**: Para inputs `type="number"` onde os spinners padrão não são desejados, aplique a classe CSS `hide-number-spinners` (estilos definidos em `globals.css`).
+- **Estado Compartilhado (Preços Crypto)**: Para dados que precisam ser acessíveis em múltiplos componentes do dashboard (como preços de criptomoedas atualizados), utilize o padrão Context API. Exemplo implementado: `PriceProvider` e `usePrice` (em `src/lib/context/PriceContext.tsx`) para o preço do Bitcoin. Use `usePrice()` em qualquer Client Component dentro do `(dashboard)/layout.tsx` para acessar o valor.
+- **Rotas**:
+  - `/signin`: Login de usuários
+  - `/signup`: Registro de novos usuários
+  - `/home`: Página inicial após login
+  - `/admin`: Painel de administração
+  - `/admin/usuarios`: Gerenciamento de usuários
+- **Isolamento**:
+  - Cada componente é isolado e não compartilha estado com outros, exceto o `PriceContext` para preços de criptomoedas.
 
-### Endpoints da API
+### Principais Diretórios (Detalhado na Seção 3 - Estrutura do Projeto)
+   *Esta seção é um resumo, veja a Seção 3 para a árvore completa.*
+   - `/src/app`: Páginas e APIs (incluindo `/api/crypto/performance`).
+   - `/src/components`: Componentes reutilizáveis (incluindo `/crypto/OperacaoForm.tsx` com `react-number-format`).
+   - `/src/lib`: Utilitários (incluindo `utils.ts` com `formatCurrency`), hooks, contextos, etc.
+   - `/src/types`: Definições TypeScript.
 
-| Endpoint | Método | Descrição |
-|----------|--------|-----------|
-| `/api/auth/register` | POST | Registro de usuários |
-| `/api/admin/users` | GET | Listar usuários |
-| `/api/admin/users` | POST | Criar usuário |
-| `/api/admin/users` | PATCH | Atualizar usuário |
-| `/api/admin/users?id=:id` | DELETE | Excluir/Desativar usuário |
+### Fluxo de Trabalho de Desenvolvimento
 
-### Padrões de Código
+- **Adicionando Novas Features**:
+  - Adicione tabelas/campos necessários no PostgreSQL
+  - Atualize o arquivo `supabase-schema.sql`
 
-- **Estado Compartilhado (Ex: Preços Crypto)**: Para dados que precisam ser acessíveis em múltiplos componentes do dashboard (como preços de criptomoedas atualizados), utilize o padrão Context API. Exemplo implementado: `PriceProvider` e `usePrice` (em `src/lib/context/PriceContext.tsx`) para o preço do Bitcoin. Use `usePrice()` em qualquer Client Component dentro do `(dashboard)/layout.tsx` para acessar o valor.
+- **Crie componentes reutilizáveis**:
+  - Coloque-os em `/src/components`
+  - Siga o padrão existente para componentes
 
-#### Componentes
+- **Implemente páginas**:
+  - Crie um novo diretório em `/src/app`
+  - Implemente `page.tsx` seguindo o padrão App Router
 
-```tsx
-// src/components/ExampleComponent.tsx
-"use client";
+- **Adicione rotas de API**:
+  - Crie endpoints em `/src/app/api`
+  - Use validação Zod para dados de entrada
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+- **Atualize o middleware**:
+  - Adicione a rota ao middleware se ela for protegida
 
-interface ExampleComponentProps {
-  initialValue: number;
-  onChange?: (value: number) => void;
-}
+### Dependências Importantes
 
-export function ExampleComponent({ 
-  initialValue = 0, 
-  onChange 
-}: ExampleComponentProps) {
-  const [value, setValue] = useState(initialValue);
-  
-  const handleIncrement = () => {
-    const newValue = value + 1;
-    setValue(newValue);
-    onChange?.(newValue);
-  };
-  
-  return (
-    <div className="p-4 border rounded">
-      <p>Valor atual: {value}</p>
-      <Button onClick={handleIncrement}>Incrementar</Button>
-    </div>
-  );
-}
-```
-
-#### Página
-
-```tsx
-// src/app/example/page.tsx
-"use client";
-
-import { useState } from "react";
-import { ExampleComponent } from "@/components/ExampleComponent";
-import { useAuth } from "@/lib/hooks/use-auth";
-
-export default function ExamplePage() {
-  const { user } = useAuth();
-  const [value, setValue] = useState(0);
-  
-  return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-2xl font-bold mb-4">Página de Exemplo</h1>
-      {user ? (
-        <>
-          <p>Olá, {user.email}</p>
-          <ExampleComponent 
-            initialValue={value} 
-            onChange={setValue} 
-          />
-        </>
-      ) : (
-        <p>Carregando...</p>
-      )}
-    </div>
-  );
-}
-```
-
-#### Rota de API
-
-```tsx
-// src/app/api/example/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { hasPermission } from "@/lib/utils/permissions";
-
-// Schema de validação
-const exampleSchema = z.object({
-  id: z.string().uuid().optional(),
-  name: z.string().min(3),
-});
-
-export async function POST(request: NextRequest) {
-  try {
-    // Obter e validar os dados
-    const body = await request.json();
-    const validation = exampleSchema.safeParse(body);
-    
-    if (!validation.success) {
-      return NextResponse.json(
-        { error: "Dados inválidos", details: validation.error.format() },
-        { status: 400 }
-      );
-    }
-    
-    const { name, id } = validation.data;
-    
-    // Criar cliente Supabase
-    const supabase = await createServerSupabaseClient();
-    
-    // Obter sessão atual
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      return NextResponse.json(
-        { error: "Não autenticado" },
-        { status: 401 }
-      );
-    }
-    
-    // Verificar permissão
-    const userId = session.user.id;
-    const hasAccess = await hasPermission(userId, "example_create");
-    
-    if (!hasAccess) {
-      return NextResponse.json(
-        { error: "Sem permissão" },
-        { status: 403 }
-      );
-    }
-    
-    // Processar a solicitação
-    // ...
-    
-    return NextResponse.json(
-      { message: "Sucesso", data: { id: "novo_id" } },
-      { status: 201 }
-    );
-    
-  } catch (error: any) {
-    console.error("Erro:", error);
-    return NextResponse.json(
-      { error: error.message || "Erro interno" },
-      { status: 500 }
-    );
-  }
-}
-```
-
-### Adicionando Novas Features
-
-1. **Comece com o banco de dados**:
-   - Adicione tabelas/campos necessários no PostgreSQL
-   - Atualize o arquivo `supabase-schema.sql`
-
-2. **Crie componentes reutilizáveis**:
-   - Coloque-os em `/src/components`
-   - Siga o padrão existente para componentes
-
-3. **Implemente páginas**:
-   - Crie um novo diretório em `/src/app`
-   - Implemente `page.tsx` seguindo o padrão App Router
-
-4. **Adicione rotas de API**:
-   - Crie endpoints em `/src/app/api`
-   - Use validação Zod para dados de entrada
-
-5. **Atualize o middleware**:
-   - Adicione a rota ao middleware se ela for protegida
+*   **React Hook Form + Zod**: Validação de formulários.
+*   **Supabase**: Banco de dados e autenticação.
+*   **shadcn/ui + Radix UI**: Biblioteca de componentes UI.
+*   **Tailwind CSS**: Estilização.
+*   **date-fns**: Manipulação de datas.
+*   **react-number-format**: Formatação de inputs numéricos (ex: moeda).
+*   **Context API (React)**: Usado para compartilhar estado global (ex: preços de cripto).
 
 ## 7. Módulo de Criptomoedas
 
-Este módulo permite aos usuários registrar suas operações de compra e venda de criptomoedas e visualizar a performance de seu portfólio calculado usando o método FIFO (First-In, First-Out).
+Este módulo permite aos usuários registrar e gerenciar suas operações de compra e venda de criptomoedas, além de visualizar a performance do seu portfólio.
 
-### Funcionalidades
+### Funcionalidades Principais
 
-- **Registro de Operações:** Formulário modal (`OperacaoModal`) para adicionar ou editar operações de compra/venda, incluindo moeda, quantidade, preço, data, taxas, etc.
-- **Listagem de Operações:** Tabela na página `/crypto` exibindo o histórico de operações do usuário, com filtros e ordenação.
-- **Visualização de Portfólio:** Tabela consolidada na página `/crypto` mostrando a posição atual em cada moeda:
-    - Quantidade Atual
-    - Custo Médio (FIFO)
-    - Custo Base Atual (FIFO)
-    - Preço Atual (via `PriceContext`)
-    - Valor Total Atual (recalculado no frontend)
-    - L/P Não Realizado (recalculado no frontend)
-    - % Não Realizado (recalculado no frontend)
-    - L/P Realizado Total (FIFO)
-- **Cards de Resumo:** Exibição dos totais do portfólio (Valor Total, Custo Base, P/L Não Realizado, P/L Realizado).
-
-### Lógica de Cálculo FIFO
-
-- **Função Principal:** `calcularPerformanceFifo` em `src/lib/crypto/fifoCalculations.ts`.
-- **Entrada:** Recebe um array de operações (compras/vendas) para **uma única moeda**, ordenadas por data, e o preço de mercado atual dessa moeda.
-- **Processamento:**
-    1.  Mantém uma lista de "lotes" de compra abertos (`lotesCompraAbertos`), armazenando quantidade, preço de custo unitário e data de cada compra.
-    2.  Itera sobre as operações ordenadas:
-        - **Compra:** Adiciona um novo lote à lista.
-        - **Venda:** Consome os lotes da lista na ordem FIFO (primeiro que entrou). Para cada lote consumido (total ou parcialmente), calcula o custo base proporcional dessa parte vendida. A diferença entre o valor da venda (quantidade vendida * preço de venda) e o custo base dos lotes consumidos é o lucro/prejuízo realizado para aquela venda.
-    3.  Acumula o `lucroPrejuizoRealizadoTotal`.
-- **Saída:** Retorna um objeto `PerformanceMetrics` contendo:
-    - `quantidadeAtual`: Soma das quantidades restantes nos lotes de compra abertos.
-    - `custoBaseTotalAtual`: Custo total dos lotes restantes.
-    - `custoMedioAtual`: Custo médio ponderado dos lotes restantes.
-    - `lucroPrejuizoRealizadoTotal`: Lucro/prejuízo acumulado de todas as vendas processadas.
-    - `valorDeMercadoAtual`: Calculado usando o `precoAtualMercado` fornecido como argumento.
-    - `lucroPrejuizoNaoRealizado`: Diferença entre `valorDeMercadoAtual` e `custoBaseTotalAtual`.
-    - `lucroPrejuizoNaoRealizadoPercentual`.
-
-### API de Performance (`GET /api/crypto/performance`)
-
-- **Responsabilidade:** Orquestrar o cálculo FIFO para todas as moedas do usuário.
-- **Fluxo:**
-    1.  Obtém o ID do usuário autenticado.
-    2.  Busca todas as operações (`crypto_operacoes`) do usuário no banco de dados.
-    3.  Agrupa as operações por `moeda_id`.
-    4.  Busca os preços de mercado atuais para todas as `moeda_id`s encontradas usando `fetchMarketDataByIds` (`src/lib/coingecko.ts`).
-    5.  Itera sobre cada `moeda_id`:
-        - **Cria uma cópia profunda** (`JSON.parse(JSON.stringify(...))`) do array de operações daquela moeda para garantir isolamento.
-        - Chama `calcularPerformanceFifo` passando a cópia profunda das operações e o preço de mercado atual da moeda.
-        - Armazena o resultado (`PerformanceMetrics`) para aquela moeda.
-    6.  Calcula um sumário geral (total realizado, não realizado, valor de mercado).
-    7.  Retorna um JSON contendo o objeto `performance` (com a performance detalhada por moeda) e o objeto `summary`.
-
-### Fluxo de Dados no Frontend (`CryptoPage`)
-
-1.  **Busca de Dados:** O componente busca dados de duas fontes principais:
-    - Performance FIFO: Chama a API `/api/crypto/performance` para obter os cálculos base (quantidade, custo base, P/L realizado).
-    - Preços Atuais: Usa o hook `usePrice` para obter o mapa de preços mais recentes do `PriceContext`.
-    - Operações: Chama a API `/api/crypto/operacoes` para popular a tabela de histórico.
-2.  **Processamento (`calcularPortfolio`):**
-    - Itera sobre os dados de performance recebidos da API.
-    - Para cada moeda, pega os valores FIFO fundamentais (quantidade, custo base, P/L realizado).
-    - Obtém o `precoAtual` do `PriceContext`.
-    - **Recalcula** o `valorAtualizado` (valor de mercado) e `lucro` (P/L não realizado) usando a `quantidadeAtual` (da API) e o `precoAtual` (do Context).
-    - Monta o objeto final para exibição na tabela do portfólio.
-3.  **Renderização:** Exibe os dados processados nas tabelas e cards, usando funções de formatação (`formatarMoeda`, `formatarQuantidade`, etc.).
+- **Registro de Operações**: Formulário (`OperacaoForm`) para adicionar novas operações (compra/venda), incluindo moeda, quantidade, preço unitário, data, exchange (opcional) e notas (opcional). Utiliza `react-number-format` para formatação dos campos de preço e valor total.
+- **Listagem de Operações**: Tabela (`CryptoPage`) exibindo todas as operações registradas, com filtros por tipo (compra/venda/todas) e busca textual.
+- **Cálculo de Performance (FIFO)**: Uma API (`/api/crypto/performance`) calcula a performance de cada moeda usando o método FIFO, considerando todas as compras e vendas. Retorna dados como quantidade atual, custo médio, custo base, lucro/prejuízo realizado, etc.
+- **Visualização de Portfólio**: Tabela (`CryptoPage`) que consolida a performance por moeda, mostrando quantidade atual, custo médio, valor de mercado atual, lucro/prejuízo não realizado e realizado.
+- **Dashboard Resumido**: A página inicial (`HomePage`) exibe cards com os totais do portfólio (Valor Total, Custo Base, L/P Realizado, L/P Não Realizado) obtidos da API de performance.
+- **Dados de Mercado**: Integração com CoinGecko (via `src/lib/coingecko.ts` e API `/api/crypto/market-data`) para buscar preços atuais e outros dados de mercado.
+- **Contexto de Preços**: O `PriceContext` (`src/lib/context/PriceContext.tsx`) mantém um cache dos preços de mercado recentes para uso nos componentes do frontend.
+- **Formatação Padronizada**: Valores monetários são formatados usando a função `formatCurrency` de `src/lib/utils.ts`.
 
 ## 8. Fluxo de Trabalho Git
 

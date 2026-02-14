@@ -105,6 +105,71 @@ export type Database = {
           },
         ]
       }
+      crypto_middleware_signals: {
+        Row: {
+          criado_em: string | null
+          ema_200_1h: number
+          ema_50_1h: number
+          highlights: Json
+          id: string
+          macro_badge: string
+          macro_score: number
+          price: number
+          raw_payload: Json
+          rsi_1h: number
+          score: number
+          stage: string
+          symbol: string
+          trend_1w: string
+          trend_4h: string
+          usuario_id: string
+        }
+        Insert: {
+          criado_em?: string | null
+          ema_200_1h: number
+          ema_50_1h: number
+          highlights?: Json
+          id?: string
+          macro_badge: string
+          macro_score: number
+          price: number
+          raw_payload?: Json
+          rsi_1h: number
+          score: number
+          stage: string
+          symbol: string
+          trend_1w: string
+          trend_4h: string
+          usuario_id: string
+        }
+        Update: {
+          criado_em?: string | null
+          ema_200_1h?: number
+          ema_50_1h?: number
+          highlights?: Json
+          id?: string
+          macro_badge?: string
+          macro_score?: number
+          price?: number
+          raw_payload?: Json
+          rsi_1h?: number
+          score?: number
+          stage?: string
+          symbol?: string
+          trend_1w?: string
+          trend_4h?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crypto_middleware_signals_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empresas: {
         Row: {
           ativo: boolean | null

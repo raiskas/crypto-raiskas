@@ -99,6 +99,24 @@ crypto_operacoes
   ├── grupo_id (UUID, FK -> grupos.id) - Grupo associado à operação (opcional)
   ├── criado_em (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
   └── atualizado_em (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
+
+crypto_middleware_signals
+  ├── id (PK, UUID, DEFAULT uuid_generate_v4())
+  ├── usuario_id (UUID, FK -> usuarios.id, NOT NULL)
+  ├── symbol (VARCHAR(20), NOT NULL) - Ex: BTCUSDT
+  ├── stage (VARCHAR(10), NOT NULL, CHECK IN ('WAIT','SMALL','MEDIUM','FULL'))
+  ├── score (DECIMAL(5,2), NOT NULL)
+  ├── price (DECIMAL(18,8), NOT NULL)
+  ├── rsi_1h (DECIMAL(6,2), NOT NULL)
+  ├── ema_50_1h (DECIMAL(18,8), NOT NULL)
+  ├── ema_200_1h (DECIMAL(18,8), NOT NULL)
+  ├── trend_4h (VARCHAR(10), NOT NULL, CHECK IN ('bull','bear'))
+  ├── trend_1w (VARCHAR(10), NOT NULL, CHECK IN ('bull','bear'))
+  ├── macro_badge (VARCHAR(20), NOT NULL, CHECK IN ('risk_on','neutro','risk_off'))
+  ├── macro_score (DECIMAL(5,2), NOT NULL)
+  ├── highlights (JSONB, NOT NULL)
+  ├── raw_payload (JSONB, NOT NULL)
+  └── criado_em (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
 ```
 
 -- Nota: A existência das colunas `empresa_id` (FK), `is_master` (boolean) e `telas_permitidas` (_text/TEXT[]) 

@@ -31,6 +31,7 @@ import {
 const navItems = [
   { href: "/home", label: "Home" },
   { href: "/crypto", label: "Crypto" },
+  { href: "/crypto-middleware", label: "Crypto Middleware" },
 ];
 
 const adminNavItems = [

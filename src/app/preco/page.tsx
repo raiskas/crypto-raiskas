@@ -7,15 +7,16 @@ import { usePrice } from '@/lib/context/PriceContext'; // Importar o hook usePri
 
 export default function PrecoPage() {
   // Consumir os valores do contexto
-  const { price, isLoading, error, isUpdating } = usePrice(); 
+  const { prices, isLoading, error, isUpdating } = usePrice();
+  const btcPrice = prices.bitcoin ?? null;
 
   // Remover a função fetchPrice e os useEffect/useCallback
   // const fetchPrice = useCallback(...);
   // useEffect(...);
 
   // A lógica de formatação continua a mesma
-  const formattedPrice = price !== null
-    ? price.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+  const formattedPrice = btcPrice !== null
+    ? btcPrice.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
     : '---';
 
   return (

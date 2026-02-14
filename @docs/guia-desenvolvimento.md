@@ -22,6 +22,7 @@ Este guia fornece instruções detalhadas para desenvolvedores que estão começ
 
 2. **Instale as dependências**
 
+   É crucial rodar este comando após clonar o repositório ou após fazer pull de mudanças que alteraram as dependências (ex: adicionando `react-number-format`).
    ```bash
    pnpm install
    ```
@@ -69,6 +70,9 @@ Este guia fornece instruções detalhadas para desenvolvedores que estão começ
 - **CSS**: Use Tailwind CSS para estilos
 - **Formulários**: Use React Hook Form + Zod para validação
 - **Estado**: Gerenciamento local com hooks useState/useReducer
+- **Formatação de Moeda**: Utilize a função utilitária `formatCurrency` (definida em `src/lib/utils.ts`) para formatar valores monetários. Ela usa `Intl.NumberFormat` com padrão `en-US`, 2 decimais e sem símbolo. Permite sobrescrever opções (`{ maximumFractionDigits: 8 }`).
+- **Formatação de Inputs Numéricos**: Para inputs que exigem formatação complexa (como moeda), use o componente `NumericFormat` da biblioteca `react-number-format`. Exemplo em `OperacaoForm.tsx`.
+- **Inputs Numéricos Simples**: Para inputs `type="number"` onde os spinners padrão não são desejados, aplique a classe CSS `hide-number-spinners` (estilos definidos em `globals.css`).
 - **Estado Compartilhado (Preços Crypto)**: Para dados que precisam ser acessíveis em múltiplos componentes do dashboard (como preços de criptomoedas atualizados), utilize o padrão Context API. Exemplo implementado: `PriceProvider` e `usePrice` (em `src/lib/context/PriceContext.tsx`). Use `usePrice()` em qualquer Client Component dentro do `(dashboard)/layout.tsx` para acessar o mapa de preços atualizados.
 - **Rotas**: Siga a convenção de nomenclatura do Next.js App Router
 - **Isolamento**: Coloque componentes específicos de página em seus diretórios
@@ -77,14 +81,21 @@ Este guia fornece instruções detalhadas para desenvolvedores que estão começ
 
 - **`/src/app`**: Páginas e layout da aplicação
     - **`/src/app/(dashboard)/crypto`**: Página principal do módulo de criptomoedas.
-    - **`/src/app/api/crypto`**: APIs relacionadas ao módulo de criptomoedas (operações, performance, market-data).
+    - **`/src/app/(dashboard)/home`**: Página inicial do dashboard (agora usa API de performance).
+    - **`/src/app/api/crypto`**: APIs relacionadas ao módulo de criptomoedas (operações, performance, market-data, etc.).
+        - **`/api/crypto/performance`**: Endpoint que retorna dados calculados de performance FIFO e resumo do portfólio.
+    - **`/src/app/(dashboard)/crypto-middleware`**: Página nativa do módulo de sinais tático/macro.
+    - **`/src/app/api/crypto-middleware`**: Endpoints do módulo (`run` e `latest`).
 - **`/src/components`**: Componentes reutilizáveis
-    - **`/src/components/crypto`**: Componentes específicos do módulo crypto (ex: `OperacaoModal`).
+    - **`/src/components/crypto`**: Componentes específicos do módulo crypto (ex: `OperacaoForm`, `OperacaoModal`).
+        - **`OperacaoForm.tsx`**: Usa `react-number-format` para inputs de preço/valor.
 - **`/src/lib`**: Funções utilitárias e bibliotecas
+    - **`/src/lib/utils.ts`**: Contém funções utilitárias como `cn`, `formatDate`, `formatCurrency`.
     - **`/src/lib/crypto`**: Lógica específica do módulo crypto (ex: `fifoCalculations.ts`).
     - **`/src/lib/context`**: Context Providers (ex: `PriceContext.tsx`).
     - **`/src/lib/hooks`**: Hooks personalizados (ex: `usePrice.ts`).
     - **`/src/lib/coingecko.ts`**: Funções para interagir com a API CoinGecko.
+    - **`/src/lib/crypto-middleware`**: Engine, tipos e auth/permissão do módulo unificado.
 - **`/src/types`**: Definições de tipos TypeScript
     - **`/src/types/crypto.ts`**: Tipos específicos do módulo crypto.
     - **`/src/types/supabase.ts`**: Tipos gerados do Supabase.
@@ -112,6 +123,16 @@ Este guia fornece instruções detalhadas para desenvolvedores que estão começ
 
 5. **Atualize o middleware**:
    - Adicione a rota ao middleware se ela for protegida
+
+### Dependências Importantes
+
+*   **React Hook Form + Zod**: Validação de formulários.
+*   **Supabase**: Banco de dados e autenticação.
+*   **shadcn/ui + Radix UI**: Biblioteca de componentes UI.
+*   **Tailwind CSS**: Estilização.
+*   **date-fns**: Manipulação de datas.
+*   **react-number-format**: Formatação de inputs numéricos (ex: moeda).
+*   **Context API (React)**: Usado para compartilhar estado global (ex: preços de cripto).
 
 ### Trabalhando com Autenticação
 

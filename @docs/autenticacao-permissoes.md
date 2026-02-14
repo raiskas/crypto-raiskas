@@ -124,6 +124,8 @@ O sistema vem com as seguintes permissões pré-configuradas:
 | `venda_criar` | Criar vendas | vendas |
 | `venda_editar` | Editar vendas | vendas |
 | `venda_excluir` | Excluir vendas | vendas |
+| `crypto_middleware_visualizar` | Visualizar sinais do Crypto Middleware | crypto_middleware |
+| `crypto_middleware_executar` | Executar o motor do Crypto Middleware | crypto_middleware |
 
 ## Modelo Multi-Tenant
 

@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-// CORREÇÃO: Usar diretamente o ThemeProvider do next-themes
-import { ThemeProvider } from "next-themes";
+import { ThemeProvider } from "@/components/theme-provider";
 // Importar AuthProvider
 import { AuthProvider } from "@/providers/auth-provider"; 
 // REMOVIDO: Imports Supabase para simplificação
@@ -59,13 +58,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
       <body className={inter.className}>
-        {/* Usar ThemeProvider com as props corretas */}
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <ThemeProvider>
           {/* Envolver children com AuthProvider */}
           <AuthProvider>
             {children}

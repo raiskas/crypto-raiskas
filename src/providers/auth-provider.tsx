@@ -1,10 +1,7 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
-import { PropsWithChildren, useEffect } from "react";
+import { PropsWithChildren } from "react";
 import { useAuth } from "@/lib/hooks/use-auth";
-import { AuthLoading } from "@/components/auth-loading";
-import { AUTH_ROUTES, HOME_ROUTE } from "@/lib/config/routes";
 
 // Lista de rotas públicas (não exigem autenticação)
 // const publicPaths = ['/signin', '/signup', '/forgot-password', '/auth-diagnostico'];
@@ -17,9 +14,9 @@ export function AuthProvider({
   children, 
   requireAuth = true // Esta prop pode não ser mais necessária se o middleware fizer tudo
 }: AuthProviderProps) {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-  const pathname = usePathname();
+  const { user } = useAuth();
+  void user;
+  void requireAuth;
   
   /* // REMOVIDO: Lógica de redirecionamento agora centralizada em /app/page.tsx e middleware
   useEffect(() => {
@@ -41,14 +38,6 @@ export function AuthProvider({
   }, [user, loading, sessionChecked, pathname, router]); 
   */
   
-  // Mostrar componente de loading enquanto verifica autenticação inicial
-  if (loading) {
-    // REMOVIDO: console.log("[AuthProvider] Estado loading=true. Renderizando AuthLoading...");
-    return <AuthLoading />;
-  }
-  
-  // Se não está carregando, simplesmente renderiza os children
-  // A proteção de rota é feita pelo middleware
-  // REMOVIDO: console.log("[AuthProvider] Estado loading=false. Renderizando children (sem useEffect de redirecionamento).");
+  // Renderiza sempre; proteção e redirecionamento são tratados pelo middleware/rotas.
   return <>{children}</>;
-} 
+}

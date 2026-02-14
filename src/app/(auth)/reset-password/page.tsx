@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AlertCircle, CheckCircle } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 const resetPasswordSchema = z.object({
@@ -34,16 +34,15 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
-    const tokenParam = searchParams.get('token');
+    const tokenParam = new URLSearchParams(window.location.search).get("token");
     if (!tokenParam) {
       setError("Link de redefinição inválido. Solicite uma nova redefinição de senha.");
       return;
     }
     setToken(tokenParam);
-  }, [searchParams]);
+  }, []);
 
   const form = useForm<z.infer<typeof resetPasswordSchema>>({
     resolver: zodResolver(resetPasswordSchema),

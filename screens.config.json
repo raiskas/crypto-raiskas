@@ -5,6 +5,7 @@
   { "id": "admin/empresas", "label": "Admin: Empresas" },
   { "id": "perfil", "label": "Perfil" },
   { "id": "crypto", "label": "Crypto" },
+  { "id": "crypto-middleware", "label": "Crypto Middleware" },
   { "id": "vendas", "label": "Vendas" },
   { "id": "home", "label": "Home" }
-] 
+]

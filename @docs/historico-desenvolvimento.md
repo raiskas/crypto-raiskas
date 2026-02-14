@@ -263,43 +263,27 @@ O projeto está funcional com as seguintes capacidades:
    - Implementação de tratamento de erros mais robustos nas APIs
    - Simplificação da interface de autenticação para melhor experiência do usuário
 
-## Implementação Módulo Cripto e Cálculo FIFO (DD/MM/YYYY - Preencher Data Atual)
+## Refatoração e Melhorias de Formatação (Julho/2024 - Data Aproximada)
 
-1. **Estrutura Inicial do Módulo Crypto**
-   - Criação da página principal em `/src/app/(dashboard)/crypto/page.tsx` para visualização do portfólio e operações.
-   - Definição da estrutura da tabela `crypto_operacoes` no banco de dados para registrar compras e vendas.
-   - Criação de API inicial para CRUD de operações (`/api/crypto/operacoes`).
+1.  **Refatoração do Cálculo de Portfólio (`HomePage`)**
+    *   Removida a lógica de cálculo de portfólio do frontend (`HomePage`).
+    *   O componente agora busca os dados sumarizados da API `/api/crypto/performance`.
+    *   Os cards de resumo foram atualizados para usar os dados da API (Valor Total, Custo Base, L/P Realizado, L/P Não Realizado).
 
-2. **Implementação do Cálculo FIFO**
-   - Criação da função `calcularPerformanceFifo` em `src/lib/crypto/fifoCalculations.ts`.
-   - Lógica implementada para processar operações (ordenadas por data) de uma única moeda, aplicando o método First-In, First-Out para:
-       - Calcular a quantidade atual restante (`quantidadeAtual`).
-       - Determinar o custo base dos lotes restantes (`custoBaseTotalAtual`).
-       - Calcular o custo médio ponderado dos lotes restantes (`custoMedioAtual`).
-       - Calcular o lucro/prejuízo realizado total (`lucroPrejuizoRealizadoTotal`) acumulado das vendas.
+2.  **Padronização da Formatação de Moeda**
+    *   Criada a função utilitária `formatCurrency` em `src/lib/utils.ts` usando `Intl.NumberFormat` (padrão `en-US`, 2 decimais, sem símbolo).
+    *   A função permite sobrescrever opções (ex: `maximumFractionDigits`).
+    *   Aplicada `formatCurrency` em `HomePage` e `CryptoPage` para consistência na exibição de valores monetários.
 
-3. **Criação da API de Performance (`/api/crypto/performance`)**
-   - Implementação da rota `GET /api/crypto/performance/route.ts`.
-   - Lógica para:
-       - Buscar todas as operações do usuário autenticado.
-       - Agrupar as operações por `moeda_id`.
-       - Buscar os preços de mercado atuais para todas as moedas envolvidas via CoinGecko (`fetchMarketDataByIds`).
-       - Iterar sobre cada moeda, chamando `calcularPerformanceFifo` com os dados isolados daquela moeda e seu preço atual.
-       - Retornar um objeto com a performance calculada para cada moeda e um sumário total.
+3.  **Melhoria na Formatação de Inputs (`OperacaoForm`)**
+    *   Removidos os spinners padrão dos inputs numéricos (`quantidade`, `valor_total`) usando a classe CSS `hide-number-spinners` e estilos globais.
+    *   Implementada formatação automática para os campos "Preço Unitário (USD)" e "Valor Total (USD)" usando a biblioteca `react-number-format`.
+    *   Os campos agora utilizam `NumericFormat` com `customInput={Input}` para manter o estilo visual, permitindo digitação livre e formatação (separadores de milhar, controle decimal).
+    *   Adicionada a dependência `react-number-format` ao projeto.
 
-4. **Integração Frontend (`CryptoPage`)**
-   - A página busca os dados de performance da API `/api/crypto/performance`.
-   - Utiliza o `PriceContext` (`usePrice`) para obter os preços de mercado mais recentes disponíveis no cliente.
-   - A função `calcularPortfolio` processa os dados:
-       - Utiliza `quantidadeAtual`, `custoBaseTotalAtual`, `custoMedioAtual` e `lucroPrejuizoRealizadoTotal` vindos da API.
-       - Usa o `precoAtual` do `PriceContext`.
-       - Recalcula `valorDeMercadoAtual` e `lucroPrejuizoNaoRealizado` localmente usando o `precoAtual` do contexto para garantir consistência visual na tabela.
-   - Exibe o portfólio consolidado e os totais na interface.
-
-5. **Correção de Bug de Interação FIFO (DD/MM/YYYY - Preencher Data Atual)**
-   - **Problema:** Identificado que a realização de uma venda de uma moeda (ex: XRP) estava afetando incorretamente o cálculo da quantidade atual de outra moeda (ex: BTC) na mesma requisição da API `/api/crypto/performance`. Isso indicava um efeito colateral (mutação de dados) entre as iterações do loop que calculava a performance para cada moeda.
-   - **Solução:** Modificada a rota da API (`/api/crypto/performance/route.ts`) para garantir isolamento completo entre os cálculos. Antes de chamar `calcularPerformanceFifo` para cada moeda, agora é criada uma **cópia profunda (deep copy)** do array de operações daquela moeda usando `JSON.parse(JSON.stringify(operacoesPorMoeda[moedaId]))`.
-   - **Resultado:** A cópia profunda impede qualquer possibilidade de mutação acidental dos dados de uma moeda afetar o cálculo das moedas subsequentes, corrigindo o bug e garantindo a independência dos cálculos FIFO por moeda.
+4.  **Correção de Build (Vercel)**
+    *   Resolvido o erro `ERR_PNPM_OUTDATED_LOCKFILE` durante o deploy na Vercel.
+    *   Atualizado o arquivo `pnpm-lock.yaml` para sincronizar com `package.json` após a adição de novas dependências.
 
 ## Próximos Passos Sugeridos
 
@@ -355,6 +339,33 @@ O projeto está funcional com as seguintes capacidades:
     *   Adicionado `PriceProvider` ao layout do dashboard (`src/app/(dashboard)/layout.tsx`).
     *   Refatorada a página `/preco` e adicionado o uso do hook `usePrice` nas páginas `home` e `crypto` para consumir o preço compartilhado.
     *   **Nota:** Para exibir preços de criptomoedas em novos componentes/páginas do dashboard, utilize o hook `usePrice()`.
+
+## 2026-02-13
+
+*   **Unificação Real do Crypto Middleware no Projeto Principal:**
+    *   Criado módulo nativo em TypeScript em `src/lib/crypto-middleware/`.
+    *   Implementada engine unificada (`engine.ts`) com:
+        *   Coleta OHLC na Kraken (`1H`, `4H`, `1W`)
+        *   Cálculo de EMA/RSI
+        *   Score tático/macro
+        *   Decisão de estágio (`WAIT`, `SMALL`, `MEDIUM`, `FULL`)
+    *   Implementadas APIs internas:
+        *   `POST /api/crypto-middleware/run`
+        *   `GET /api/crypto-middleware/latest`
+    *   Página `/crypto-middleware` refatorada para UI nativa (sem iframe), com ações `Rodar Agora` e `Atualizar`.
+    *   Inclusão do item `Crypto Middleware` no menu superior.
+
+*   **Banco de Dados e Permissões:**
+    *   Nova tabela `crypto_middleware_signals`.
+    *   Nova migração: `supabase/migrations/20260213190000_add_crypto_middleware_signals.sql`.
+    *   Permissões adicionadas:
+        *   `crypto_middleware_visualizar`
+        *   `crypto_middleware_executar`
+    *   Atualização de `screens.config.json` para incluir `crypto-middleware`.
+
+*   **Documentação:**
+    *   Criado documento dedicado: `@docs/crypto-middleware.md`.
+    *   Atualizados os documentos de índice e visão geral para refletir o módulo unificado.
 
 ---
 

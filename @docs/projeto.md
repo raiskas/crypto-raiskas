@@ -28,6 +28,7 @@ src/
 │   │   │   └── usuarios/    # Gerenciamento de usuários
 │   │   ├── crypto/          # Módulo de Criptomoedas
 │   │   │   └── page.tsx     # Página principal do módulo
+│   │   ├── crypto-middleware/# Módulo de sinais tático/macro
 │   │   ├── dashboard/       # Dashboard principal
 │   │   ├── home/            # Página inicial após login
 │   │   └── vendas/          # Módulo de vendas
@@ -38,6 +39,7 @@ src/
 │   │   │   ├── operacoes/   # CRUD de operações cripto
 │   │   │   ├── performance/ # Cálculo de performance FIFO
 │   │   │   └── ...          # Outras APIs relacionadas
+│   │   ├── crypto-middleware/# Endpoints de execução e leitura de sinais
 │   │   └── preco/           # Endpoint para preço do Bitcoin (cacheado)
 │   └── page.tsx             # Página inicial (redireciona)
 ├── components/              # Componentes reutilizáveis
@@ -246,6 +248,14 @@ SUPABASE_SERVICE_ROLE_KEY=sua_chave_service_role_do_supabase
 - API (`/api/crypto/performance`) que orquestra o cálculo FIFO de forma isolada por moeda e busca preços de mercado.
 - Frontend (`/crypto`) exibe o portfólio consolidado, histórico de operações e utiliza preços do `PriceContext` para valorização atual.
 - Formulário modal para adicionar/editar operações.
+
+### Módulo Crypto Middleware (Unificado)
+- Motor tático/macro nativo em TypeScript (`src/lib/crypto-middleware/engine.ts`).
+- APIs internas:
+  - `POST /api/crypto-middleware/run` (execução e persistência de sinais)
+  - `GET /api/crypto-middleware/latest` (último sinal por símbolo do usuário)
+- Página nativa em `/crypto-middleware` com ações `Rodar Agora` e `Atualizar`.
+- Persistência em tabela dedicada `crypto_middleware_signals`.
 
 ### Layout e Interface
 - Navegação principal via Menu Superior (TopNav) moderno e responsivo.
