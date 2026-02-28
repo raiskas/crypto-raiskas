@@ -100,6 +100,36 @@ crypto_operacoes
   ├── criado_em (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
   └── atualizado_em (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
 
+crypto_carteiras
+  ├── id (PK, UUID, DEFAULT uuid_generate_v4())
+  ├── usuario_id (UUID, FK -> usuarios.id, NOT NULL)
+  ├── nome (VARCHAR(120), NOT NULL, DEFAULT 'Carteira Principal')
+  ├── valor_inicial (DECIMAL(18,2), NOT NULL, DEFAULT 0)
+  ├── ativo (BOOLEAN, NOT NULL, DEFAULT TRUE)
+  ├── criado_em (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
+  └── atualizado_em (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
+
+crypto_carteira_aportes
+  ├── id (PK, UUID, DEFAULT uuid_generate_v4())
+  ├── carteira_id (UUID, FK -> crypto_carteiras.id, NOT NULL)
+  ├── valor (DECIMAL(18,2), NOT NULL, CHECK > 0)
+  ├── data_aporte (TIMESTAMP WITH TIME ZONE, NOT NULL)
+  ├── descricao (TEXT, opcional)
+  ├── criado_em (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
+  └── atualizado_em (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
+
+crypto_carteira_snapshots
+  ├── id (PK, UUID, DEFAULT uuid_generate_v4())
+  ├── carteira_id (UUID, FK -> crypto_carteiras.id, NOT NULL)
+  ├── data_ref (DATE, NOT NULL)
+  ├── aporte_liquido (DECIMAL(18,2), NOT NULL)
+  ├── saldo_caixa (DECIMAL(18,2), NOT NULL)
+  ├── valor_ativos (DECIMAL(18,2), NOT NULL)
+  ├── patrimonio_total (DECIMAL(18,2), NOT NULL)
+  ├── fonte_preco (VARCHAR(30), NOT NULL, ex: coingecko_daily, ops_last_price)
+  ├── criado_em (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
+  └── atualizado_em (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
+
 crypto_middleware_signals
   ├── id (PK, UUID, DEFAULT uuid_generate_v4())
   ├── usuario_id (UUID, FK -> usuarios.id, NOT NULL)
@@ -252,6 +282,18 @@ CREATE INDEX idx_vendas_usuario_id ON vendas(usuario_id);
 CREATE INDEX idx_crypto_operacoes_usuario_id ON crypto_operacoes(usuario_id);
 CREATE INDEX idx_crypto_operacoes_moeda_id ON crypto_operacoes(moeda_id);
 CREATE INDEX idx_crypto_operacoes_data_operacao ON crypto_operacoes(data_operacao);
+CREATE INDEX idx_crypto_operacoes_carteira_id ON crypto_operacoes(carteira_id);
+
+-- Índices para crypto_carteiras
+CREATE INDEX idx_crypto_carteiras_usuario_id ON crypto_carteiras(usuario_id);
+CREATE INDEX idx_crypto_carteiras_usuario_ativo ON crypto_carteiras(usuario_id, ativo);
+
+-- Índices para crypto_carteira_aportes
+CREATE INDEX idx_crypto_carteira_aportes_carteira_id ON crypto_carteira_aportes(carteira_id);
+CREATE INDEX idx_crypto_carteira_aportes_data ON crypto_carteira_aportes(data_aporte);
+
+-- Índices para crypto_carteira_snapshots
+CREATE INDEX idx_crypto_carteira_snapshots_carteira_data ON crypto_carteira_snapshots(carteira_id, data_ref);
 ```
 
 ### Diretrizes para Índices

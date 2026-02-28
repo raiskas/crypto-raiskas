@@ -8,6 +8,13 @@ export interface PerformanceSummary {
   totalRealizado: number;
   totalNaoRealizado: number;
   valorTotalAtual: number;
+  saldoCaixa?: number;
+  valorAtivos?: number;
+  patrimonioTotal?: number;
+  valorInicial?: number;
+  totalAportes?: number;
+  resultadoTotal?: number;
+  resultadoPercentual?: number;
 }
 
 export interface CryptoPerformanceState {

@@ -81,6 +81,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    const carteiraId = searchParams.get('carteira_id');
 
     // Construir a query base
     let query = supabase
@@ -95,6 +96,9 @@ export async function GET(request: NextRequest) {
     if (id) {
       query = query.eq('id', id);
     } else {
+      if (carteiraId) {
+        query = query.eq("carteira_id", carteiraId);
+      }
       // Aplicar filtro de empresa APENAS na listagem
       if (userProfile.empresa_id) {
          query = query.eq('grupos.empresa_id', userProfile.empresa_id);
@@ -171,7 +175,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { nome, moeda_id, tipo, data_operacao, quantidade, preco_unitario, valor_total, exchange, notas, grupo_id, simbolo } = body;
+    const { nome, moeda_id, tipo, data_operacao, quantidade, preco_unitario, valor_total, exchange, notas, grupo_id, simbolo, carteira_id } = body;
 
     // Validação básica (poderia usar Zod aqui também)
     if (!nome || !moeda_id || !tipo || !data_operacao || !simbolo || quantidade === undefined || preco_unitario === undefined || valor_total === undefined || !grupo_id) {
@@ -206,24 +210,44 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Inserir a operação usando o ID interno do usuário
-    const { data, error } = await supabase
+    const insertPayload: Record<string, any> = {
+      nome,
+      moeda_id,
+      simbolo,
+      tipo,
+      data_operacao: data_operacao_iso,
+      quantidade,
+      preco_unitario,
+      valor_total,
+      exchange: exchange || null,
+      notas: notas || null,
+      usuario_id: userProfile.id,
+      grupo_id: grupo_id,
+    };
+
+    if (carteira_id) {
+      insertPayload.carteira_id = carteira_id;
+    }
+
+    const supabaseAny: any = supabase;
+
+    let { data, error } = await supabaseAny
       .from("crypto_operacoes")
-      .insert({
-        nome,
-        moeda_id,
-        simbolo,
-        tipo,
-        data_operacao: data_operacao_iso,
-        quantidade,
-        preco_unitario,
-        valor_total,
-        exchange: exchange || null, // Garantir null se vazio
-        notas: notas || null, // Garantir null se vazio
-        usuario_id: userProfile.id, // USAR ID INTERNO DO PERFIL
-        grupo_id: grupo_id
-      })
+      .insert(insertPayload)
       .select()
       .single();
+
+    // Compatibilidade: caso a coluna carteira_id ainda não exista no banco.
+    if (error && carteira_id && (error.code === "42703" || error.message?.includes("carteira_id"))) {
+      delete insertPayload.carteira_id;
+      const retry = await supabaseAny
+        .from("crypto_operacoes")
+        .insert(insertPayload)
+        .select()
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       console.error("[API:operacoes:POST] Erro ao inserir:", error);

@@ -14,7 +14,7 @@ O menu superior (TopNav) é um componente de navegação moderno que fornece ace
 
 ## Componentes Principais
 
-### TopNav (`src/components/layouts/top-nav.tsx`)
+### Dashboard Header (`src/components/layouts/dashboard-header.tsx`)
 
 Este é o componente principal que implementa o menu superior. Ele inclui:
 
@@ -23,6 +23,12 @@ Este é o componente principal que implementa o menu superior. Ele inclui:
 - Versão responsiva com menu hamburger para dispositivos móveis
 - Integração com as informações de usuário
 - Controles para alternar tema e fazer logout
+
+### Itens de navegação (atual)
+
+- `/home`
+- `/crypto`
+- `/crypto/carteira`
 
 ### DashboardLayout (`src/app/(dashboard)/layout.tsx`)
 

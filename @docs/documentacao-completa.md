@@ -61,7 +61,8 @@ src/
 │   │   │   ├── page.tsx     # Painel principal admin
 │   │   │   └── usuarios/    # Gerenciamento de usuários
 │   │   ├── crypto/          # <<< Módulo de Criptomoedas
-│   │   │   └── page.tsx     # <<< Página principal do módulo
+│   │   │   ├── page.tsx     # <<< Página principal do módulo
+│   │   │   └── carteira/    # <<< Acompanhamento detalhado da carteira
 │   │   ├── dashboard/       # Dashboard principal
 │   │   ├── home/            # Página inicial após login
 │   │   └── vendas/          # Módulo de vendas
@@ -73,6 +74,9 @@ src/
 │   │   │   └── users/       # Gerenciamento de usuários (CRUD)
 │   │   ├── crypto/          # <<< Endpoints do módulo de cripto
 │   │   │   ├── operacoes/   # <<< CRUD de operações cripto
+│   │   │   ├── carteira/    # <<< Carteira principal (valor inicial / caixa)
+│   │   │   │   └── aportes/ # <<< Aportes futuros da carteira
+│   │   │   │   └── snapshots/ # <<< Snapshots diários da carteira (leve)
 │   │   │   ├── performance/ # <<< Cálculo de performance FIFO
 │   │   │   ├── relevant-coin-ids/ # <<< Busca IDs de moedas relevantes
 │   │   │   └── market-data/ # <<< Busca dados de mercado (CoinGecko via lib)
@@ -195,8 +199,39 @@ crypto_operacoes
   ├── notas (TEXT) - Notas adicionais (opcional)
   ├── usuario_id (UUID, FK -> usuarios.id, NOT NULL) - Usuário que realizou a operação
   ├── grupo_id (UUID, FK -> grupos.id) - Grupo associado à operação (opcional)
+  ├── carteira_id (UUID, FK -> crypto_carteiras.id) - Carteira associada (opcional para compatibilidade)
   ├── criado_em (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
   └── atualizado_em (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
+
+crypto_carteiras
+  ├── id (PK, UUID)
+  ├── usuario_id (UUID, FK -> usuarios.id)
+  ├── nome (VARCHAR(120))
+  ├── valor_inicial (DECIMAL(18,2))
+  ├── ativo (BOOLEAN)
+  ├── criado_em
+  └── atualizado_em
+
+crypto_carteira_aportes
+  ├── id (PK, UUID)
+  ├── carteira_id (UUID, FK -> crypto_carteiras.id)
+  ├── valor (DECIMAL(18,2))
+  ├── data_aporte
+  ├── descricao
+  ├── criado_em
+  └── atualizado_em
+
+crypto_carteira_snapshots
+  ├── id (PK, UUID)
+  ├── carteira_id (UUID, FK -> crypto_carteiras.id)
+  ├── data_ref (DATE)
+  ├── aporte_liquido
+  ├── saldo_caixa
+  ├── valor_ativos
+  ├── patrimonio_total
+  ├── fonte_preco
+  ├── criado_em
+  └── atualizado_em
 ```
 
 ### Restrições e Consistência
@@ -464,6 +499,21 @@ Este módulo permite aos usuários registrar e gerenciar suas operações de com
 - **Listagem de Operações**: Tabela (`CryptoPage`) exibindo todas as operações registradas, com filtros por tipo (compra/venda/todas) e busca textual.
 - **Cálculo de Performance (FIFO)**: Uma API (`/api/crypto/performance`) calcula a performance de cada moeda usando o método FIFO, considerando todas as compras e vendas. Retorna dados como quantidade atual, custo médio, custo base, lucro/prejuízo realizado, etc.
 - **Visualização de Portfólio**: Tabela (`CryptoPage`) que consolida a performance por moeda, mostrando quantidade atual, custo médio, valor de mercado atual, lucro/prejuízo não realizado e realizado.
+- **Acompanhamento de Carteira**: Página dedicada (`/crypto/carteira`) com formulário completo de carteira (nome + valor inicial), cadastro de aportes futuros, cards de desempenho consolidado e painel de evolução (sem tabela de posições e sem lista de operações recentes).
+- **Modelo de Patrimônio**: Carteira evoluída para `caixa + ativos`, com valor inicial configurável em `/api/crypto/carteira`.
+- **Aportes Futuros**: Registro de entradas de capital em `/api/crypto/carteira/aportes`, refletindo no caixa e patrimônio total.
+- **Administração via Modal**: A página `/crypto/carteira` usa modal dedicado (`CarteiraAdminModal`) para criar/editar carteira e gerenciar aportes (criar, editar e excluir).
+- **Snapshots Diários Leves**: Endpoint `/api/crypto/carteira/snapshots` gera e consulta histórico diário por carteira (1 linha/dia). A valoração usa preço histórico diário da CoinGecko por ativo (`fonte_preco=coingecko_daily`) com fallback para preço da última operação (`ops_last_price`) se necessário.
+- **Gráfico de Evolução**: Na página `/crypto/carteira`, gráfico interativo (Recharts) no padrão de acompanhamento de investimentos com:
+  comparação `Valor da Carteira x Aporte Líquido`,
+  subpainel de `Resultado`,
+  seletor de período (`1M`, `3M`, `6M`, `12M`, `Tudo`),
+  controle de visibilidade por série (`Carteira`, `Aporte`, `Resultado`),
+  crosshair no hover, tooltip detalhado e métricas de período (variação e drawdown).
+- **Reconciliação de Histórico**: Após mudanças de cálculo, use o botão **Atualizar Histórico** em `/crypto/carteira` para recalcular snapshots do período e alinhar gráfico com os cards de patrimônio.
+- **Atualização Automática na Abertura**: Ao entrar/recarregar `/crypto/carteira`, o sistema dispara reconciliação automática incremental somente quando necessário (sem snapshot do dia), uma vez por sessão da página e por carteira.
+- **Estratégia de Atualização**: Auto-update incremental adiciona/ajusta apenas dias novos recentes; o botão **Atualizar Histórico** executa rebuild completo da janela (12 meses).
+- **Proteção de Consistência**: A geração de snapshots usa modo estrito de mercado (`strict_market`), que bloqueia sobrescrita quando a cobertura histórica de preços estiver insuficiente, evitando degradar histórico já válido.
 - **Dashboard Resumido**: A página inicial (`HomePage`) exibe cards com os totais do portfólio (Valor Total, Custo Base, L/P Realizado, L/P Não Realizado) obtidos da API de performance.
 - **Dados de Mercado**: Integração com CoinGecko (via `src/lib/coingecko.ts` e API `/api/crypto/market-data`) para buscar preços atuais e outros dados de mercado.
 - **Contexto de Preços**: O `PriceContext` (`src/lib/context/PriceContext.tsx`) mantém um cache dos preços de mercado recentes para uso nos componentes do frontend.

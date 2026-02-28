@@ -11,7 +11,6 @@ const PERMISSION_MAP: { [key: string]: string } = {
   '/admin/empresas': 'admin_panel',
   '/configuracoes': 'configuracoes',
   '/crypto': 'crypto',
-  '/crypto-middleware': 'crypto_middleware',
   '/crypto/nova-operacao': 'crypto',
   '/vendas': 'vendas',
   '/crypto/operacoes': 'crypto_operacoes' // Adicione outros mapeamentos conforme necessário

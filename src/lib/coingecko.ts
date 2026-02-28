@@ -54,6 +54,46 @@ const COINGECKO_API_URL = 'https://api.coingecko.com/api/v3';
 const SEARCH_REVALIDATE_TIME = 300; // 5 minutos para cache de busca
 const PRICE_REVALIDATE_TIME = 60; // 1 minuto para cache de preço (mais volátil)
 const COIN_LIST_REVALIDATE_TIME = 60 * 60 * 24; // Cache de 24 horas para a lista de moedas
+const MARKET_CACHE_FILE = path.join(process.cwd(), "tools", "cache", "coingecko_market_cache.json");
+const MARKET_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 12; // 12h para fallback de indisponibilidade
+
+type MarketCachePayload = {
+  updated_at: string;
+  data: MarketDataMap;
+};
+
+async function readMarketCache(): Promise<MarketCachePayload | null> {
+  try {
+    if (!existsSync(MARKET_CACHE_FILE)) return null;
+    const raw = await fs.readFile(MARKET_CACHE_FILE, "utf-8");
+    const parsed = JSON.parse(raw) as MarketCachePayload;
+    if (!parsed || typeof parsed !== "object" || !parsed.data) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+async function writeMarketCache(data: MarketDataMap): Promise<void> {
+  try {
+    await fs.mkdir(path.dirname(MARKET_CACHE_FILE), { recursive: true });
+    const payload: MarketCachePayload = {
+      updated_at: new Date().toISOString(),
+      data,
+    };
+    await fs.writeFile(MARKET_CACHE_FILE, JSON.stringify(payload, null, 2), "utf-8");
+  } catch (err) {
+    console.warn("[CoinGecko Lib] Falha ao salvar cache local de mercado:", err);
+  }
+}
+
+function pickIdsFromCache(cache: MarketCachePayload, ids: string[]): MarketDataMap {
+  const out: MarketDataMap = {};
+  for (const id of ids) {
+    out[id] = cache.data[id] ?? null;
+  }
+  return out;
+}
 
 /**
  * Busca dados de mercado completos para uma lista de IDs de moedas da CoinGecko.
@@ -110,10 +150,24 @@ export async function fetchMarketDataByIds(ids: string[]): Promise<MarketDataMap
       }
     });
 
+    await writeMarketCache(marketDataMap);
     return marketDataMap;
 
   } catch (error) {
     console.error('[CoinGecko Lib] Exceção ao buscar dados de mercado:', error);
+    const isRateLimit = error instanceof Error && /429/.test(error.message);
+    const cached = await readMarketCache();
+    if (isRateLimit && cached) {
+      const cacheTime = new Date(cached.updated_at).getTime();
+      const ageMs = Number.isFinite(cacheTime) ? Math.max(0, Date.now() - cacheTime) : Number.POSITIVE_INFINITY;
+      if (ageMs <= MARKET_CACHE_MAX_AGE_MS) {
+        console.warn(
+          `[CoinGecko Lib] Rate limit (429). Usando cache local de mercado (${Math.round(ageMs / 60000)} min de idade).`
+        );
+        return pickIdsFromCache(cached, ids);
+      }
+      console.warn("[CoinGecko Lib] Cache local existe, mas expirou para fallback de 429.");
+    }
     // Relança o erro para que a camada da API possa decidir como responder ao cliente
     // Poderia ser mais específico, mas por enquanto relançamos o erro original ou um genérico
     if (error instanceof Error) {
@@ -258,3 +312,6 @@ export async function fetchCoinList(): Promise<SimpleCoinInfo[]> {
 }
 
 // TODO: Adicionar função fetchCoinIds() aqui no futuro, se necessário. 
+import { existsSync } from "fs";
+import { promises as fs } from "fs";
+import path from "path";

@@ -87,12 +87,83 @@ export async function GET(request: NextRequest) {
     console.log(`[API /crypto/performance] [LOG DEBUG] ID interno encontrado: ${internalUserId}`);
     // <<< FIM ETAPA EXTRA >>>
 
+    const carteiraIdParam = request.nextUrl.searchParams.get("carteira_id");
+    const supabaseAny: any = supabase;
+
+    // Buscar carteira ativa/principal (se o schema de carteira existir)
+    let carteiraSelecionada: any = null;
+    let hasCarteiraSchema = true;
+    let carteiraWarning: string | null = null;
+    let totalAportes = 0;
+
+    try {
+      let carteiraQuery = supabaseAny
+        .from("crypto_carteiras")
+        .select("*")
+        .eq("usuario_id", internalUserId)
+        .eq("ativo", true);
+
+      if (carteiraIdParam) {
+        carteiraQuery = carteiraQuery.eq("id", carteiraIdParam);
+      }
+
+      const { data: carteiraData, error: carteiraError } = await carteiraQuery
+        .order("criado_em", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (carteiraError) {
+        if (carteiraError.code === "42P01") {
+          hasCarteiraSchema = false;
+          carteiraWarning =
+            "Schema de carteira não encontrado. Execute a migração SQL para ativar caixa + ativos.";
+        } else {
+          carteiraWarning = `Falha ao consultar carteira: ${carteiraError.message}`;
+        }
+      } else if (carteiraData) {
+        carteiraSelecionada = carteiraData;
+      }
+    } catch (e: any) {
+      hasCarteiraSchema = false;
+      carteiraWarning =
+        e?.message || "Falha ao consultar carteira. Fluxo seguirá em modo legado.";
+    }
+
+    if (hasCarteiraSchema && carteiraSelecionada?.id) {
+      try {
+        const { data: aportesData, error: aportesError } = await supabaseAny
+          .from("crypto_carteira_aportes")
+          .select("valor")
+          .eq("carteira_id", carteiraSelecionada.id);
+
+        if (aportesError) {
+          if (aportesError.code === "42P01") {
+            carteiraWarning = [carteiraWarning, "Tabela de aportes não encontrada."].filter(Boolean).join(" | ");
+          } else {
+            carteiraWarning = [carteiraWarning, `Falha ao ler aportes: ${aportesError.message}`]
+              .filter(Boolean)
+              .join(" | ");
+          }
+        } else {
+          totalAportes = (aportesData || []).reduce((acc: number, row: any) => acc + Number(row.valor || 0), 0);
+        }
+      } catch (e: any) {
+        carteiraWarning = [carteiraWarning, e?.message || "Falha ao processar aportes."].filter(Boolean).join(" | ");
+      }
+    }
+
     // Usar o ID INTERNO na consulta de operações
     console.log(`[API /crypto/performance] [LOG DEBUG] Buscando operações para usuario_id (interno) = ${internalUserId}`); 
-    const { data: operacoesData, error: operacoesError } = await supabase
+    let operacoesQuery = supabase
       .from('crypto_operacoes')
       .select('*')
-      .eq('usuario_id', internalUserId) // <<< USAR ID INTERNO AQUI >>>
+      .eq('usuario_id', internalUserId);
+
+    if (hasCarteiraSchema && carteiraSelecionada?.id) {
+      operacoesQuery = operacoesQuery.eq("carteira_id", carteiraSelecionada.id);
+    }
+
+    const { data: operacoesData, error: operacoesError } = await operacoesQuery
       .order('data_operacao', { ascending: true });
 
      if (operacoesError) {
@@ -134,7 +205,27 @@ export async function GET(request: NextRequest) {
     if (operacoes.length === 0) {
        console.log("[API /crypto/performance] [LOG DEBUG] Nenhuma operação válida encontrada após mapeamento/filtragem. Retornando vazio."); // <<< LOG VAZIO
       // <<< Retornar response com status 200 >>>
-      return NextResponse.json({ performance: {}, summary: { totalRealizado: 0, totalNaoRealizado: 0, valorTotalAtual: 0 } }, { status: 200 });
+      const valorInicial = Number(carteiraSelecionada?.valor_inicial ?? 0);
+      const capitalTotal = valorInicial + totalAportes;
+      const saldoCaixa = valorInicial;
+      const summarySemOps = {
+        totalRealizado: 0,
+        totalNaoRealizado: 0,
+        valorTotalAtual: 0,
+        saldoCaixa: capitalTotal,
+        valorAtivos: 0,
+        patrimonioTotal: capitalTotal,
+        valorInicial,
+        totalAportes,
+        resultadoTotal: capitalTotal - capitalTotal,
+        resultadoPercentual: capitalTotal > 0 ? 0 : 0,
+      };
+      return NextResponse.json({
+        performance: {},
+        summary: summarySemOps,
+        carteira: carteiraSelecionada,
+        warning: carteiraWarning,
+      }, { status: 200 });
     }
 
     // Agrupar operações por moeda_id
@@ -153,9 +244,18 @@ export async function GET(request: NextRequest) {
     // NOTA: fetchMarketDataByIds provavelmente não precisa de autenticação, mas se precisasse,
     // teria que ser adaptado ou chamado pelo frontend.
      console.log(`[API /crypto/performance] [LOG DEBUG] Buscando dados de mercado para IDs: ${Array.from(allMoedaIds).join(', ')}`); // <<< LOG ANTES COINGECKO
-    const marketDataMap = await fetchMarketDataByIds(Array.from(allMoedaIds));
-    console.log(`[API /crypto/performance] [LOG DEBUG] Dados de mercado recebidos:`, marketDataMap); // <<< LOG DADOS COINGECKO
-    console.log(`[API /crypto/performance] Dados de mercado buscados para ${Object.keys(marketDataMap).length} moedas.`);
+    let marketDataMap: Record<string, { current_price?: number | null } | null> = {};
+    let marketDataWarning: string | null = null;
+    try {
+      marketDataMap = await fetchMarketDataByIds(Array.from(allMoedaIds));
+      console.log(`[API /crypto/performance] [LOG DEBUG] Dados de mercado recebidos:`, marketDataMap); // <<< LOG DADOS COINGECKO
+      console.log(`[API /crypto/performance] Dados de mercado buscados para ${Object.keys(marketDataMap).length} moedas.`);
+    } catch (marketError: unknown) {
+      const errMsg = marketError instanceof Error ? marketError.message : "erro_mercado";
+      marketDataWarning = `Dados de mercado indisponíveis agora (${errMsg}). Cálculo feito sem preço atual.`;
+      console.warn(`[API /crypto/performance] ${marketDataWarning}`);
+      marketDataMap = {};
+    }
 
     // Calcular performance para cada moeda
     const performancePorMoeda: { [key: string]: PerformanceMetrics } = {};
@@ -191,6 +291,32 @@ export async function GET(request: NextRequest) {
         totalNaoRealizado: totalNaoRealizadoGeral,
         valorTotalAtual: valorTotalDeMercadoGeral,
       };
+
+    // Fluxo de caixa da carteira (caixa + ativos)
+    const valorInicial = Number(carteiraSelecionada?.valor_inicial ?? 0);
+    const capitalTotal = valorInicial + totalAportes;
+    const comprasBrutas = operacoes
+      .filter((op) => op.tipo === "compra")
+      .reduce((acc, op) => acc + Number(op.valor_total) + Number(op.taxa ?? 0), 0);
+    const vendasLiquidas = operacoes
+      .filter((op) => op.tipo === "venda")
+      .reduce((acc, op) => acc + Number(op.valor_total) - Number(op.taxa ?? 0), 0);
+    const saldoCaixa = capitalTotal - comprasBrutas + vendasLiquidas;
+    const valorAtivos = valorTotalDeMercadoGeral;
+    const patrimonioTotal = saldoCaixa + valorAtivos;
+    const resultadoTotal = patrimonioTotal - capitalTotal;
+    const resultadoPercentual = capitalTotal > 0 ? (resultadoTotal / capitalTotal) * 100 : 0;
+
+    const summaryComCarteira = {
+      ...summary,
+      saldoCaixa,
+      valorAtivos,
+      patrimonioTotal,
+      valorInicial,
+      totalAportes,
+      resultadoTotal,
+      resultadoPercentual,
+    };
     console.log(`[API /crypto/performance] [LOG DEBUG] Dados a serem retornados:`, { performance: performancePorMoeda, summary });
     // <<< FIM LOG >>>
 
@@ -198,7 +324,9 @@ export async function GET(request: NextRequest) {
     // <<< Retornar response com status 200 >>>
     return NextResponse.json({
       performance: performancePorMoeda,
-      summary: summary
+      summary: summaryComCarteira,
+      carteira: carteiraSelecionada,
+      warning: [marketDataWarning, carteiraWarning].filter(Boolean).join(" | ") || null,
     }, { status: 200 });
 
   } catch (error: any) {

@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS vendas (
 CREATE TABLE IF NOT EXISTS crypto_operacoes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   usuario_id UUID REFERENCES usuarios(id) ON DELETE CASCADE,
+  carteira_id UUID,
   moeda_id VARCHAR(100) NOT NULL, -- ID da criptomoeda (bitcoin, ethereum, etc)
   simbolo VARCHAR(20) NOT NULL, -- Símbolo da moeda (BTC, ETH, etc)
   nome VARCHAR(100) NOT NULL, -- Nome da moeda (Bitcoin, Ethereum, etc)
@@ -94,6 +95,42 @@ CREATE TABLE IF NOT EXISTS crypto_operacoes (
   notas TEXT, -- Notas adicionais
   criado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   atualizado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS crypto_carteiras (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  nome VARCHAR(120) NOT NULL DEFAULT 'Carteira Principal',
+  valor_inicial DECIMAL(18, 2) NOT NULL DEFAULT 0,
+  ativo BOOLEAN NOT NULL DEFAULT TRUE,
+  criado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  atualizado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  CONSTRAINT chk_crypto_carteiras_valor_inicial_non_negative CHECK (valor_inicial >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS crypto_carteira_aportes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  carteira_id UUID NOT NULL REFERENCES crypto_carteiras(id) ON DELETE CASCADE,
+  valor DECIMAL(18, 2) NOT NULL,
+  data_aporte TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  descricao TEXT,
+  criado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  atualizado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  CONSTRAINT chk_crypto_carteira_aportes_valor_positive CHECK (valor > 0)
+);
+
+CREATE TABLE IF NOT EXISTS crypto_carteira_snapshots (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  carteira_id UUID NOT NULL REFERENCES crypto_carteiras(id) ON DELETE CASCADE,
+  data_ref DATE NOT NULL,
+  aporte_liquido DECIMAL(18, 2) NOT NULL DEFAULT 0,
+  saldo_caixa DECIMAL(18, 2) NOT NULL DEFAULT 0,
+  valor_ativos DECIMAL(18, 2) NOT NULL DEFAULT 0,
+  patrimonio_total DECIMAL(18, 2) NOT NULL DEFAULT 0,
+  fonte_preco VARCHAR(30) NOT NULL DEFAULT 'ops_last_price',
+  criado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  atualizado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  CONSTRAINT uq_crypto_carteira_snapshots UNIQUE (carteira_id, data_ref)
 );
 
 -- CRYPTO_MIDDLEWARE_SIGNALS (Sinais do motor tatico/macro)
@@ -120,6 +157,12 @@ CREATE TABLE IF NOT EXISTS crypto_middleware_signals (
 CREATE INDEX idx_crypto_operacoes_usuario_id ON crypto_operacoes(usuario_id);
 CREATE INDEX idx_crypto_operacoes_moeda_id ON crypto_operacoes(moeda_id);
 CREATE INDEX idx_crypto_operacoes_data ON crypto_operacoes(data_operacao);
+CREATE INDEX idx_crypto_operacoes_carteira_id ON crypto_operacoes(carteira_id);
+CREATE INDEX idx_crypto_carteiras_usuario_id ON crypto_carteiras(usuario_id);
+CREATE INDEX idx_crypto_carteiras_usuario_ativo ON crypto_carteiras(usuario_id, ativo);
+CREATE INDEX idx_crypto_carteira_aportes_carteira_id ON crypto_carteira_aportes(carteira_id);
+CREATE INDEX idx_crypto_carteira_aportes_data ON crypto_carteira_aportes(data_aporte);
+CREATE INDEX idx_crypto_carteira_snapshots_carteira_data ON crypto_carteira_snapshots(carteira_id, data_ref);
 CREATE INDEX idx_crypto_middleware_signals_usuario_id ON crypto_middleware_signals(usuario_id);
 CREATE INDEX idx_crypto_middleware_signals_symbol ON crypto_middleware_signals(symbol);
 CREATE INDEX idx_crypto_middleware_signals_criado_em ON crypto_middleware_signals(criado_em DESC);
@@ -150,3 +193,14 @@ CREATE INDEX idx_usuarios_empresa_id ON usuarios(empresa_id);
 CREATE INDEX idx_grupos_empresa_id ON grupos(empresa_id);
 CREATE INDEX idx_vendas_empresa_id ON vendas(empresa_id);
 CREATE INDEX idx_vendas_usuario_id ON vendas(usuario_id); 
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'fk_crypto_operacoes_carteira'
+  ) THEN
+    ALTER TABLE crypto_operacoes
+      ADD CONSTRAINT fk_crypto_operacoes_carteira
+      FOREIGN KEY (carteira_id) REFERENCES crypto_carteiras(id) ON DELETE SET NULL;
+  END IF;
+END $$;
