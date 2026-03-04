@@ -27,7 +27,13 @@ Este guia fornece instruções detalhadas para desenvolvedores que estão começ
    pnpm install
    ```
 
-3. **Configure as variáveis de ambiente**
+3. **Sincronize contrato Web x macOS (obrigatório)**
+
+   ```bash
+   pnpm sync:platforms
+   ```
+
+4. **Configure as variáveis de ambiente**
 
    Crie um arquivo `.env.local` na raiz do projeto baseado no `.env.example`:
 
@@ -43,7 +49,7 @@ Este guia fornece instruções detalhadas para desenvolvedores que estão começ
    SUPABASE_SERVICE_ROLE_KEY=sua_chave_de_servico
    ```
 
-4. **Configure o banco de dados**
+5. **Configure o banco de dados**
 
    Utilize o script para inicializar o banco de dados:
 
@@ -53,13 +59,37 @@ Este guia fornece instruções detalhadas para desenvolvedores que estão começ
 
    Este script cria as tabelas necessárias e insere dados iniciais no Supabase.
 
-5. **Inicie o servidor de desenvolvimento**
+6. **Inicie o servidor de desenvolvimento**
 
    ```bash
    pnpm dev
    ```
 
    Acesse a aplicação em `http://localhost:3000`
+
+7. **Valide consistência de contrato (pré-commit recomendado)**
+
+   ```bash
+   pnpm sync:platforms:check
+   ```
+
+### Setup do App macOS
+
+```bash
+cd /Users/claudioraikasfh/Desktop/crypto-raiskas/apps/macos/RaiskasMac
+xcodegen generate
+open RaiskasMac.xcodeproj
+```
+
+### Setup do App iOS
+
+```bash
+cd /Users/claudioraikasfh/Desktop/crypto-raiskas/apps/ios/CryptoRaiskasIOS
+xcodegen generate
+open CryptoRaiskasIOS.xcodeproj
+```
+
+No iOS/macOS, configure credenciais locais em `Config.local.plist` conforme os templates de cada app.
 
 ## Estrutura do Código
 
@@ -133,6 +163,32 @@ Este guia fornece instruções detalhadas para desenvolvedores que estão começ
 *   **date-fns**: Manipulação de datas.
 *   **react-number-format**: Formatação de inputs numéricos (ex: moeda).
 *   **Context API (React)**: Usado para compartilhar estado global (ex: preços de cripto).
+
+### Sincronização Web x macOS
+
+- Contrato compartilhado: `/Users/claudioraikasfh/Desktop/crypto-raiskas/shared/cross-platform.contract.json`
+- Gerador:
+  - `/Users/claudioraikasfh/Desktop/crypto-raiskas/scripts/sync-cross-platform.mjs`
+- Saídas geradas:
+  - `/Users/claudioraikasfh/Desktop/crypto-raiskas/src/lib/cross-platform-contract.ts`
+  - Bloco gerado em `/Users/claudioraikasfh/Desktop/crypto-raiskas/apps/macos/RaiskasMac/Sources/App/AppDestination.swift`
+
+Regra: não editar manualmente arquivos gerados, apenas o contrato JSON.
+
+### Fluxo de atualização de documentação (obrigatório)
+
+Sempre que alterar comportamento funcional, layout, navegação ou fluxo administrativo:
+
+1. Atualizar documentação impactada em `@docs/`.
+2. Registrar no histórico em `@docs/historico-desenvolvimento.md`.
+3. Se houver impacto de setup/build/release, atualizar:
+   - `@docs/README.md`
+   - `@docs/documentacao-completa.md`
+4. Se houver impacto de app nativo:
+   - `@docs/macos-app.md`
+   - `@docs/ios-app.md`
+
+Sem isso, alteração não deve ser considerada concluída.
 
 ### Trabalhando com Autenticação
 

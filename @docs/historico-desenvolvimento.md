@@ -2,6 +2,42 @@
 
 Este documento registra as principais mudanças, correções e implementações realizadas durante o desenvolvimento do projeto Crypto Raiskas. Ele serve como referência para o próximo desenvolvedor entender o que já foi feito e poder continuar o trabalho.
 
+## Atualização recente (04/03/2026)
+
+### Consolidação da documentação para evolução contínua
+
+- Índice central de docs atualizado para incluir Web + macOS + iOS.
+- Criado guia dedicado do iOS:
+  - `/Users/claudioraikasfh/Desktop/crypto-raiskas/@docs/ios-app.md`
+- Atualizado fluxo oficial de manutenção documental no guia de desenvolvimento.
+- Atualizada documentação de sincronização para deixar explícito:
+  - sincronização automática atual cobre Web/macOS;
+  - iOS ainda exige replicação manual dos labels/menus.
+
+### Estado funcional recente do iOS (carteira)
+
+- Gráfico da carteira no iOS atualizado para uso interativo em tela pequena:
+  - seleção por gesto;
+  - leitura dinâmica por data;
+  - card de dados selecionados no padrão visual do projeto.
+- Ajustes de layout fullscreen e safe area aplicados no root das telas iOS para reduzir áreas mortas.
+
+## Atualização recente (03/03/2026)
+
+### Sincronização automática Web x App macOS
+
+- Adicionado contrato compartilhado:
+  - `/Users/claudioraikasfh/Desktop/crypto-raiskas/shared/cross-platform.contract.json`
+- Adicionado gerador de sincronização:
+  - `/Users/claudioraikasfh/Desktop/crypto-raiskas/scripts/sync-cross-platform.mjs`
+- Novos scripts:
+  - `pnpm sync:platforms`
+  - `pnpm sync:platforms:check`
+- Web passou a consumir labels/navegação do arquivo gerado:
+  - `/Users/claudioraikasfh/Desktop/crypto-raiskas/src/lib/cross-platform-contract.ts`
+- App macOS passou a consumir constantes geradas no `AppDestination.swift`.
+- Resultado: mudanças de branding/menu feitas no contrato se propagam para Web e macOS com um único comando.
+
 ## Implementações Principais
 
 ### Sistema de Autenticação

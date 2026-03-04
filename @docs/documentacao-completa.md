@@ -109,6 +109,59 @@ src/
 └── middleware.ts            # Middleware do Next.js para proteção de rotas
 ```
 
+### App Nativo macOS
+
+```text
+apps/macos/RaiskasMac/
+├── project.yml              # Configuração do projeto XcodeGen
+└── Sources/
+    ├── App/                 # Bootstrap, estado global e shell principal
+    ├── Core/                # Configuração, modelos e serviço Supabase
+    ├── Shared/              # Tema visual e formatadores
+    └── Features/
+        ├── Auth/            # Login nativo (SwiftUI)
+        ├── Dashboard/       # Cards de resumo e série curta
+        ├── Portfolio/       # Carteira e evolução (Swift Charts)
+        ├── Operations/      # Operações com filtros + tabela
+        ├── Market/          # Preços de mercado (BTC/ETH/XRP)
+        └── Admin/           # Lista de usuários
+```
+
+### App Nativo iOS
+
+```text
+apps/ios/CryptoRaiskasIOS/
+├── project.yml              # Configuração do projeto XcodeGen
+├── Config.local.example.plist
+└── Sources/
+    ├── App/                 # Bootstrap, navegação e estado global
+    ├── Core/                # Configuração, modelos e serviço Supabase
+    ├── Shared/              # Tema e formatadores
+    └── Features/
+        ├── Auth/            # Login nativo
+        ├── Home/            # Dashboard principal
+        ├── Crypto/          # Operações e resumo de portfólio
+        ├── Portfolio/       # Carteira e gráfico interativo
+        └── Admin/           # Visão geral, usuários e empresas
+```
+
+### Sincronização Web x macOS (contrato compartilhado)
+
+Para manter nome, navegação e labels iguais entre Web e App macOS:
+
+- Contrato: `/Users/claudioraikasfh/Desktop/crypto-raiskas/shared/cross-platform.contract.json`
+- Gerador: `/Users/claudioraikasfh/Desktop/crypto-raiskas/scripts/sync-cross-platform.mjs`
+- Comandos:
+  - `pnpm sync:platforms`
+  - `pnpm sync:platforms:check`
+
+Arquivos gerados:
+
+- Web: `/Users/claudioraikasfh/Desktop/crypto-raiskas/src/lib/cross-platform-contract.ts`
+- macOS: bloco gerado em `/Users/claudioraikasfh/Desktop/crypto-raiskas/apps/macos/RaiskasMac/Sources/App/AppDestination.swift`
+
+Observação: iOS ainda não é gerado automaticamente por esse script. A replicação equivalente de labels/menus no iOS é manual (documentada em `@docs/ios-app.md`).
+
 ## 4. Banco de Dados
 
 O projeto utiliza PostgreSQL hospedado no Supabase com uma arquitetura multi-tenant.
