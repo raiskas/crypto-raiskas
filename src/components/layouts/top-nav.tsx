@@ -8,25 +8,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
+import { APP_CONTRACT } from "@/lib/cross-platform-contract";
 
-const navItems = [
-  { href: "/home", label: "Home" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/crypto", label: "Crypto" },
-  { href: "/vendas", label: "Vendas" },
-];
-
-const adminNavItems = [
-  { href: "/admin", label: "Visão Geral" },
-  { href: "/admin/usuarios", label: "Usuários" },
-];
+const navItems = APP_CONTRACT.mainNav;
+const adminNavItems = APP_CONTRACT.adminNav;
 
 export function TopNav() {
   return (
     <nav className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
         <Link href="/" className="mr-6 flex items-center space-x-2">
-          <span className="font-bold">Crypto Raiskas</span>
+          <span className="font-bold">{APP_CONTRACT.appName}</span>
         </Link>
         <div className="flex flex-1 items-center space-x-4">
           {navItems.map((item) => (
@@ -41,7 +33,7 @@ export function TopNav() {
 
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
-              Painel Administrativo
+              {APP_CONTRACT.adminMenuTitle}
               <ChevronDown className="relative top-[1px] ml-1 h-3 w-3" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">

@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/hooks/use-auth";
 import { useUserData } from "@/lib/hooks/use-user-data";
 import { toast } from "sonner";
 import { useState } from "react";
+import { APP_CONTRACT } from "@/lib/cross-platform-contract";
 import { 
   Accordion, 
   AccordionContent, 
@@ -28,17 +29,8 @@ import {
   AccordionTrigger 
 } from "@/components/ui/accordion";
 
-const navItems = [
-  { href: "/home", label: "Home" },
-  { href: "/crypto", label: "Crypto" },
-  { href: "/crypto/carteira", label: "Carteira" },
-];
-
-const adminNavItems = [
-  { href: "/admin", label: "Visão Geral" },
-  { href: "/admin/usuarios", label: "Usuários" },
-  { href: "/admin/empresas", label: "Empresas" },
-];
+const navItems = APP_CONTRACT.mainNav;
+const adminNavItems = APP_CONTRACT.adminNav;
 
 export function DashboardHeader() {
   const router = useRouter();
@@ -102,7 +94,7 @@ export function DashboardHeader() {
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value="admin-links" className="border-b-0">
                     <AccordionTrigger className="py-2 px-3 text-base font-medium text-muted-foreground hover:bg-accent/50 hover:text-foreground hover:no-underline rounded-md">
-                      Painel Administrativo
+                      {APP_CONTRACT.adminMenuTitle}
                     </AccordionTrigger>
                     <AccordionContent className="pl-6 pb-0 pt-1 flex flex-col gap-1">
                       {adminNavItems.map((item) => (
@@ -127,9 +119,9 @@ export function DashboardHeader() {
           </Sheet>
 
           <Link href="/" className="flex items-center space-x-2">
-            <img 
-              src="/logo-no-background.png" 
-              alt="Crypto Raiskas Logo"
+              <img
+                src="/logo-no-background.png" 
+              alt={`${APP_CONTRACT.appName} Logo`}
               className="h-8"
             />
           </Link>
@@ -151,7 +143,7 @@ export function DashboardHeader() {
 
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
-                Painel Administrativo
+                {APP_CONTRACT.adminMenuTitle}
                 <ChevronDown className="relative top-[1px] ml-1 h-3 w-3" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">

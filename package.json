@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "sync:platforms": "node scripts/sync-cross-platform.mjs",
+    "sync:platforms:check": "node scripts/sync-cross-platform.mjs --check",
     "db:init": "node scripts/init-db.js",
     "setup": "pnpm install && pnpm db:init"
   },

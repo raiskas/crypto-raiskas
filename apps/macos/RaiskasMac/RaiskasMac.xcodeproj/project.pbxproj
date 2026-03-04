@@ -1,0 +1,521 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		11ED9A37A3920128F1FC0146 /* RaiskasMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A23BB07A28769C835885C9 /* RaiskasMacApp.swift */; };
+		1747FC6C83ABE7D1591509E0 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AFAF2D80160B1EDDB0551F4 /* SignInView.swift */; };
+		20A7E47B13DB468BD7F61019 /* Formatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650E95CDB23A70E0F718F08D /* Formatters.swift */; };
+		2D3C0E981E398CA606A60BA5 /* CryptoRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4327D82E1FD96DFA1D37023F /* CryptoRootView.swift */; };
+		2DD9F71CA4C5B791F60F1598 /* AdminPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85DE807348CFF771CB0880DB /* AdminPanelView.swift */; };
+		371263729D6661552EEAC334 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 847BB30369C85F79C77DC390 /* AppState.swift */; };
+		3E30AD00B3365D4D8FA1BE99 /* PortfolioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2EB8819E920BD25169A7B6B /* PortfolioView.swift */; };
+		41C848E511A6D22A1E0F8F95 /* DashboardOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2923E21EE8B093355FF234CC /* DashboardOverviewView.swift */; };
+		44B19C9BF4DE60FDE25F585B /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3A053477BD5AB6CDC85281 /* SupabaseService.swift */; };
+		45E5BB75D96B05E4E3DF5619 /* logo-sem-fundo.png in Resources */ = {isa = PBXBuildFile; fileRef = E41574EA1D1F124689F19809 /* logo-sem-fundo.png */; };
+		47F526C4185FCCCA1370E43A /* AppDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A55C066AD4B4BE5CF17AA /* AppDestination.swift */; };
+		4888B49AB68D499B917C49EB /* Config.local.plist in Resources */ = {isa = PBXBuildFile; fileRef = 720641C6ECE32D97B29F72AC /* Config.local.plist */; };
+		5B9C06A8433124770EE54787 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A86AD273467897E27446DA0 /* HomeView.swift */; };
+		5EC403A92EF71B7D5D972A7C /* MarketView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3C17E6EACD7B068DC25A0DA /* MarketView.swift */; };
+		99112E4258C5A9EB046E393C /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2E59B6F7D9701F93FFE0D64 /* AppConfig.swift */; };
+		9ABD061EB9ADFCDF47A600EF /* MainShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 883DCCF3743FE31C0C040B8C /* MainShellView.swift */; };
+		A90122EF302CAA77B9997FFC /* PortfolioViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C2D06CA410D6990DE49CE15 /* PortfolioViewModel.swift */; };
+		AB0823B2A7E2B2B9D0B1F32C /* OperationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D512493D64B3C32BBBA867D /* OperationsView.swift */; };
+		B4CB5D02B88A1BE4A53438BB /* AdminUsersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 538A74236F029EC91F1AEAD1 /* AdminUsersView.swift */; };
+		D4EE46C4490DD72D10FCE356 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = ADB42F8342C05B034DA81871 /* Supabase */; };
+		F2F432AC9CE6B4ADD0EBF89B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A99D1DC9BDA70344550AD902 /* Assets.xcassets */; };
+		FDB14491FB46221D2C2FE33A /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25D5DBFFC5C15180BA5EB27A /* Models.swift */; };
+		FDB7DE847C3E29A0C6016A14 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC0A53E40ED9F9B4741ED407 /* AppTheme.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		1A86AD273467897E27446DA0 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		25D5DBFFC5C15180BA5EB27A /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		2923E21EE8B093355FF234CC /* DashboardOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardOverviewView.swift; sourceTree = "<group>"; };
+		34A23BB07A28769C835885C9 /* RaiskasMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaiskasMacApp.swift; sourceTree = "<group>"; };
+		3AFAF2D80160B1EDDB0551F4 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		4327D82E1FD96DFA1D37023F /* CryptoRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoRootView.swift; sourceTree = "<group>"; };
+		538A74236F029EC91F1AEAD1 /* AdminUsersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminUsersView.swift; sourceTree = "<group>"; };
+		5D512493D64B3C32BBBA867D /* OperationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationsView.swift; sourceTree = "<group>"; };
+		5E3A053477BD5AB6CDC85281 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
+		650E95CDB23A70E0F718F08D /* Formatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatters.swift; sourceTree = "<group>"; };
+		720641C6ECE32D97B29F72AC /* Config.local.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Config.local.plist; sourceTree = "<group>"; };
+		847BB30369C85F79C77DC390 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		85DE807348CFF771CB0880DB /* AdminPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminPanelView.swift; sourceTree = "<group>"; };
+		883DCCF3743FE31C0C040B8C /* MainShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainShellView.swift; sourceTree = "<group>"; };
+		9C2D06CA410D6990DE49CE15 /* PortfolioViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioViewModel.swift; sourceTree = "<group>"; };
+		A99D1DC9BDA70344550AD902 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B087DCEC67A4362B4EBF0CAD /* RaiskasMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RaiskasMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BC0A53E40ED9F9B4741ED407 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		C2EB8819E920BD25169A7B6B /* PortfolioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioView.swift; sourceTree = "<group>"; };
+		C51A55C066AD4B4BE5CF17AA /* AppDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDestination.swift; sourceTree = "<group>"; };
+		E3C17E6EACD7B068DC25A0DA /* MarketView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketView.swift; sourceTree = "<group>"; };
+		E41574EA1D1F124689F19809 /* logo-sem-fundo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "logo-sem-fundo.png"; sourceTree = "<group>"; };
+		F2E59B6F7D9701F93FFE0D64 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		97B331C432ED1F51F8142A49 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D4EE46C4490DD72D10FCE356 /* Supabase in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		05CAC1C4BE9D5666909B86F0 /* Market */ = {
+			isa = PBXGroup;
+			children = (
+				E3C17E6EACD7B068DC25A0DA /* MarketView.swift */,
+			);
+			path = Market;
+			sourceTree = "<group>";
+		};
+		10EEE259C6CA9EEBCE689DC1 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				2923E21EE8B093355FF234CC /* DashboardOverviewView.swift */,
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		1D1A221909A7FD714406B979 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				BF95DA827890D40021756505 /* App */,
+				429C4310C07F0F67B7F027C5 /* Core */,
+				F6B41B7E33B96D8844005D05 /* Features */,
+				DCEBEBE884E9CFF93CCFBA9F /* Shared */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		2824FE17E4F093ED0D17DFE0 /* Operations */ = {
+			isa = PBXGroup;
+			children = (
+				5D512493D64B3C32BBBA867D /* OperationsView.swift */,
+			);
+			path = Operations;
+			sourceTree = "<group>";
+		};
+		429C4310C07F0F67B7F027C5 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				F2E59B6F7D9701F93FFE0D64 /* AppConfig.swift */,
+				25D5DBFFC5C15180BA5EB27A /* Models.swift */,
+				5E3A053477BD5AB6CDC85281 /* SupabaseService.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		57814C950974FDC2DADDC765 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				3AFAF2D80160B1EDDB0551F4 /* SignInView.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		7B4159B7C511604A0EFD3302 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A99D1DC9BDA70344550AD902 /* Assets.xcassets */,
+				E41574EA1D1F124689F19809 /* logo-sem-fundo.png */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		94420D235B694E100CD2EFFA /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B087DCEC67A4362B4EBF0CAD /* RaiskasMac.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		991DCAF07E272D65EBC96F2D /* Admin */ = {
+			isa = PBXGroup;
+			children = (
+				85DE807348CFF771CB0880DB /* AdminPanelView.swift */,
+				538A74236F029EC91F1AEAD1 /* AdminUsersView.swift */,
+			);
+			path = Admin;
+			sourceTree = "<group>";
+		};
+		BC8B8BD894036112AB3017C6 = {
+			isa = PBXGroup;
+			children = (
+				720641C6ECE32D97B29F72AC /* Config.local.plist */,
+				7B4159B7C511604A0EFD3302 /* Resources */,
+				1D1A221909A7FD714406B979 /* Sources */,
+				94420D235B694E100CD2EFFA /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		BF95DA827890D40021756505 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				C51A55C066AD4B4BE5CF17AA /* AppDestination.swift */,
+				847BB30369C85F79C77DC390 /* AppState.swift */,
+				883DCCF3743FE31C0C040B8C /* MainShellView.swift */,
+				34A23BB07A28769C835885C9 /* RaiskasMacApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		D1F3BD64A1F56A3FE2C72140 /* Crypto */ = {
+			isa = PBXGroup;
+			children = (
+				4327D82E1FD96DFA1D37023F /* CryptoRootView.swift */,
+			);
+			path = Crypto;
+			sourceTree = "<group>";
+		};
+		DCEBEBE884E9CFF93CCFBA9F /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				BC0A53E40ED9F9B4741ED407 /* AppTheme.swift */,
+				650E95CDB23A70E0F718F08D /* Formatters.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		E4608C149A6D5DEFD5B6A205 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				1A86AD273467897E27446DA0 /* HomeView.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		ED8711C8A07B569D48D5E47E /* Portfolio */ = {
+			isa = PBXGroup;
+			children = (
+				C2EB8819E920BD25169A7B6B /* PortfolioView.swift */,
+				9C2D06CA410D6990DE49CE15 /* PortfolioViewModel.swift */,
+			);
+			path = Portfolio;
+			sourceTree = "<group>";
+		};
+		F6B41B7E33B96D8844005D05 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				991DCAF07E272D65EBC96F2D /* Admin */,
+				57814C950974FDC2DADDC765 /* Auth */,
+				D1F3BD64A1F56A3FE2C72140 /* Crypto */,
+				10EEE259C6CA9EEBCE689DC1 /* Dashboard */,
+				E4608C149A6D5DEFD5B6A205 /* Home */,
+				05CAC1C4BE9D5666909B86F0 /* Market */,
+				2824FE17E4F093ED0D17DFE0 /* Operations */,
+				ED8711C8A07B569D48D5E47E /* Portfolio */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3AD233FBBE4EA1F24E8D9CA7 /* RaiskasMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 86729DDBE35F495D63F5C8B1 /* Build configuration list for PBXNativeTarget "RaiskasMac" */;
+			buildPhases = (
+				EE3C2466ECF524F7BB2C63B9 /* Sources */,
+				C3BAF0A244605349FD940EC1 /* Resources */,
+				97B331C432ED1F51F8142A49 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RaiskasMac;
+			packageProductDependencies = (
+				ADB42F8342C05B034DA81871 /* Supabase */,
+			);
+			productName = RaiskasMac;
+			productReference = B087DCEC67A4362B4EBF0CAD /* RaiskasMac.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		3A2BDCBA61A1FACF59FA14BB /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+			};
+			buildConfigurationList = 982368EE579DD360183EC246 /* Build configuration list for PBXProject "RaiskasMac" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = BC8B8BD894036112AB3017C6;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				D273C27D718E6B6758395A17 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3AD233FBBE4EA1F24E8D9CA7 /* RaiskasMac */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C3BAF0A244605349FD940EC1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F2F432AC9CE6B4ADD0EBF89B /* Assets.xcassets in Resources */,
+				4888B49AB68D499B917C49EB /* Config.local.plist in Resources */,
+				45E5BB75D96B05E4E3DF5619 /* logo-sem-fundo.png in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		EE3C2466ECF524F7BB2C63B9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2DD9F71CA4C5B791F60F1598 /* AdminPanelView.swift in Sources */,
+				B4CB5D02B88A1BE4A53438BB /* AdminUsersView.swift in Sources */,
+				99112E4258C5A9EB046E393C /* AppConfig.swift in Sources */,
+				47F526C4185FCCCA1370E43A /* AppDestination.swift in Sources */,
+				371263729D6661552EEAC334 /* AppState.swift in Sources */,
+				FDB7DE847C3E29A0C6016A14 /* AppTheme.swift in Sources */,
+				2D3C0E981E398CA606A60BA5 /* CryptoRootView.swift in Sources */,
+				41C848E511A6D22A1E0F8F95 /* DashboardOverviewView.swift in Sources */,
+				20A7E47B13DB468BD7F61019 /* Formatters.swift in Sources */,
+				5B9C06A8433124770EE54787 /* HomeView.swift in Sources */,
+				9ABD061EB9ADFCDF47A600EF /* MainShellView.swift in Sources */,
+				5EC403A92EF71B7D5D972A7C /* MarketView.swift in Sources */,
+				FDB14491FB46221D2C2FE33A /* Models.swift in Sources */,
+				AB0823B2A7E2B2B9D0B1F32C /* OperationsView.swift in Sources */,
+				3E30AD00B3365D4D8FA1BE99 /* PortfolioView.swift in Sources */,
+				A90122EF302CAA77B9997FFC /* PortfolioViewModel.swift in Sources */,
+				11ED9A37A3920128F1FC0146 /* RaiskasMacApp.swift in Sources */,
+				1747FC6C83ABE7D1591509E0 /* SignInView.swift in Sources */,
+				44B19C9BF4DE60FDE25F585B /* SupabaseService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		074EF45AFDB1B79C8F205C6C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.raiskas.macos;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.10;
+			};
+			name = Debug;
+		};
+		1B5C53B4122F4F540BE74702 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.raiskas.macos;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.10;
+			};
+			name = Release;
+		};
+		2CDDF2EC0622243887005325 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Crypto Raiskas";
+				INFOPLIST_KEY_CFBundleName = "Crypto Raiskas";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Raiskas";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_NAME = "Crypto Raiskas";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		2E6792861111DED934F956D1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Crypto Raiskas";
+				INFOPLIST_KEY_CFBundleName = "Crypto Raiskas";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Raiskas";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_NAME = "Crypto Raiskas";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		86729DDBE35F495D63F5C8B1 /* Build configuration list for PBXNativeTarget "RaiskasMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2E6792861111DED934F956D1 /* Debug */,
+				2CDDF2EC0622243887005325 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		982368EE579DD360183EC246 /* Build configuration list for PBXProject "RaiskasMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				074EF45AFDB1B79C8F205C6C /* Debug */,
+				1B5C53B4122F4F540BE74702 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		D273C27D718E6B6758395A17 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		ADB42F8342C05B034DA81871 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D273C27D718E6B6758395A17 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 3A2BDCBA61A1FACF59FA14BB /* Project object */;
+}

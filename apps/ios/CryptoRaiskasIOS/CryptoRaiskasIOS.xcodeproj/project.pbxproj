@@ -1,0 +1,500 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 63;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		005640E293A56B0B7C363F1C /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B14C8718750AD8F523DAA3 /* SupabaseService.swift */; };
+		10B9284B373779286766611F /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 166C274D20FBBCD2EFAD82CA /* MainTabView.swift */; };
+		288526D85913CB1F71AF9532 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11832D15E316853E33CFA33 /* AppConfig.swift */; };
+		50DEAF322A901E34004DAC25 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B490FA68C4F0712C46DF8F2 /* Models.swift */; };
+		585A4AD3C0A3D97313D1BEC6 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A2A4F4D93C793EE4201345 /* AppState.swift */; };
+		601DF3129BD1E644082B4FED /* AdminRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF74D09100259046A6F77823 /* AdminRootView.swift */; };
+		654D30F2982998939077A3C8 /* Config.local.plist in Resources */ = {isa = PBXBuildFile; fileRef = 472A3BED608241E4452EA5AD /* Config.local.plist */; };
+		6F235D9DADE268D8A446E5E3 /* AdminUsersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE85FE6AB58BD424113D7CC3 /* AdminUsersView.swift */; };
+		7F72FAF1F68F0EB69BEC13BE /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A12689C1D8F6A33302F8AE80 /* AppTheme.swift */; };
+		83C98AC010564DB929C818FB /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 9B747369EF880BCB5D59D520 /* Supabase */; };
+		8EA1FAB53AFF21A49EAC4A41 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 140FC72A4F67908616735F9C /* HomeView.swift */; };
+		9EA4732BEBB8983EBFC77150 /* AppDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EFC1C7AD74168743D778F4 /* AppDestination.swift */; };
+		A5A71E8B618815A7FBF2A6F8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4FE3B6262C02A314F53F5C6A /* Assets.xcassets */; };
+		AF41332F4D5EF35A6C1E73E6 /* Formatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3180B6EE6ADD8FBC2F238468 /* Formatters.swift */; };
+		B8B9305190D72A69CC3B91D4 /* AdminEmpresasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97C8B6590C0633CFF397A34B /* AdminEmpresasView.swift */; };
+		C2A5410F3808D8AE049316D7 /* CryptoRaiskasIOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8069980678EC6043A002F754 /* CryptoRaiskasIOSApp.swift */; };
+		C754FF52EA6F9412E307C507 /* CryptoRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04E74485A69E80EC8602A93B /* CryptoRootView.swift */; };
+		CAB66B9CDD08A339A36CD0B0 /* logo-sem-fundo.png in Resources */ = {isa = PBXBuildFile; fileRef = C65A1B088C1E4A2EB6F71A2C /* logo-sem-fundo.png */; };
+		E640AC974E590DF90D074E95 /* AppContract.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933D9959288BD69B55CEC0B1 /* AppContract.swift */; };
+		F94F788AABCB9941D6FBFB6D /* PortfolioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C6165D3CEE1BEF44C138032 /* PortfolioView.swift */; };
+		FCC14DACC3B6B417734EFF6C /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E99EA2B4723428D478E7BFE6 /* SignInView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		04E74485A69E80EC8602A93B /* CryptoRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoRootView.swift; sourceTree = "<group>"; };
+		0B490FA68C4F0712C46DF8F2 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		140FC72A4F67908616735F9C /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		166C274D20FBBCD2EFAD82CA /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		3180B6EE6ADD8FBC2F238468 /* Formatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatters.swift; sourceTree = "<group>"; };
+		3C6165D3CEE1BEF44C138032 /* PortfolioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioView.swift; sourceTree = "<group>"; };
+		46EFC1C7AD74168743D778F4 /* AppDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDestination.swift; sourceTree = "<group>"; };
+		472A3BED608241E4452EA5AD /* Config.local.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Config.local.plist; sourceTree = "<group>"; };
+		49B14C8718750AD8F523DAA3 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
+		4FE3B6262C02A314F53F5C6A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		8069980678EC6043A002F754 /* CryptoRaiskasIOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoRaiskasIOSApp.swift; sourceTree = "<group>"; };
+		8F67DC19F11CCB42466B0A9F /* Crypto Raiskas.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Crypto Raiskas.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		933D9959288BD69B55CEC0B1 /* AppContract.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContract.swift; sourceTree = "<group>"; };
+		97C8B6590C0633CFF397A34B /* AdminEmpresasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminEmpresasView.swift; sourceTree = "<group>"; };
+		A12689C1D8F6A33302F8AE80 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		B0A2A4F4D93C793EE4201345 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		B11832D15E316853E33CFA33 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		C65A1B088C1E4A2EB6F71A2C /* logo-sem-fundo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "logo-sem-fundo.png"; sourceTree = "<group>"; };
+		CE85FE6AB58BD424113D7CC3 /* AdminUsersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminUsersView.swift; sourceTree = "<group>"; };
+		E99EA2B4723428D478E7BFE6 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		FF74D09100259046A6F77823 /* AdminRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminRootView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		17BFF9301CDB1981EFBC4514 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				83C98AC010564DB929C818FB /* Supabase in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		04EAAC50E305812DAEA7D2E1 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				140FC72A4F67908616735F9C /* HomeView.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		0998A345862EC6AC9DA3D20A /* Admin */ = {
+			isa = PBXGroup;
+			children = (
+				97C8B6590C0633CFF397A34B /* AdminEmpresasView.swift */,
+				FF74D09100259046A6F77823 /* AdminRootView.swift */,
+				CE85FE6AB58BD424113D7CC3 /* AdminUsersView.swift */,
+			);
+			path = Admin;
+			sourceTree = "<group>";
+		};
+		2719781D9528D42628173C08 /* Portfolio */ = {
+			isa = PBXGroup;
+			children = (
+				3C6165D3CEE1BEF44C138032 /* PortfolioView.swift */,
+			);
+			path = Portfolio;
+			sourceTree = "<group>";
+		};
+		3462FCA099E90533353A6704 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				B11832D15E316853E33CFA33 /* AppConfig.swift */,
+				0B490FA68C4F0712C46DF8F2 /* Models.swift */,
+				49B14C8718750AD8F523DAA3 /* SupabaseService.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		598C157071A3006F0893042D /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				4FE3B6262C02A314F53F5C6A /* Assets.xcassets */,
+				C65A1B088C1E4A2EB6F71A2C /* logo-sem-fundo.png */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		70F6E68A827F9D972386AA0F /* App */ = {
+			isa = PBXGroup;
+			children = (
+				933D9959288BD69B55CEC0B1 /* AppContract.swift */,
+				46EFC1C7AD74168743D778F4 /* AppDestination.swift */,
+				B0A2A4F4D93C793EE4201345 /* AppState.swift */,
+				8069980678EC6043A002F754 /* CryptoRaiskasIOSApp.swift */,
+				166C274D20FBBCD2EFAD82CA /* MainTabView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		7B943AE92DD3DB9BBE3C02BD /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				0998A345862EC6AC9DA3D20A /* Admin */,
+				BBF0BBBA0452773016478998 /* Auth */,
+				EC0A4720A089950EE594BD2C /* Crypto */,
+				04EAAC50E305812DAEA7D2E1 /* Home */,
+				2719781D9528D42628173C08 /* Portfolio */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		97123C0AF2932D8AB8D3CAD9 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				A12689C1D8F6A33302F8AE80 /* AppTheme.swift */,
+				3180B6EE6ADD8FBC2F238468 /* Formatters.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		A7293FB03295CA3939DC1C81 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8F67DC19F11CCB42466B0A9F /* Crypto Raiskas.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AC62602B63239C664EBC5087 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				70F6E68A827F9D972386AA0F /* App */,
+				3462FCA099E90533353A6704 /* Core */,
+				7B943AE92DD3DB9BBE3C02BD /* Features */,
+				97123C0AF2932D8AB8D3CAD9 /* Shared */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		BBF0BBBA0452773016478998 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				E99EA2B4723428D478E7BFE6 /* SignInView.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		EC0A4720A089950EE594BD2C /* Crypto */ = {
+			isa = PBXGroup;
+			children = (
+				04E74485A69E80EC8602A93B /* CryptoRootView.swift */,
+			);
+			path = Crypto;
+			sourceTree = "<group>";
+		};
+		F16AC1726EDD59D83A606695 = {
+			isa = PBXGroup;
+			children = (
+				472A3BED608241E4452EA5AD /* Config.local.plist */,
+				598C157071A3006F0893042D /* Resources */,
+				AC62602B63239C664EBC5087 /* Sources */,
+				A7293FB03295CA3939DC1C81 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A004E55B7C99E182EAA89F05 /* CryptoRaiskasIOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5ED546D88941A57AB7093254 /* Build configuration list for PBXNativeTarget "CryptoRaiskasIOS" */;
+			buildPhases = (
+				715D41DE963A04926A038E32 /* Sources */,
+				ABCA0BFF6584BE254FE84E6D /* Resources */,
+				17BFF9301CDB1981EFBC4514 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CryptoRaiskasIOS;
+			packageProductDependencies = (
+				9B747369EF880BCB5D59D520 /* Supabase */,
+			);
+			productName = CryptoRaiskasIOS;
+			productReference = 8F67DC19F11CCB42466B0A9F /* Crypto Raiskas.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		73067B236D0519A5C37B6747 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 2630;
+			};
+			buildConfigurationList = 00011014173AF8EADDB39E24 /* Build configuration list for PBXProject "CryptoRaiskasIOS" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = F16AC1726EDD59D83A606695;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				2077082DCB9979883F066FA0 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A004E55B7C99E182EAA89F05 /* CryptoRaiskasIOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		ABCA0BFF6584BE254FE84E6D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A5A71E8B618815A7FBF2A6F8 /* Assets.xcassets in Resources */,
+				654D30F2982998939077A3C8 /* Config.local.plist in Resources */,
+				CAB66B9CDD08A339A36CD0B0 /* logo-sem-fundo.png in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		715D41DE963A04926A038E32 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B8B9305190D72A69CC3B91D4 /* AdminEmpresasView.swift in Sources */,
+				601DF3129BD1E644082B4FED /* AdminRootView.swift in Sources */,
+				6F235D9DADE268D8A446E5E3 /* AdminUsersView.swift in Sources */,
+				288526D85913CB1F71AF9532 /* AppConfig.swift in Sources */,
+				E640AC974E590DF90D074E95 /* AppContract.swift in Sources */,
+				9EA4732BEBB8983EBFC77150 /* AppDestination.swift in Sources */,
+				585A4AD3C0A3D97313D1BEC6 /* AppState.swift in Sources */,
+				7F72FAF1F68F0EB69BEC13BE /* AppTheme.swift in Sources */,
+				C2A5410F3808D8AE049316D7 /* CryptoRaiskasIOSApp.swift in Sources */,
+				C754FF52EA6F9412E307C507 /* CryptoRootView.swift in Sources */,
+				AF41332F4D5EF35A6C1E73E6 /* Formatters.swift in Sources */,
+				8EA1FAB53AFF21A49EAC4A41 /* HomeView.swift in Sources */,
+				10B9284B373779286766611F /* MainTabView.swift in Sources */,
+				50DEAF322A901E34004DAC25 /* Models.swift in Sources */,
+				F94F788AABCB9941D6FBFB6D /* PortfolioView.swift in Sources */,
+				FCC14DACC3B6B417734EFF6C /* SignInView.swift in Sources */,
+				005640E293A56B0B7C363F1C /* SupabaseService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		2CD3E274B34E72179A29915D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 79KY2ARRTR;
+				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_LAUNCH_SCREEN_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Crypto Raiskas";
+				INFOPLIST_KEY_CFBundleName = "Crypto Raiskas";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_NAME = "Crypto Raiskas";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		750B7F439931C1239E08313F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.raiskas.ios;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.10;
+			};
+			name = Debug;
+		};
+		E1C342EE56DE8361222EE9EE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 79KY2ARRTR;
+				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_LAUNCH_SCREEN_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Crypto Raiskas";
+				INFOPLIST_KEY_CFBundleName = "Crypto Raiskas";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_NAME = "Crypto Raiskas";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		FCAD1CF0E00CD03340CDA30A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.raiskas.ios;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.10;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		00011014173AF8EADDB39E24 /* Build configuration list for PBXProject "CryptoRaiskasIOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				750B7F439931C1239E08313F /* Debug */,
+				FCAD1CF0E00CD03340CDA30A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		5ED546D88941A57AB7093254 /* Build configuration list for PBXNativeTarget "CryptoRaiskasIOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2CD3E274B34E72179A29915D /* Debug */,
+				E1C342EE56DE8361222EE9EE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		2077082DCB9979883F066FA0 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		9B747369EF880BCB5D59D520 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2077082DCB9979883F066FA0 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 73067B236D0519A5C37B6747 /* Project object */;
+}

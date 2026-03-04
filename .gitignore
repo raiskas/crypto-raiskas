@@ -39,3 +39,23 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# macOS local secrets
+apps/macos/RaiskasMac/Config.local.plist
+apps/ios/CryptoRaiskasIOS/Config.local.plist
+
+# Xcode user/derived local files
+**/xcuserdata/
+*.xcuserstate
+**/build/
+
+# local build artifacts
+Release/
+
+# generated PWA artifacts
+public/sw.js
+public/workbox-*.js
+
+# local tool runtime/cache data
+tools/cache/
+tools/onchain-monitor/data/

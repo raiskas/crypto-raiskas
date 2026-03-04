@@ -16,7 +16,6 @@ import { Operacao } from "@/types/crypto";
 import type { PerformanceMetrics } from "@/lib/crypto/fifoCalculations";
 import { CarteiraAdminModal } from "@/components/crypto/CarteiraAdminModal";
 import {
-  Area,
   CartesianGrid,
   ComposedChart,
   Legend,
@@ -403,7 +402,26 @@ export default function CryptoCarteiraPage() {
   ]);
 
   const chartSourceData = useMemo(() => {
-    if (snapshots.length === 0) return evolutionData;
+    const normalizeSeries = (
+      rows: Array<{
+        ts: number;
+        label: string;
+        valorCarteira: number;
+        aporteLiquido: number;
+        resultado: number;
+      }>
+    ) => {
+      const valid = rows.filter((r) => Number.isFinite(r.ts));
+      valid.sort((a, b) => a.ts - b.ts);
+      const byDay = new Map<string, (typeof valid)[number]>();
+      for (const row of valid) {
+        const dayKey = new Date(row.ts).toISOString().slice(0, 10);
+        byDay.set(dayKey, row);
+      }
+      return Array.from(byDay.values()).sort((a, b) => a.ts - b.ts);
+    };
+
+    if (snapshots.length === 0) return normalizeSeries(evolutionData);
 
     const fromSnapshots = snapshots.map((s) => ({
       ts: new Date(`${s.data_ref}T00:00:00Z`).getTime(),
@@ -430,7 +448,7 @@ export default function CryptoCarteiraPage() {
     };
 
     if (fromSnapshots.length === 0) {
-      return [currentPoint];
+      return normalizeSeries([currentPoint]);
     }
 
     const last = fromSnapshots[fromSnapshots.length - 1];
@@ -440,7 +458,7 @@ export default function CryptoCarteiraPage() {
       fromSnapshots.push(currentPoint);
     }
 
-    return fromSnapshots;
+    return normalizeSeries(fromSnapshots);
   }, [
     snapshots,
     evolutionData,
@@ -470,6 +488,23 @@ export default function CryptoCarteiraPage() {
   const chartDataWindow = useMemo(() => {
     return filteredEvolution;
   }, [filteredEvolution]);
+
+  const chartRenderData = useMemo(() => {
+    if (chartDataWindow.length === 0) return [] as Array<
+      (typeof chartDataWindow)[number] & { x: number }
+    >;
+
+    // Série de exibição: 1 ponto por dia local (último do dia), ordenado.
+    const byLocalDay = new Map<string, (typeof chartDataWindow)[number]>();
+    for (const row of chartDataWindow) {
+      const key = new Date(row.ts).toLocaleDateString("en-CA"); // YYYY-MM-DD (local)
+      const prev = byLocalDay.get(key);
+      if (!prev || row.ts >= prev.ts) byLocalDay.set(key, row);
+    }
+
+    const normalized = Array.from(byLocalDay.values()).sort((a, b) => a.ts - b.ts);
+    return normalized.map((d, idx) => ({ ...d, x: idx }));
+  }, [chartDataWindow]);
 
   const chart = useMemo(() => {
     if (chartDataWindow.length < 2) {
@@ -520,14 +555,15 @@ export default function CryptoCarteiraPage() {
 
   const xTickFormatter = useCallback(
     (value: number) => {
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return "";
+      const row = chartRenderData[Math.round(value)];
+      if (!row) return "";
+      const date = new Date(row.ts);
       if (chartRange === "1M" || chartRange === "3M") {
         return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
       }
       return date.toLocaleDateString("pt-BR", { month: "2-digit", year: "2-digit" });
     },
-    [chartRange]
+    [chartRange, chartRenderData]
   );
 
   const latestChartPoint = useMemo(() => {
@@ -546,12 +582,15 @@ export default function CryptoCarteiraPage() {
       label?: string | number;
     }) => {
       if (!active || !payload || payload.length === 0) return null;
-      const labelDate =
-        typeof label === "number"
-          ? new Date(label).toLocaleDateString("pt-BR")
-          : typeof label === "string"
-            ? label
-            : "-";
+      let labelDate = "-";
+      if (typeof label === "number" && Number.isFinite(label)) {
+        const row = chartRenderData[Math.round(label)];
+        if (row) {
+          labelDate = new Date(row.ts).toLocaleDateString("pt-BR");
+        }
+      } else if (typeof label === "string") {
+        labelDate = label;
+      }
 
       const byKey: Record<string, number> = {};
       for (const item of payload) {
@@ -597,7 +636,7 @@ export default function CryptoCarteiraPage() {
         </div>
       );
     },
-    [visibleSeries]
+    [visibleSeries, chartRenderData]
   );
 
   return (
@@ -820,15 +859,15 @@ export default function CryptoCarteiraPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart
                       syncId="carteira-evolution"
-                      data={chartDataWindow}
+                      data={chartRenderData}
                       margin={{ top: 18, right: 50, left: 8, bottom: 12 }}
                     >
                       <CartesianGrid stroke="#1f2937" strokeDasharray="2 6" strokeOpacity={0.75} />
                       <XAxis
-                        dataKey="ts"
+                        dataKey="x"
                         type="number"
                         domain={["dataMin", "dataMax"]}
-                        scale="time"
+                        scale="linear"
                         minTickGap={24}
                         tickCount={8}
                         tickFormatter={xTickFormatter}
@@ -867,25 +906,16 @@ export default function CryptoCarteiraPage() {
                           </span>
                         )}
                       />
-                      <Area
-                        yAxisId="principal"
-                        type="monotone"
-                        dataKey="valorCarteira"
-                        name="Valor da Carteira"
-                        stroke="#3b82f6"
-                        fill="#1d4ed8"
-                        fillOpacity={0.12}
-                        strokeWidth={1.6}
-                        hide={!visibleSeries.valorCarteira}
-                      />
                       <Line
                         yAxisId="principal"
-                        type="monotone"
+                        type="linear"
                         dataKey="valorCarteira"
                         name="Valor da Carteira"
                         stroke="#3b82f6"
                         strokeWidth={2.8}
                         dot={false}
+                        connectNulls
+                        isAnimationActive={false}
                         activeDot={{ r: 5, fill: "#3b82f6", stroke: "#ffffff", strokeWidth: 2 }}
                         legendType="none"
                         tooltipType="none"
@@ -893,12 +923,14 @@ export default function CryptoCarteiraPage() {
                       />
                       <Line
                         yAxisId="principal"
-                        type="monotone"
+                        type="linear"
                         dataKey="aporteLiquido"
                         name="Aporte Líquido"
                         stroke="#f59e0b"
                         strokeWidth={2.2}
                         dot={false}
+                        connectNulls
+                        isAnimationActive={false}
                         hide={!visibleSeries.aporteLiquido}
                       />
                     </ComposedChart>
@@ -909,11 +941,11 @@ export default function CryptoCarteiraPage() {
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart
                         syncId="carteira-evolution"
-                        data={chartDataWindow}
-                        margin={{ top: 8, right: 50, left: 8, bottom: 2 }}
-                      >
+                      data={chartRenderData}
+                      margin={{ top: 8, right: 50, left: 8, bottom: 2 }}
+                    >
                         <CartesianGrid stroke="#1f2937" strokeDasharray="2 6" strokeOpacity={0.5} />
-                        <XAxis hide dataKey="ts" type="number" domain={["dataMin", "dataMax"]} scale="time" />
+                        <XAxis hide dataKey="x" type="number" domain={["dataMin", "dataMax"]} scale="linear" />
                         <YAxis
                           orientation="right"
                           axisLine={{ stroke: "#334155", strokeOpacity: 0.8 }}
@@ -924,12 +956,14 @@ export default function CryptoCarteiraPage() {
                         />
                         <Tooltip content={renderChartTooltip} cursor={<CrosshairCursor />} />
                         <Line
-                          type="monotone"
+                          type="linear"
                           dataKey="resultado"
                           name="Resultado"
                           stroke="#e2e8f0"
                           strokeWidth={2.1}
                           dot={false}
+                          connectNulls
+                          isAnimationActive={false}
                         />
                       </ComposedChart>
                     </ResponsiveContainer>
