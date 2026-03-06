@@ -125,6 +125,23 @@ Implementado:
 - Atualização de dados via App Group (`group.com.raiskas.ios`) a partir do app principal.
 - Visual com foco em leitura rápida no lock screen (tipografia e contraste ajustados).
 
+Comportamento de atualização (estado atual):
+
+- O widget usa snapshot salvo no App Group.
+- A timeline do widget está configurada para tentativa de refresh em ~30 minutos.
+- Com app **fechado/minimizado**, o iOS continua exibindo o widget, mas sem garantia de novo dado de mercado em tempo real.
+- Novos dados entram quando o app atualiza snapshot e dispara reload do widget.
+
+Limitação atual:
+
+- Sem pipeline server-side para atualizar lock screen em tempo quase real sem abrir o app.
+
+Evolução planejada (quando Apple Developer estiver ativo):
+
+- Completar stack de push/APNs no backend (já iniciada em `@docs/alertas-preco-ios.md`).
+- Implementar opção de atualização avançada para lock screen (Live Activity + push updates) para reduzir dependência de abrir o app.
+- Validar em device real com provisioning/capabilities finais.
+
 Observações operacionais:
 
 - Alterações de visual em widgets podem ficar em cache do iOS.

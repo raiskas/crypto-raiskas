@@ -26,6 +26,21 @@ Este bloco é a referência oficial para continuar exatamente do ponto atual qua
 3. Rodar `supabase secrets set` com os valores finais.
 4. Validar disparo ponta a ponta (engine -> push -> deep link Alertas).
 
+### O que será feito quando Apple Developer estiver ativo (checklist)
+
+1. Confirmar `APNS_KEY_ID`, `APNS_TEAM_ID` e chave `.p8` válidos.
+2. Configurar secrets finais no Supabase:
+   - `CRON_SECRET`
+   - `APNS_TEAM_ID`
+   - `APNS_KEY_ID`
+   - `APNS_PRIVATE_KEY`
+   - `APNS_BUNDLE_ID`
+3. Validar token APNs em device real (`device_tokens` com `apns_environment` correto).
+4. Testar envio manual da Edge Function e recebimento de push com app em foreground/background.
+5. Testar deep link do push abrindo diretamente em Alertas no iOS.
+6. Rodar teste de estabilidade por 24h no cron (`*/1`) e monitorar deduplicação/cooldown.
+7. Opcional (fase 2): iniciar implementação de Live Activity + push updates para lock screen em tempo quase real.
+
 ### Valores já confirmados no projeto
 
 - `APNS_BUNDLE_ID`: `com.raiskas.ios`
@@ -276,3 +291,9 @@ limit 20;
 - Cache curto em memória na function.
 - Deduplicação por `is_triggered` + `next_eligible_at` + `cooldown_minutes`.
 - Tokens inválidos são desativados (`ativo=false`) em respostas APNs `400/410`.
+
+## Observação sobre widget de lock screen (escopo atual)
+
+- O widget de lock screen mostra snapshot local (App Group) e timeline periódica.
+- Isso significa que, com app fechado, o sistema pode exibir dado recente, porém sem atualização contínua de mercado em tempo real.
+- Para atualização mais frequente sem abrir app, o caminho técnico é Live Activity com updates por push (fase futura, após stack APNs plenamente validada).
