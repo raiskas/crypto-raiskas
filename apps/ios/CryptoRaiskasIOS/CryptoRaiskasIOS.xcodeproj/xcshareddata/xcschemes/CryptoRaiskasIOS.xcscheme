@@ -20,6 +20,20 @@
                ReferencedContainer = "container:CryptoRaiskasIOS.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "5EBF1A0E63379E8EF3F2E6A8"
+               BuildableName = "Crypto Raiskas Widgets.appex"
+               BlueprintName = "CryptoRaiskasWidgets"
+               ReferencedContainer = "container:CryptoRaiskasIOS.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction

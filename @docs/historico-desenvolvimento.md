@@ -4,6 +4,24 @@ Este documento registra as principais mudanças, correções e implementações 
 
 ## Atualização recente (04/03/2026)
 
+### Alertas de Preço (iOS + Supabase)
+
+- Nova subpágina **Alertas** no Painel Administrativo iOS.
+- CRUD completo de alertas por ativo:
+  - ativo
+  - direção (`>=` / `<=`)
+  - preço alvo
+  - ativo/inativo
+  - cooldown
+- Registro de tokens APNs em `device_tokens`.
+- Nova migration:
+  - `/Users/claudioraikasfh/Desktop/crypto-raiskas/supabase/migrations/20260304110000_add_price_alerts_and_device_tokens.sql`
+- Nova Edge Function de engine server-side:
+  - `/Users/claudioraikasfh/Desktop/crypto-raiskas/supabase/functions/price-alert-engine/index.ts`
+- Deep link de push para abrir o app em Alertas e destacar alerta/ativo.
+- Documentação de operação/deploy:
+  - `/Users/claudioraikasfh/Desktop/crypto-raiskas/@docs/alertas-preco-ios.md`
+
 ### Consolidação da documentação para evolução contínua
 
 - Índice central de docs atualizado para incluir Web + macOS + iOS.
@@ -21,6 +39,16 @@ Este documento registra as principais mudanças, correções e implementações 
   - leitura dinâmica por data;
   - card de dados selecionados no padrão visual do projeto.
 - Ajustes de layout fullscreen e safe area aplicados no root das telas iOS para reduzir áreas mortas.
+
+### Widget lock screen iOS (refino final visual)
+
+- Widget de lock screen estabilizado com leitura dinâmica dos dados da carteira.
+- Layout final do card retangular:
+  - logo do app à esquerda (asset `icon-192x192.png`)
+  - valor total (sem rótulo `Total`) na primeira linha
+  - `L/P` com percentual na segunda linha
+- Ajustes finos de tipografia, tamanho do logo e contraste para leitura em wallpapers claros/escuros.
+- Fluxo de atualização/caching documentado para evitar inconsistência visual após novas versões.
 
 ## Atualização recente (03/03/2026)
 

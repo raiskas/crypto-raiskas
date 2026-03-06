@@ -147,6 +147,34 @@ crypto_middleware_signals
   ├── highlights (JSONB, NOT NULL)
   ├── raw_payload (JSONB, NOT NULL)
   └── criado_em (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
+
+price_alerts
+  ├── id (PK, UUID, DEFAULT gen_random_uuid())
+  ├── usuario_id (UUID, FK -> usuarios.id, NOT NULL)
+  ├── asset_symbol (VARCHAR(20), NOT NULL)
+  ├── provider_asset_id (VARCHAR(100), opcional)
+  ├── direction (VARCHAR(3), CHECK IN ('gte','lte'))
+  ├── target_price (NUMERIC(24,8), NOT NULL)
+  ├── enabled (BOOLEAN, DEFAULT TRUE)
+  ├── is_triggered (BOOLEAN, DEFAULT FALSE)
+  ├── cooldown_minutes (INTEGER, DEFAULT 0)
+  ├── last_price (NUMERIC(24,8), opcional)
+  ├── last_triggered_at (TIMESTAMPTZ, opcional)
+  ├── next_eligible_at (TIMESTAMPTZ, opcional)
+  ├── triggered_count (INTEGER, DEFAULT 0)
+  ├── created_at (TIMESTAMPTZ, DEFAULT NOW())
+  └── updated_at (TIMESTAMPTZ, DEFAULT NOW())
+
+device_tokens
+  ├── id (PK, UUID, DEFAULT gen_random_uuid())
+  ├── usuario_id (UUID, FK -> usuarios.id, NOT NULL)
+  ├── platform (VARCHAR(20), DEFAULT 'ios')
+  ├── token (TEXT, NOT NULL)
+  ├── apns_environment (VARCHAR(20), CHECK IN ('sandbox','production'))
+  ├── ativo (BOOLEAN, DEFAULT TRUE)
+  ├── last_seen_at (TIMESTAMPTZ, DEFAULT NOW())
+  ├── created_at (TIMESTAMPTZ, DEFAULT NOW())
+  └── updated_at (TIMESTAMPTZ, DEFAULT NOW())
 ```
 
 -- Nota: A existência das colunas `empresa_id` (FK), `is_master` (boolean) e `telas_permitidas` (_text/TEXT[]) 
@@ -175,6 +203,20 @@ Este comando irá:
 - Inserir dados iniciais (permissões padrão)
 
 ## Migrações de Banco de Dados
+
+### Migração atual (Alertas de Preço)
+
+Arquivo:
+
+- `/Users/claudioraikasfh/Desktop/crypto-raiskas/supabase/migrations/20260304110000_add_price_alerts_and_device_tokens.sql`
+
+Inclui:
+
+- Tabelas `price_alerts` e `device_tokens`
+- Índices para leitura da engine de alertas
+- Trigger padrão `updated_at`
+- RLS em ambas as tabelas com vínculo ao usuário autenticado (`usuarios.auth_id = auth.uid()`)
+- Extensões `pg_cron` e `pg_net` para agendamento server-side da Edge Function
 
 Para realizar alterações no banco de dados, siga estas etapas:
 

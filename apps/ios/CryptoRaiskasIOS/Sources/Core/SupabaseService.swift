@@ -204,6 +204,33 @@ final class SupabaseService {
     return AdminAccessContext(isMaster: current.is_master, empresaId: current.empresa_id)
   }
 
+  func registerDeviceToken(token: String, environment: String) async throws {
+    let current = try await currentInternalUser()
+    struct DeviceTokenPayload: Encodable {
+      let usuario_id: String
+      let platform: String
+      let token: String
+      let apns_environment: String
+      let ativo: Bool
+      let atualizado_em: String
+      let last_seen_at: String
+    }
+    let now = ISO8601DateFormatter().string(from: Date())
+    let payload = DeviceTokenPayload(
+      usuario_id: current.id.uuidString,
+      platform: "ios",
+      token: token,
+      apns_environment: environment,
+      ativo: true,
+      atualizado_em: now,
+      last_seen_at: now
+    )
+    _ = try await client
+      .from("device_tokens")
+      .upsert(payload, onConflict: "usuario_id,token")
+      .execute()
+  }
+
   private func ensureMasterAccess() async throws {
     let current = try await currentInternalUser()
     guard current.is_master else {
@@ -541,6 +568,119 @@ final class SupabaseService {
       resultadoPct: wallet.0.resultadoPercentual,
       totalOperacoes: ops.count
     )
+  }
+
+  func fetchPriceAlerts(limit: Int = 500) async throws -> [PriceAlertRow] {
+    let current = try await currentInternalUser()
+    let rows: [PriceAlertDTO] = try await client
+      .from("price_alerts")
+      .select("id,asset_symbol,provider_asset_id,direction,target_price,enabled,is_triggered,cooldown_minutes,last_price,last_triggered_at,next_eligible_at,updated_at")
+      .eq("usuario_id", value: current.id.uuidString)
+      .order("updated_at", ascending: false)
+      .limit(limit)
+      .execute()
+      .value
+
+    let iso = ISO8601DateFormatter()
+    return rows.map { row in
+      PriceAlertRow(
+        id: row.id,
+        assetSymbol: row.asset_symbol.uppercased(),
+        providerAssetId: row.provider_asset_id,
+        direction: PriceAlertDirection(rawValue: row.direction.lowercased()) ?? .gte,
+        targetPrice: row.target_price,
+        enabled: row.enabled ?? true,
+        isTriggered: row.is_triggered ?? false,
+        cooldownMinutes: max(0, row.cooldown_minutes ?? 0),
+        lastPrice: row.last_price,
+        lastTriggeredAt: row.last_triggered_at.flatMap { iso.date(from: $0) },
+        nextEligibleAt: row.next_eligible_at.flatMap { iso.date(from: $0) },
+        updatedAt: row.updated_at.flatMap { iso.date(from: $0) }
+      )
+    }
+  }
+
+  func createPriceAlert(input: PriceAlertUpsertInput) async throws {
+    let current = try await currentInternalUser()
+    struct Payload: Encodable {
+      let usuario_id: String
+      let asset_symbol: String
+      let provider_asset_id: String?
+      let direction: String
+      let target_price: Double
+      let enabled: Bool
+      let cooldown_minutes: Int
+    }
+    let payload = Payload(
+      usuario_id: current.id.uuidString,
+      asset_symbol: input.assetSymbol.uppercased(),
+      provider_asset_id: input.providerAssetId?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+      direction: input.direction.rawValue,
+      target_price: input.targetPrice,
+      enabled: input.enabled,
+      cooldown_minutes: max(0, input.cooldownMinutes)
+    )
+    _ = try await client.from("price_alerts").insert(payload).execute()
+  }
+
+  func updatePriceAlert(id: UUID, input: PriceAlertUpsertInput) async throws {
+    let current = try await currentInternalUser()
+    struct Payload: Encodable {
+      let asset_symbol: String
+      let provider_asset_id: String?
+      let direction: String
+      let target_price: Double
+      let enabled: Bool
+      let cooldown_minutes: Int
+      let is_triggered: Bool
+      let updated_at: String
+    }
+    let payload = Payload(
+      asset_symbol: input.assetSymbol.uppercased(),
+      provider_asset_id: input.providerAssetId?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+      direction: input.direction.rawValue,
+      target_price: input.targetPrice,
+      enabled: input.enabled,
+      cooldown_minutes: max(0, input.cooldownMinutes),
+      is_triggered: false,
+      updated_at: ISO8601DateFormatter().string(from: Date())
+    )
+    _ = try await client
+      .from("price_alerts")
+      .update(payload)
+      .eq("id", value: id.uuidString)
+      .eq("usuario_id", value: current.id.uuidString)
+      .execute()
+  }
+
+  func setPriceAlertEnabled(id: UUID, enabled: Bool) async throws {
+    let current = try await currentInternalUser()
+    struct Payload: Encodable {
+      let enabled: Bool
+      let is_triggered: Bool
+      let updated_at: String
+    }
+    let payload = Payload(
+      enabled: enabled,
+      is_triggered: false,
+      updated_at: ISO8601DateFormatter().string(from: Date())
+    )
+    _ = try await client
+      .from("price_alerts")
+      .update(payload)
+      .eq("id", value: id.uuidString)
+      .eq("usuario_id", value: current.id.uuidString)
+      .execute()
+  }
+
+  func deletePriceAlert(id: UUID) async throws {
+    let current = try await currentInternalUser()
+    _ = try await client
+      .from("price_alerts")
+      .delete()
+      .eq("id", value: id.uuidString)
+      .eq("usuario_id", value: current.id.uuidString)
+      .execute()
   }
 
   func fetchAdminUsers(limit: Int = 200) async throws -> [AdminUserRow] {

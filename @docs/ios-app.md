@@ -78,7 +78,22 @@ open /Users/claudioraikasfh/Desktop/crypto-raiskas/apps/ios/CryptoRaiskasIOS/Cry
   - Visão Geral
   - Usuários (com ações de editar/reset/excluir)
   - Empresas (com ações de editar/excluir)
+  - Alertas de preço (CRUD + toggle ativo/inativo)
 - Logout via Painel Administrativo.
+
+## Alertas de preço (iOS + Supabase)
+
+Documentação completa:
+
+- `/Users/claudioraikasfh/Desktop/crypto-raiskas/@docs/alertas-preco-ios.md`
+
+Resumo técnico:
+
+- Tela de Alertas dentro do Painel Administrativo.
+- Registro de device token APNs no Supabase.
+- Deep link para abrir alerta via push (`cryptoraiskas://alerts?...`).
+- Monitoramento server-side por Edge Function + `pg_cron` + `pg_net`.
+- Sem polling contínuo no iOS.
 
 ## Carteira no iOS (estado atual)
 
@@ -89,6 +104,34 @@ Implementado:
 - Seleção por gesto (drag) com leitura dinâmica por data.
 - Card de dados selecionados no padrão visual do projeto.
 - Painel adaptado para iPhone mantendo as mesmas informações da versão Web.
+
+## Widget iOS (tela bloqueada)
+
+Arquivos principais:
+
+- `/Users/claudioraikasfh/Desktop/crypto-raiskas/apps/ios/CryptoRaiskasIOS/Widgets/CryptoRaiskasWidgets/CryptoRaiskasWidgets.swift`
+- `/Users/claudioraikasfh/Desktop/crypto-raiskas/apps/ios/CryptoRaiskasIOS/Sources/Core/WidgetPortfolioSnapshotStore.swift`
+
+Implementado:
+
+- Widget de lock screen com formatos:
+  - `accessoryInline`
+  - `accessoryCircular`
+  - `accessoryRectangular`
+- Card retangular com layout final:
+  - logo do app (asset `icon-192x192.png`)
+  - valor total do portfólio (linha superior)
+  - `L/P` com percentual (linha inferior)
+- Atualização de dados via App Group (`group.com.raiskas.ios`) a partir do app principal.
+- Visual com foco em leitura rápida no lock screen (tipografia e contraste ajustados).
+
+Observações operacionais:
+
+- Alterações de visual em widgets podem ficar em cache do iOS.
+- Quando mudar layout/asset do widget:
+  1. Rodar app pelo Xcode.
+  2. Remover widget da lock screen.
+  3. Adicionar novamente.
 
 ## Padrões obrigatórios para futuras alterações
 

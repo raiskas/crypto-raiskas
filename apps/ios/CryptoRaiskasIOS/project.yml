@@ -6,6 +6,8 @@ settings:
   base:
     SWIFT_VERSION: "5.10"
     PRODUCT_BUNDLE_IDENTIFIER: "com.raiskas.ios"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
 packages:
   Supabase:
     url: https://github.com/supabase/supabase-swift.git
@@ -33,14 +35,33 @@ targets:
         INFOPLIST_KEY_UIRequiresFullScreen: YES
         TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_ENTITLEMENTS: CryptoRaiskasIOS.entitlements
     dependencies:
       - package: Supabase
         product: Supabase
+      - target: CryptoRaiskasWidgets
+        embed: true
+  CryptoRaiskasWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widgets/CryptoRaiskasWidgets
+      - path: Widgets/CryptoRaiskasWidgets/logo-sem-fundo.png
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_NAME: "Crypto Raiskas Widgets"
+        PRODUCT_BUNDLE_IDENTIFIER: "com.raiskas.ios.widgets"
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Widgets/CryptoRaiskasWidgets/Info.plist
+        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+        CODE_SIGN_ENTITLEMENTS: CryptoRaiskasWidgets.entitlements
 schemes:
   CryptoRaiskasIOS:
     build:
       targets:
         CryptoRaiskasIOS: all
+        CryptoRaiskasWidgets: all
     run:
       config: Debug
     archive:

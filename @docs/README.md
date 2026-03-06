@@ -15,6 +15,7 @@ Este diretório centraliza a documentação oficial do projeto **Crypto Raiskas*
 
 - [App Nativo macOS](/Users/claudioraikasfh/Desktop/crypto-raiskas/@docs/macos-app.md)
 - [App Nativo iOS](/Users/claudioraikasfh/Desktop/crypto-raiskas/@docs/ios-app.md)
+- [Alertas de Preço (iOS + Supabase)](/Users/claudioraikasfh/Desktop/crypto-raiskas/@docs/alertas-preco-ios.md)
 - [Auditoria de Fidelidade Web x iOS](/Users/claudioraikasfh/Desktop/crypto-raiskas/@docs/ios-fidelidade-auditoria.md)
 - [Sincronização de Contrato (Web x macOS)](/Users/claudioraikasfh/Desktop/crypto-raiskas/@docs/sincronizacao-web-macos.md)
 

@@ -10,10 +10,12 @@ enum AppContract {
   static let adminOverviewLabel = "Visão Geral"
   static let adminUsuariosLabel = "Usuários"
   static let adminEmpresasLabel = "Empresas"
+  static let adminAlertasLabel = "Alertas"
 
   static let modalCryptoNewOperationLabel = "Crypto • Nova Operação"
   static let modalPortfolioAdminLabel = "Carteira • Administrar Carteira"
   static let modalAdminNewUserLabel = "Admin • Novo Usuário"
   static let modalAdminNewGroupLabel = "Admin • Novo Grupo"
   static let modalAdminNewEmpresaLabel = "Admin • Nova Empresa"
+  static let modalAdminNewAlertaLabel = "Admin • Novo Alerta"
 }

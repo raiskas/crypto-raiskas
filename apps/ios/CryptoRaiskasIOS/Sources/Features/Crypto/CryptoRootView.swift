@@ -110,6 +110,12 @@ final class CryptoRootViewModel: ObservableObject {
         prices = merged
         self.error = "Dados de mercado instáveis. Exibindo último preço conhecido."
       }
+      let s = summary
+      WidgetPortfolioSnapshotStore.save(
+        portfolio: s.portfolio,
+        unrealized: s.unrealized,
+        unrealizedPct: s.unrealizedPct
+      )
     } catch {
       self.error = error.localizedDescription
     }

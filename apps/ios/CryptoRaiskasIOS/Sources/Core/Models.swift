@@ -228,6 +228,42 @@ struct CoinSearchRow: Identifiable, Equatable {
   let currentPrice: Double?
 }
 
+enum PriceAlertDirection: String, CaseIterable, Codable {
+  case gte = "gte"
+  case lte = "lte"
+
+  var label: String {
+    switch self {
+    case .gte: return ">= (acima)"
+    case .lte: return "<= (abaixo)"
+    }
+  }
+}
+
+struct PriceAlertRow: Identifiable, Equatable {
+  let id: UUID
+  let assetSymbol: String
+  let providerAssetId: String?
+  let direction: PriceAlertDirection
+  let targetPrice: Double
+  let enabled: Bool
+  let isTriggered: Bool
+  let cooldownMinutes: Int
+  let lastPrice: Double?
+  let lastTriggeredAt: Date?
+  let nextEligibleAt: Date?
+  let updatedAt: Date?
+}
+
+struct PriceAlertUpsertInput: Equatable {
+  let assetSymbol: String
+  let providerAssetId: String?
+  let direction: PriceAlertDirection
+  let targetPrice: Double
+  let enabled: Bool
+  let cooldownMinutes: Int
+}
+
 struct EmpresaDTO: Decodable {
   let id: UUID
   let nome: String
@@ -244,6 +280,21 @@ struct EmpresaDTO: Decodable {
   let ativo: Bool?
   let criado_em: String?
   let atualizado_em: String?
+}
+
+struct PriceAlertDTO: Decodable {
+  let id: UUID
+  let asset_symbol: String
+  let provider_asset_id: String?
+  let direction: String
+  let target_price: Double
+  let enabled: Bool?
+  let is_triggered: Bool?
+  let cooldown_minutes: Int?
+  let last_price: Double?
+  let last_triggered_at: String?
+  let next_eligible_at: String?
+  let updated_at: String?
 }
 
 struct GrupoDTO: Decodable {

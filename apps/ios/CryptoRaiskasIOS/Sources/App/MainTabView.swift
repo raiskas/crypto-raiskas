@@ -7,13 +7,14 @@ struct MainTabView: View {
     ZStack(alignment: .topLeading) {
       AppTheme.pageBackground.ignoresSafeArea()
 
-      TabView {
+      TabView(selection: $appState.selectedDestination) {
         RootFillContainer {
           HomeView()
         }
         .tabItem {
           Label(AppContract.homeLabel, systemImage: "house")
         }
+        .tag(AppDestination.home)
 
         RootFillContainer {
           CryptoRootView()
@@ -21,6 +22,7 @@ struct MainTabView: View {
         .tabItem {
           Label(AppContract.cryptoLabel, systemImage: "bitcoinsign.circle")
         }
+        .tag(AppDestination.crypto)
 
         RootFillContainer {
           PortfolioView()
@@ -28,6 +30,7 @@ struct MainTabView: View {
         .tabItem {
           Label(AppContract.carteiraLabel, systemImage: "chart.line.uptrend.xyaxis")
         }
+        .tag(AppDestination.carteira)
 
         RootFillContainer {
           AdminTabRootView()
@@ -35,6 +38,7 @@ struct MainTabView: View {
         .tabItem {
           Label(AppContract.adminMenuTitle, systemImage: "person.3")
         }
+        .tag(AppDestination.admin)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
       .background(AppTheme.pageBackground.ignoresSafeArea())
