@@ -210,6 +210,43 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Inserir a operação usando o ID interno do usuário
+    let carteiraIdToUse: string | null = typeof carteira_id === "string" && carteira_id.trim() ? carteira_id.trim() : null;
+
+    if (!carteiraIdToUse) {
+      const { data: activeWallet, error: activeWalletError } = await supabase
+        .from("crypto_carteiras")
+        .select("id")
+        .eq("usuario_id", userProfile.id)
+        .eq("ativo", true)
+        .order("criado_em", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (activeWalletError) {
+        console.error("[API:operacoes:POST] Erro ao buscar carteira ativa:", activeWalletError);
+        return NextResponse.json({ error: "Erro ao localizar carteira ativa do usuário." }, { status: 500 });
+      }
+
+      carteiraIdToUse = activeWallet?.id ?? null;
+    } else {
+      const { data: walletOwnership, error: walletOwnershipError } = await supabase
+        .from("crypto_carteiras")
+        .select("id")
+        .eq("id", carteiraIdToUse)
+        .eq("usuario_id", userProfile.id)
+        .eq("ativo", true)
+        .maybeSingle();
+
+      if (walletOwnershipError) {
+        console.error("[API:operacoes:POST] Erro ao validar carteira informada:", walletOwnershipError);
+        return NextResponse.json({ error: "Erro ao validar carteira da operação." }, { status: 500 });
+      }
+
+      if (!walletOwnership?.id) {
+        return NextResponse.json({ error: "Carteira informada não pertence ao usuário." }, { status: 403 });
+      }
+    }
+
     const insertPayload: Record<string, any> = {
       nome,
       moeda_id,
@@ -225,8 +262,8 @@ export async function POST(request: NextRequest) {
       grupo_id: grupo_id,
     };
 
-    if (carteira_id) {
-      insertPayload.carteira_id = carteira_id;
+    if (carteiraIdToUse) {
+      insertPayload.carteira_id = carteiraIdToUse;
     }
 
     const supabaseAny: any = supabase;
@@ -238,7 +275,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     // Compatibilidade: caso a coluna carteira_id ainda não exista no banco.
-    if (error && carteira_id && (error.code === "42703" || error.message?.includes("carteira_id"))) {
+    if (error && carteiraIdToUse && (error.code === "42703" || error.message?.includes("carteira_id"))) {
       delete insertPayload.carteira_id;
       const retry = await supabaseAny
         .from("crypto_operacoes")

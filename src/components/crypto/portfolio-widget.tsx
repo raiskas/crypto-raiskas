@@ -100,7 +100,11 @@ export function PortfolioWidget({ compact = false, className }: PortfolioWidgetP
       }
       
       const operacoesData = await operacoesResponse.json();
-      const fetchedOperacoes = operacoesData?.operacoes || [];
+      const fetchedOperacoes = Array.isArray(operacoesData)
+        ? operacoesData
+        : Array.isArray(operacoesData?.operacoes)
+          ? operacoesData.operacoes
+          : [];
       
       if (!Array.isArray(fetchedOperacoes)) {
           console.error("[PortfolioWidget] Formato inesperado de operações:", fetchedOperacoes);

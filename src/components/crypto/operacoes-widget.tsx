@@ -127,8 +127,11 @@ export function OperacoesWidget({ compact = false, className }: OperacoesWidgetP
       }
       
       const operacoesData = await operacoesResponse.json();
-      // A API /operacoes parece retornar { operacoes: [] }
-      const fetchedOperacoes = operacoesData?.operacoes || []; 
+      const fetchedOperacoes = Array.isArray(operacoesData)
+        ? operacoesData
+        : Array.isArray(operacoesData?.operacoes)
+          ? operacoesData.operacoes
+          : [];
       
       if (!Array.isArray(fetchedOperacoes)) {
           console.error("[OperacoesWidget] Formato inesperado de operações:", fetchedOperacoes);

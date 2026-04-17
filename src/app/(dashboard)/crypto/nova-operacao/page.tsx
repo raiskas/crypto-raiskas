@@ -103,6 +103,7 @@ export default function NovaOperacaoPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [carteiraId, setCarteiraId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Moeda[]>([]);
   const [searchingCoins, setSearchingCoins] = useState(false);
@@ -156,7 +157,10 @@ export default function NovaOperacaoPage() {
         console.log("[NovaCripto] Inicializando página...");
         
         // Verificar se a tabela existe e criar se necessário
-        await verificarTabelaCryptoOperacoes();
+        await Promise.all([
+          verificarTabelaCryptoOperacoes(),
+          carregarCarteiraAtiva(),
+        ]);
         
       } catch (err) {
         console.error("[NovaCripto] Erro na inicialização:", err);
@@ -188,6 +192,27 @@ export default function NovaOperacaoPage() {
       }
     } catch (err) {
       console.error("[NovaCripto] Erro ao verificar/criar tabela:", err);
+    }
+  };
+
+  const carregarCarteiraAtiva = async () => {
+    try {
+      const response = await fetch("/api/crypto/carteira", {
+        headers: {
+          "Cache-Control": "no-cache",
+          "Pragma": "no-cache",
+        },
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        console.warn("[NovaCripto] Falha ao buscar carteira ativa:", data?.error);
+        return;
+      }
+
+      setCarteiraId(data?.carteira?.id ?? null);
+    } catch (err) {
+      console.warn("[NovaCripto] Erro ao carregar carteira ativa:", err);
     }
   };
 
@@ -379,7 +404,8 @@ export default function NovaOperacaoPage() {
         data_operacao: dataFormatada,
         exchange: values.exchange || null,
         notas: values.notas || null,
-        grupo_id: values.grupo_id
+        grupo_id: values.grupo_id,
+        carteira_id: carteiraId,
       };
       
       console.log("[NovaCripto] Enviando dados para API:", dadosOperacao);
