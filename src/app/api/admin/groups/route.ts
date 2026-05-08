@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/types/supabase';
-import { supabaseConfig } from '@/lib/config';
+import { getServiceRoleKey, supabaseConfig } from '@/lib/config';
 import { z } from 'zod';
 // Helper para criar cliente Supabase na rota
 import { createServerClient } from '@supabase/ssr';
@@ -41,7 +41,7 @@ const updateGroupSchema = groupBaseSchema.partial().extend({
 const createSupabaseClient = (cookieStore: ReturnType<typeof cookies>) => {
   return createServerClient<Database>(
     supabaseConfig.url!,
-    supabaseConfig.serviceRoleKey!, // Usar service role para operações admin
+    getServiceRoleKey(), // Usar service role para operações admin
     {
       cookies: {
         get(name: string) {
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
   // Usar cliente SSR para obter sessão
   const supabase = createServerClient<Database>(
     supabaseConfig.url!,
-    supabaseConfig.serviceRoleKey!,
+    getServiceRoleKey(),
     {
       cookies: {
         get(name: string) {
@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
     // <<< FIM: Buscar Perfil do Requisitante >>>
 
     // Usar cliente com service_role para buscar dados
-    const supabaseAdmin = createClient<Database>(supabaseConfig.url!, supabaseConfig.serviceRoleKey!, { auth: { persistSession: false } });
+    const supabaseAdmin = createClient<Database>(supabaseConfig.url!, getServiceRoleKey(), { auth: { persistSession: false } });
 
     // Verificar se um ID específico foi solicitado
     const groupId = request.nextUrl.searchParams.get('id');
@@ -243,7 +243,7 @@ export async function POST(request: NextRequest) {
     console.log("[API:AdminGroups:POST] Dados validados para inserção:", dataToInsert);
 
     // Usar cliente admin para a operação de insert
-    const supabaseAdmin = createClient<Database>(supabaseConfig.url!, supabaseConfig.serviceRoleKey!, { auth: { persistSession: false } });
+    const supabaseAdmin = createClient<Database>(supabaseConfig.url!, getServiceRoleKey(), { auth: { persistSession: false } });
     const { data: newGroup, error: insertError } = await supabaseAdmin
       .from('grupos')
       .insert(dataToInsert) // Passar objeto tipado
@@ -336,7 +336,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Usar cliente admin para as operações
-    const supabaseAdmin = createClient<Database>(supabaseConfig.url!, supabaseConfig.serviceRoleKey!, { auth: { persistSession: false } });
+    const supabaseAdmin = createClient<Database>(supabaseConfig.url!, getServiceRoleKey(), { auth: { persistSession: false } });
 
     // *** Verificação de Segurança ***
     if (!isMaster) {
@@ -415,7 +415,7 @@ export async function DELETE(request: NextRequest) {
          return NextResponse.json({ error: "ID do grupo inválido." }, { status: 400 });
     }
 
-    const supabaseAdmin = createClient<Database>(supabaseConfig.url!, supabaseConfig.serviceRoleKey!, { auth: { persistSession: false } });
+    const supabaseAdmin = createClient<Database>(supabaseConfig.url!, getServiceRoleKey(), { auth: { persistSession: false } });
 
     // *** Verificação de Segurança ***
     if (!isMaster) {

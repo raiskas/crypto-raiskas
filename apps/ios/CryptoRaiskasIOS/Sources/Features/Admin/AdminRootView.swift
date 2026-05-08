@@ -295,10 +295,11 @@ final class AdminAlertsViewModel: ObservableObject {
           let value = form.providerAssetId.trimmingCharacters(in: .whitespacesAndNewlines)
           return value.isEmpty ? nil : value
         }(),
-        direction: form.direction,
+        direction: .cross,
+        repeatMode: form.repeatMode,
         targetPrice: max(0.00000001, form.targetPrice),
-        enabled: form.enabled,
-        cooldownMinutes: max(0, form.cooldownMinutes)
+        enabled: true,
+        cooldownMinutes: 0
       )
       if let id {
         try await SupabaseService.shared.updatePriceAlert(id: id, input: input)
@@ -332,6 +333,7 @@ final class AdminAlertsViewModel: ObservableObject {
           assetSymbol: current.assetSymbol,
           providerAssetId: current.providerAssetId,
           direction: current.direction,
+          repeatMode: current.repeatMode,
           targetPrice: current.targetPrice,
           enabled: enabled,
           isTriggered: false,
@@ -357,10 +359,8 @@ final class AdminAlertsViewModel: ObservableObject {
 struct PriceAlertFormState {
   var assetSymbol = "BTC"
   var providerAssetId = ""
-  var direction: PriceAlertDirection = .gte
+  var repeatMode: PriceAlertRepeatMode = .always
   var targetPrice: Double = 0
-  var enabled = true
-  var cooldownMinutes = 0
 }
 
 struct AdminAlertsView: View {
@@ -492,7 +492,7 @@ struct AdminAlertsView: View {
           Text(row.assetSymbol.uppercased())
             .font(.headline)
             .foregroundStyle(AppTheme.strongText)
-          Text("Gatilho \(row.direction == .gte ? ">=" : "<=") \(AppFormatters.currency(row.targetPrice))")
+          Text("Cruzar \(AppFormatters.currency(row.targetPrice))")
             .font(.subheadline)
             .foregroundStyle(AppTheme.subtleText)
         }
@@ -506,6 +506,9 @@ struct AdminAlertsView: View {
 
       HStack(spacing: 10) {
         statusBadge(row)
+        Text(row.repeatMode == .always ? "Repete sempre" : "Dispara uma vez")
+          .font(.caption)
+          .foregroundStyle(AppTheme.subtleText)
         if let lastPrice = row.lastPrice {
           Text("Último preço: \(AppFormatters.currency(lastPrice))")
             .font(.caption)
@@ -565,10 +568,8 @@ struct AdminAlertsView: View {
     form = PriceAlertFormState(
       assetSymbol: row.assetSymbol,
       providerAssetId: row.providerAssetId ?? "",
-      direction: row.direction,
-      targetPrice: row.targetPrice,
-      enabled: row.enabled,
-      cooldownMinutes: row.cooldownMinutes
+      repeatMode: row.repeatMode,
+      targetPrice: row.targetPrice
     )
     showForm = true
   }
@@ -581,25 +582,108 @@ private struct PriceAlertFormModal: View {
   let onSave: () -> Void
   let onCancel: () -> Void
 
+  @State private var coinQuery = ""
+  @State private var showCoinList = false
+  @State private var searchResults: [CoinSearchRow] = []
+  @State private var searching = false
+  @State private var searchError: String?
+  @State private var searchTask: Task<Void, Never>?
+
   var body: some View {
     NavigationStack {
       Form {
         Section {
-          TextField("Ativo (ex: BTC)", text: $form.assetSymbol)
-            .textInputAutocapitalization(.characters)
-            .autocorrectionDisabled(true)
-          TextField("Provider ID opcional (ex: bitcoin)", text: $form.providerAssetId)
-            .textInputAutocapitalization(.never)
-            .autocorrectionDisabled(true)
-          Picker("Direção", selection: $form.direction) {
-            ForEach(PriceAlertDirection.allCases, id: \.self) { value in
-              Text(value.label).tag(value)
+          VStack(alignment: .leading, spacing: 8) {
+            Text("Criptomoeda")
+              .font(.caption)
+              .foregroundStyle(AppTheme.subtleText)
+            TextField("Buscar por nome ou símbolo...", text: $coinQuery)
+              .textInputAutocapitalization(.characters)
+              .autocorrectionDisabled(true)
+              .onChange(of: coinQuery) { _, newValue in
+                runCoinSearch(query: newValue)
+              }
+
+            if let searchError {
+              Text(searchError)
+                .font(.caption)
+                .foregroundStyle(.red)
+            }
+
+            if searching {
+              Text("Buscando...")
+                .font(.caption)
+                .foregroundStyle(AppTheme.subtleText)
+            }
+
+            if showCoinList {
+              ScrollView {
+                VStack(spacing: 0) {
+                  ForEach(searchResults) { opt in
+                    Button {
+                      selectCoin(opt)
+                    } label: {
+                      HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                          Text(opt.name)
+                            .foregroundStyle(AppTheme.strongText)
+                          Text(opt.symbol.uppercased())
+                            .font(.caption)
+                            .foregroundStyle(AppTheme.subtleText)
+                        }
+                        Spacer()
+                        if let px = opt.currentPrice {
+                          Text(AppFormatters.currency(px))
+                            .font(.caption)
+                            .foregroundStyle(AppTheme.subtleText)
+                        }
+                      }
+                      .padding(.horizontal, 10)
+                      .padding(.vertical, 8)
+                    }
+                    .buttonStyle(.plain)
+
+                    if opt.id != searchResults.last?.id {
+                      Divider()
+                    }
+                  }
+                }
+              }
+              .frame(maxHeight: 160)
+            } else if !form.assetSymbol.isEmpty {
+              Text("Selecionada: \(form.assetSymbol.uppercased())")
+                .font(.caption)
+                .foregroundStyle(AppTheme.subtleText)
             }
           }
-          TextField("Preço alvo", value: $form.targetPrice, format: .number)
-            .keyboardType(.decimalPad)
-          Stepper("Cooldown (min): \(form.cooldownMinutes)", value: $form.cooldownMinutes, in: 0 ... 240)
-          Toggle("Alerta ativo", isOn: $form.enabled)
+
+          VStack(alignment: .leading, spacing: 6) {
+            Text("Quando o preço cruzar esse valor")
+              .font(.caption)
+              .foregroundStyle(AppTheme.subtleText)
+            Text("O alerta dispara se vier de cima para baixo ou de baixo para cima.")
+              .font(.caption2)
+              .foregroundStyle(AppTheme.subtleText)
+          }
+
+          VStack(alignment: .leading, spacing: 6) {
+            Text("Valor do alerta (USD)")
+              .font(.caption)
+              .foregroundStyle(AppTheme.subtleText)
+            TextField("Preço alvo", value: $form.targetPrice, format: .number)
+              .keyboardType(.decimalPad)
+          }
+
+          VStack(alignment: .leading, spacing: 6) {
+            Text("Repetição")
+              .font(.caption)
+              .foregroundStyle(AppTheme.subtleText)
+            Picker("Repetição", selection: $form.repeatMode) {
+              Text("Sempre").tag(PriceAlertRepeatMode.always)
+              Text("Uma vez").tag(PriceAlertRepeatMode.once)
+            }
+            .pickerStyle(.segmented)
+          }
         }
       }
       .scrollContentBackground(.hidden)
@@ -612,6 +696,64 @@ private struct PriceAlertFormModal: View {
         ToolbarItem(placement: .confirmationAction) {
           Button(saving ? "Salvando..." : "Salvar", action: onSave)
             .disabled(saving || form.assetSymbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || form.targetPrice <= 0)
+        }
+      }
+    }
+    .onAppear {
+      if !form.providerAssetId.isEmpty {
+        coinQuery = "\(form.assetSymbol.uppercased()) (\(form.providerAssetId))"
+      } else {
+        coinQuery = form.assetSymbol.uppercased()
+      }
+    }
+    .onDisappear {
+      searchTask?.cancel()
+    }
+  }
+
+  private func selectCoin(_ opt: CoinSearchRow) {
+    form.assetSymbol = opt.symbol.uppercased()
+    form.providerAssetId = opt.id
+    coinQuery = "\(opt.name) (\(opt.symbol.uppercased()))"
+    showCoinList = false
+    searchResults = []
+    searchError = nil
+  }
+
+  private func runCoinSearch(query: String) {
+    searchTask?.cancel()
+    searchError = nil
+    let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.count < 2 {
+      searchResults = []
+      searching = false
+      showCoinList = false
+      return
+    }
+
+    showCoinList = true
+    searching = true
+    searchTask = Task {
+      try? await Task.sleep(nanoseconds: 350_000_000)
+      if Task.isCancelled { return }
+      do {
+        let result = try await SupabaseService.shared.searchCoins(query: trimmed, limit: 10)
+        if Task.isCancelled { return }
+        await MainActor.run {
+          searchResults = result
+          searching = false
+          showCoinList = true
+          if result.isEmpty {
+            searchError = "Nenhuma moeda encontrada."
+          }
+        }
+      } catch {
+        if Task.isCancelled { return }
+        await MainActor.run {
+          searching = false
+          searchResults = []
+          showCoinList = false
+          searchError = "Erro ao buscar moedas."
         }
       }
     }

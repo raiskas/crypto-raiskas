@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from '@supabase/supabase-js';
 // @ts-ignore - Ignorar erro de tipo devido à falha na geração de tipos
 import { Database } from '@/types/supabase';
-import { supabaseConfig } from '@/lib/config';
+import { getServiceRoleKey, supabaseConfig } from '@/lib/config';
 import { z } from "zod";
 import { createServerSupabaseClient as createServiceRoleClient } from "@/lib/supabase/server";
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
@@ -13,7 +13,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // Cliente Supabase com chave administrativa
 const supabase = createClient<Database>(
   supabaseConfig.url,
-  supabaseConfig.serviceRoleKey,
+  getServiceRoleKey(),
   {
     auth: {
       persistSession: false,

@@ -53,6 +53,15 @@ interface Moeda {
   current_price: number;
 }
 
+interface Carteira {
+  id: string;
+  nome: string;
+  valor_inicial: number;
+  ativo?: boolean;
+}
+
+const SELECTED_CARTEIRA_STORAGE_KEY = "crypto:selected-carteira-id";
+
 // Schema de validação para o formulário
 const formSchema = z.object({
   moeda_id: z.string().min(1, { message: "Selecione uma moeda" }),
@@ -104,6 +113,7 @@ export default function NovaOperacaoPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [carteiraId, setCarteiraId] = useState<string | null>(null);
+  const [carteiras, setCarteiras] = useState<Carteira[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Moeda[]>([]);
   const [searchingCoins, setSearchingCoins] = useState(false);
@@ -155,12 +165,7 @@ export default function NovaOperacaoPage() {
     const init = async () => {
       try {
         console.log("[NovaCripto] Inicializando página...");
-        
-        // Verificar se a tabela existe e criar se necessário
-        await Promise.all([
-          verificarTabelaCryptoOperacoes(),
-          carregarCarteiraAtiva(),
-        ]);
+        await carregarCarteiraAtiva();
         
       } catch (err) {
         console.error("[NovaCripto] Erro na inicialização:", err);
@@ -171,33 +176,18 @@ export default function NovaOperacaoPage() {
     init();
   }, []);
   
-  // Verificar se a tabela crypto_operacoes existe e criar se necessário
-  const verificarTabelaCryptoOperacoes = async () => {
-    try {
-      console.log("[NovaCripto] Verificando se a tabela crypto_operacoes existe");
-      
-      // Acessar o endpoint público para setup de banco de dados
-      const setupResponse = await fetch("/api/admin/setup-database", {
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-      
-      const setupResult = await setupResponse.json();
-      console.log("[NovaCripto] Resultado da verificação da tabela:", setupResult);
-      
-      if (!setupResponse.ok) {
-        console.warn("[NovaCripto] A tabela pode não existir:", setupResult.error);
-      }
-    } catch (err) {
-      console.error("[NovaCripto] Erro ao verificar/criar tabela:", err);
-    }
-  };
-
   const carregarCarteiraAtiva = async () => {
     try {
-      const response = await fetch("/api/crypto/carteira", {
+      const carteiraIdSalva =
+        typeof window !== "undefined"
+          ? window.localStorage.getItem(SELECTED_CARTEIRA_STORAGE_KEY)
+          : null;
+
+      const response = await fetch(
+        `/api/crypto/carteira${
+          carteiraIdSalva ? `?carteira_id=${encodeURIComponent(carteiraIdSalva)}` : ""
+        }`,
+        {
         headers: {
           "Cache-Control": "no-cache",
           "Pragma": "no-cache",
@@ -210,9 +200,22 @@ export default function NovaOperacaoPage() {
         return;
       }
 
+      const carteirasAtivas = Array.isArray(data?.carteiras) ? data.carteiras : [];
+      setCarteiras(carteirasAtivas);
       setCarteiraId(data?.carteira?.id ?? null);
+
+      if (typeof window !== "undefined" && data?.carteira?.id) {
+        window.localStorage.setItem(SELECTED_CARTEIRA_STORAGE_KEY, data.carteira.id);
+      }
     } catch (err) {
       console.warn("[NovaCripto] Erro ao carregar carteira ativa:", err);
+    }
+  };
+
+  const selecionarCarteira = (id: string) => {
+    setCarteiraId(id);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(SELECTED_CARTEIRA_STORAGE_KEY, id);
     }
   };
 
@@ -515,6 +518,25 @@ export default function NovaOperacaoPage() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
+                  <Label>Portfolio</Label>
+                  <Select value={carteiraId ?? undefined} onValueChange={selecionarCarteira}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um portfolio" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {carteiras.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    A operação será registrada dentro do portfolio selecionado.
+                  </p>
+                </div>
+
+                <div>
                   <Label>Criptomoeda</Label>
                   {!selectedCoin ? (
                     <div className="space-y-2">
@@ -577,7 +599,9 @@ export default function NovaOperacaoPage() {
                     </div>
                   )}
                 </div>
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="tipo"
@@ -613,7 +637,7 @@ export default function NovaOperacaoPage() {
                   )}
                 />
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
@@ -739,7 +763,7 @@ export default function NovaOperacaoPage() {
                 </Button>
                 <Button 
                   type="submit"
-                  disabled={loading || !selectedCoin}
+                  disabled={loading || !selectedCoin || !carteiraId}
                 >
                   {loading ? (
                     <div className="flex items-center gap-2">

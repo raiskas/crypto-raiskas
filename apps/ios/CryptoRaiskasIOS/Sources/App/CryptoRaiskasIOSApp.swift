@@ -1,14 +1,25 @@
 import SwiftUI
 import UIKit
 import UserNotifications
+#if os(iOS)
+import WatchConnectivity
+#endif
 
 @main
 struct CryptoRaiskasIOSApp: App {
   @UIApplicationDelegateAdaptor(PushNotificationCoordinator.self) private var pushCoordinator
+  @Environment(\.scenePhase) private var scenePhase
   @StateObject private var appState = AppState()
 
   init() {
     configureSystemAppearance()
+    #if os(iOS)
+    if WCSession.isSupported() {
+      let session = WCSession.default
+      session.delegate = WatchSessionDelegate.shared
+      session.activate()
+    }
+    #endif
   }
 
   var body: some Scene {
@@ -39,6 +50,17 @@ struct CryptoRaiskasIOSApp: App {
       .onChange(of: appState.isAuthenticated) { _, isAuthenticated in
         if isAuthenticated {
           pushCoordinator.requestAuthorizationAndRegister()
+          Task { await appState.syncCompanionSnapshot() }
+        }
+      }
+      .onChange(of: scenePhase) { _, newPhase in
+        switch newPhase {
+        case .active:
+          appState.appBecameActive()
+        case .inactive, .background:
+          appState.appBecameInactive()
+        @unknown default:
+          break
         }
       }
       .onOpenURL { url in
@@ -93,7 +115,6 @@ struct CryptoRaiskasIOSApp: App {
 
 final class PushNotificationCoordinator: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
   private weak var appState: AppState?
-  private var didRequestPermission = false
 
   func bind(appState: AppState) {
     self.appState = appState
@@ -112,28 +133,56 @@ final class PushNotificationCoordinator: NSObject, UIApplicationDelegate, UNUser
   }
 
   func requestAuthorizationAndRegister() {
-    guard !didRequestPermission else { return }
-    didRequestPermission = true
-    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
-      guard granted else { return }
-      DispatchQueue.main.async {
-        UIApplication.shared.registerForRemoteNotifications()
+    #if targetEnvironment(simulator)
+    // Simulator cannot register real APNs tokens.
+    print("[Push] Simulator detected; skipping APNs registration.")
+    return
+    #else
+    UNUserNotificationCenter.current().getNotificationSettings { settings in
+      switch settings.authorizationStatus {
+      case .authorized, .provisional, .ephemeral:
+        DispatchQueue.main.async {
+          print("[Push] Notifications already authorized. Calling registerForRemoteNotifications()")
+          UIApplication.shared.registerForRemoteNotifications()
+        }
+      case .notDetermined:
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+          print("[Push] Notification authorization granted: \(granted)")
+          guard granted else { return }
+          DispatchQueue.main.async {
+            print("[Push] Calling registerForRemoteNotifications()")
+            UIApplication.shared.registerForRemoteNotifications()
+          }
+        }
+      case .denied:
+        print("[Push] Notification authorization denied by user.")
+      @unknown default:
+        print("[Push] Unknown notification authorization status.")
       }
     }
+    #endif
   }
 
   func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
     let hex = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
+    print("[Push] APNs token received: \(hex)")
     #if DEBUG
       let environment = "sandbox"
     #else
       let environment = "production"
     #endif
-    Task { try? await SupabaseService.shared.registerDeviceToken(token: hex, environment: environment) }
+    Task {
+      do {
+        try await SupabaseService.shared.registerDeviceToken(token: hex, environment: environment)
+        print("[Push] Device token saved to Supabase with environment: \(environment)")
+      } catch {
+        print("[Push] Failed to save device token to Supabase: \(error.localizedDescription)")
+      }
+    }
   }
 
   func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
-    print("APNs registration failed: \(error.localizedDescription)")
+    print("[Push] APNs registration failed: \(error.localizedDescription)")
   }
 
   func userNotificationCenter(

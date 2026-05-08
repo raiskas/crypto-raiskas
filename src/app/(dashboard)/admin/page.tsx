@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { Settings, Users, ShieldCheck, Database, Building } from "lucide-react";
+import { BellRing, Building, Users, Wallet } from "lucide-react";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -22,6 +22,20 @@ export default function AdminPage() {
       icon: <Building className="h-8 w-8" />,
       path: "/admin/empresas",
       color: "bg-indigo-100 text-indigo-700",
+    },
+    {
+      title: "Alertas de Preço",
+      description: "Criar alertas por cruzamento de preço com repetição uma vez ou sempre",
+      icon: <BellRing className="h-8 w-8" />,
+      path: "/admin/alertas",
+      color: "bg-amber-100 text-amber-700",
+    },
+    {
+      title: "Gerenciar Portfolios",
+      description: "Criar, renomear, arquivar e organizar portfolios de cripto",
+      icon: <Wallet className="h-8 w-8" />,
+      path: "/admin/portfolios",
+      color: "bg-emerald-100 text-emerald-700",
     },
   ];
   

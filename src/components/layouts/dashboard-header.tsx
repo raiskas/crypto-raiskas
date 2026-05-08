@@ -17,8 +17,6 @@ import {
   SheetTrigger, 
   SheetClose
 } from "@/components/ui/sheet";
-import { useAuth } from "@/lib/hooks/use-auth";
-import { useUserData } from "@/lib/hooks/use-user-data";
 import { toast } from "sonner";
 import { useState } from "react";
 import { APP_CONTRACT } from "@/lib/cross-platform-contract";
@@ -35,8 +33,6 @@ const adminNavItems = APP_CONTRACT.adminNav;
 export function DashboardHeader() {
   const router = useRouter();
   const pathname = usePathname();
-  const { user } = useAuth();
-  const { userData, loading } = useUserData();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -158,12 +154,6 @@ export function DashboardHeader() {
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
-          {userData && (
-            <div className="hidden md:flex flex-col items-end">
-              <span className="text-sm font-medium">{userData.nome || "Usuário"}</span>
-              <span className="text-xs text-muted-foreground">{userData.email}</span>
-            </div>
-          )}
           <ThemeToggle />
           <Button variant="outline" size="icon" onClick={handleLogout} className="md:hidden">
             <LogOut className="h-5 w-5" />

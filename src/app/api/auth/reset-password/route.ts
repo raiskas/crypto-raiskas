@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/types/supabase';
-import { supabaseConfig } from '@/lib/config';
+import { getServiceRoleKey, supabaseConfig } from '@/lib/config';
 
 // Schema para validação da solicitação de redefinição
 const requestResetSchema = z.object({
@@ -19,7 +19,7 @@ const confirmResetSchema = z.object({
 const initializeSupabaseClient = () => {
   return createClient<Database>(
     supabaseConfig.url,
-    supabaseConfig.serviceRoleKey,
+    getServiceRoleKey(),
     {
       auth: {
         persistSession: false,

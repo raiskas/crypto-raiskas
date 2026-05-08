@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/types/supabase';
-import { supabaseConfig } from '@/lib/config';
+import { getServiceRoleKey, supabaseConfig } from '@/lib/config';
+import { requireMasterUser } from "@/lib/server/admin-auth";
 
 // Inicializa o cliente Supabase com a chave de serviço
 const initializeSupabaseClient = () => {
   return createClient<Database>(
-    supabaseConfig.url,
-    supabaseConfig.serviceRoleKey,
+      supabaseConfig.url,
+      getServiceRoleKey(),
     {
       auth: {
         persistSession: false,
@@ -20,6 +21,11 @@ const initializeSupabaseClient = () => {
 // API para diagnosticar problemas de autenticação
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireMasterUser();
+    if (!auth.ok) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const body = await request.json();
     const { email, action } = body;
     

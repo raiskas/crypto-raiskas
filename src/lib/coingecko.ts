@@ -1,53 +1,10 @@
+import fs from "fs/promises";
+import { existsSync } from "fs";
+import path from "path";
+import type { FullCoinData, MarketDataMap, Moeda, SimpleCoinInfo } from "@/types/crypto";
+
 // Interface para os dados completos de uma moeda vindos da CoinGecko (/coins/markets)
-export interface FullCoinData {
-  id: string;
-  symbol: string;
-  name: string;
-  image: string;
-  current_price: number;
-  market_cap: number;
-  market_cap_rank: number | null;
-  fully_diluted_valuation: number | null;
-  total_volume: number;
-  high_24h: number | null;
-  low_24h: number | null;
-  price_change_24h: number | null;
-  price_change_percentage_24h: number | null;
-  market_cap_change_24h: number | null;
-  market_cap_change_percentage_24h: number | null;
-  circulating_supply: number;
-  total_supply: number | null;
-  max_supply: number | null;
-  ath: number;
-  ath_change_percentage: number;
-  ath_date: string;
-  atl: number;
-  atl_change_percentage: number;
-  atl_date: string;
-  roi: null | { times: number; currency: string; percentage: number };
-  last_updated: string;
-}
-
-// Interface para a resposta da nossa API: um mapa de ID para dados completos
-export interface MarketDataMap {
-  [coinId: string]: FullCoinData | null; // Usar null se a moeda não for encontrada
-}
-
-// Interface para dados simplificados de moeda (usado na busca)
-export interface Moeda {
-  id: string;
-  symbol: string;
-  name: string;
-  image: string;
-  current_price: number | null; // Permitir null se o preço não for encontrado
-}
-
-// Interface para informações básicas de moeda (usado na lista completa)
-export interface SimpleCoinInfo {
-  id: string;
-  symbol: string;
-  name: string;
-}
+export type { FullCoinData, MarketDataMap, Moeda, SimpleCoinInfo } from "@/types/crypto";
 
 const REVALIDATE_TIME = 60; // Cache de 60 segundos (usado pelo fetch do Next.js)
 const COINGECKO_API_URL = 'https://api.coingecko.com/api/v3';
@@ -311,7 +268,4 @@ export async function fetchCoinList(): Promise<SimpleCoinInfo[]> {
   }
 }
 
-// TODO: Adicionar função fetchCoinIds() aqui no futuro, se necessário. 
-import { existsSync } from "fs";
-import { promises as fs } from "fs";
-import path from "path";
+// TODO: Adicionar função fetchCoinIds() aqui no futuro, se necessário.

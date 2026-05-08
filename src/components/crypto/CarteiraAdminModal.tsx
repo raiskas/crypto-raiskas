@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -57,7 +57,7 @@ export function CarteiraAdminModal({
   aportes,
   onSaved,
 }: Props) {
-  const [nome, setNome] = useState(carteira?.nome || "Carteira Principal");
+  const [nome, setNome] = useState(carteira?.nome || "Portfolio Principal");
   const [valorInicial, setValorInicial] = useState(String(carteira?.valor_inicial ?? 0));
   const [salvandoCarteira, setSalvandoCarteira] = useState(false);
 
@@ -72,6 +72,11 @@ export function CarteiraAdminModal({
     () => aportes.find((a) => a.id === aporteIdEditando) || null,
     [aportes, aporteIdEditando]
   );
+
+  useEffect(() => {
+    setNome(carteira?.nome || "Portfolio Principal");
+    setValorInicial(String(carteira?.valor_inicial ?? 0));
+  }, [carteira?.id, carteira?.nome, carteira?.valor_inicial]);
 
   const resetAporteForm = () => {
     setAporteIdEditando(null);
@@ -97,10 +102,11 @@ export function CarteiraAdminModal({
     setSalvandoCarteira(true);
     try {
       const response = await fetch("/api/crypto/carteira", {
-        method: "POST",
+        method: carteira?.id ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          nome: nome.trim() || "Carteira Principal",
+          id: carteira?.id,
+          nome: nome.trim() || "Portfolio Principal",
           valor_inicial: valor,
         }),
       });
@@ -175,9 +181,9 @@ export function CarteiraAdminModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Administrar Carteira</DialogTitle>
+          <DialogTitle>Administrar Portfolio</DialogTitle>
           <DialogDescription>
-            Configure dados da carteira e gerencie aportes de capital.
+            Configure dados do portfolio selecionado e gerencie aportes de capital.
           </DialogDescription>
         </DialogHeader>
 
@@ -185,14 +191,14 @@ export function CarteiraAdminModal({
 
         <Tabs defaultValue="dados" className="w-full">
           <TabsList>
-            <TabsTrigger value="dados">Dados da Carteira</TabsTrigger>
+            <TabsTrigger value="dados">Dados do Portfolio</TabsTrigger>
             <TabsTrigger value="aportes">Aportes</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dados" className="space-y-4 pt-3">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="grid gap-1">
-                <label className="text-sm font-medium">Nome da carteira</label>
+                <label className="text-sm font-medium">Nome do portfolio</label>
                 <Input value={nome} onChange={(e) => setNome(e.target.value)} />
               </div>
               <div className="grid gap-1">
@@ -205,11 +211,11 @@ export function CarteiraAdminModal({
               </div>
             </div>
             <div className="text-xs text-muted-foreground">
-              Alterar o valor inicial ajusta a base da carteira. Aportes devem ser lançados na aba
+              Alterar o valor inicial ajusta a base do portfolio. Aportes devem ser lançados na aba
               de aportes.
             </div>
             <Button onClick={salvarCarteira} disabled={salvandoCarteira}>
-              {salvandoCarteira ? "Salvando..." : carteira ? "Atualizar Carteira" : "Criar Carteira"}
+              {salvandoCarteira ? "Salvando..." : carteira ? "Atualizar Portfolio" : "Criar Portfolio"}
             </Button>
           </TabsContent>
 
@@ -316,4 +322,3 @@ export function CarteiraAdminModal({
     </Dialog>
   );
 }
-

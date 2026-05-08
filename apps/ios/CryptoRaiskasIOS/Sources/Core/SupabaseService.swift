@@ -212,7 +212,7 @@ final class SupabaseService {
       let token: String
       let apns_environment: String
       let ativo: Bool
-      let atualizado_em: String
+      let updated_at: String
       let last_seen_at: String
     }
     let now = ISO8601DateFormatter().string(from: Date())
@@ -222,7 +222,7 @@ final class SupabaseService {
       token: token,
       apns_environment: environment,
       ativo: true,
-      atualizado_em: now,
+      updated_at: now,
       last_seen_at: now
     )
     _ = try await client
@@ -297,18 +297,39 @@ final class SupabaseService {
   }
 
   func fetchWalletSummaryAndHistory(months: Int = 12) async throws -> (WalletSummary, [WalletSnapshotPoint]) {
+    try await fetchWalletSummaryAndHistory(months: months, carteiraId: nil)
+  }
+
+  func fetchWalletPortfolios() async throws -> [WalletPortfolioOption] {
     let internalUser = try await currentInternalUser()
 
     let carteiras: [CryptoCarteiraDTO] = try await client
       .from("crypto_carteiras")
-      .select("id,nome,valor_inicial")
+      .select("id,nome,valor_inicial,ativo")
       .eq("usuario_id", value: internalUser.id.uuidString)
       .eq("ativo", value: true)
-      .limit(1)
+      .order("criado_em", ascending: true)
       .execute()
       .value
 
-    guard let carteira = carteiras.first else {
+    return carteiras.map {
+      WalletPortfolioOption(id: $0.id, nome: $0.nome, valorInicial: $0.valor_inicial, ativo: $0.ativo ?? true)
+    }
+  }
+
+  private func resolveSelectedPortfolio(
+    requested carteiraId: UUID?
+  ) async throws -> (selected: WalletPortfolioOption?, portfolios: [WalletPortfolioOption]) {
+    let portfolios = try await fetchWalletPortfolios()
+    let selected =
+      (carteiraId.flatMap { requested in portfolios.first(where: { $0.id == requested }) })
+      ?? portfolios.first
+    return (selected, portfolios)
+  }
+
+  func fetchWalletSummaryAndHistory(months: Int = 12, carteiraId: UUID?) async throws -> (WalletSummary, [WalletSnapshotPoint]) {
+    let resolved = try await resolveSelectedPortfolio(requested: carteiraId)
+    guard let carteira = resolved.selected else {
       return try await estimateSummaryWithoutWallet()
     }
 
@@ -320,7 +341,7 @@ final class SupabaseService {
       .value
 
     let totalAportes = aportes.reduce(0) { $0 + $1.valor }
-    let aporteTotal = carteira.valor_inicial + totalAportes
+    let aporteTotal = carteira.valorInicial + totalAportes
 
     let fromDate = Calendar.current.date(byAdding: .month, value: -max(1, months), to: Date()) ?? Date()
     let fromKey = ISO8601DateFormatter().string(from: fromDate).prefix(10)
@@ -353,6 +374,12 @@ final class SupabaseService {
     let resultado = patrimonio - aporteTotal
     let resultadoPct = aporteTotal > 0 ? (resultado / aporteTotal) * 100 : 0
 
+    WidgetPortfolioSnapshotStore.save(
+      portfolio: patrimonio,
+      unrealized: resultado,
+      unrealizedPct: resultadoPct
+    )
+
     return (
       WalletSummary(
         nome: carteira.nome,
@@ -366,18 +393,12 @@ final class SupabaseService {
   }
 
   func fetchWalletConfigAndAportes() async throws -> (WalletConfigRow?, [WalletAporteRow]) {
-    let internalUser = try await currentInternalUser()
-    let carteiras: [CryptoCarteiraDTO] = try await client
-      .from("crypto_carteiras")
-      .select("id,nome,valor_inicial")
-      .eq("usuario_id", value: internalUser.id.uuidString)
-      .eq("ativo", value: true)
-      .order("criado_em", ascending: false)
-      .limit(1)
-      .execute()
-      .value
+    try await fetchWalletConfigAndAportes(carteiraId: nil)
+  }
 
-    guard let carteira = carteiras.first else {
+  func fetchWalletConfigAndAportes(carteiraId: UUID?) async throws -> (WalletConfigRow?, [WalletAporteRow]) {
+    let resolved = try await resolveSelectedPortfolio(requested: carteiraId)
+    guard let carteira = resolved.selected else {
       return (nil, [])
     }
 
@@ -403,22 +424,14 @@ final class SupabaseService {
     }
 
     return (
-      WalletConfigRow(id: carteira.id, nome: carteira.nome, valorInicial: carteira.valor_inicial),
+      WalletConfigRow(id: carteira.id, nome: carteira.nome, valorInicial: carteira.valorInicial),
       mapped
     )
   }
 
-  func upsertWallet(nome: String, valorInicial: Double) async throws {
+  @discardableResult
+  func createWallet(nome: String, valorInicial: Double) async throws -> UUID {
     let internalUser = try await currentInternalUser()
-
-    let existing: [CryptoCarteiraDTO] = try await client
-      .from("crypto_carteiras")
-      .select("id,nome,valor_inicial")
-      .eq("usuario_id", value: internalUser.id.uuidString)
-      .eq("ativo", value: true)
-      .limit(1)
-      .execute()
-      .value
 
     struct WalletPayload: Encodable {
       let usuario_id: String
@@ -433,19 +446,48 @@ final class SupabaseService {
       ativo: true
     )
 
-    if let carteira = existing.first {
-      _ = try await client
-        .from("crypto_carteiras")
-        .update(payload)
-        .eq("id", value: carteira.id.uuidString)
-        .eq("usuario_id", value: internalUser.id.uuidString)
-        .execute()
-    } else {
-      _ = try await client
-        .from("crypto_carteiras")
-        .insert(payload)
-        .execute()
+    let inserted: [CryptoCarteiraDTO] = try await client
+      .from("crypto_carteiras")
+      .insert(payload)
+      .select("id,nome,valor_inicial,ativo")
+      .execute()
+      .value
+
+    guard let created = inserted.first else {
+      throw NSError(
+        domain: "RaiskasMac",
+        code: 500,
+        userInfo: [NSLocalizedDescriptionKey: "Falha ao criar portfolio."]
+      )
     }
+    return created.id
+  }
+
+  @discardableResult
+  func updateWallet(id: UUID, nome: String, valorInicial: Double, ativo: Bool = true) async throws -> UUID {
+    let internalUser = try await currentInternalUser()
+
+    struct WalletPayload: Encodable {
+      let nome: String
+      let valor_inicial: Double
+      let ativo: Bool
+      let atualizado_em: String
+    }
+
+    let payload = WalletPayload(
+      nome: nome,
+      valor_inicial: valorInicial,
+      ativo: ativo,
+      atualizado_em: ISO8601DateFormatter().string(from: Date())
+    )
+
+    _ = try await client
+      .from("crypto_carteiras")
+      .update(payload)
+      .eq("id", value: id.uuidString)
+      .eq("usuario_id", value: internalUser.id.uuidString)
+      .execute()
+    return id
   }
 
   func saveAporte(
@@ -491,13 +533,22 @@ final class SupabaseService {
       .execute()
   }
 
-  func fetchOperations(limit: Int = 200) async throws -> [OperationRow] {
+  func fetchOperations(limit: Int = 200, carteiraId: UUID? = nil) async throws -> [OperationRow] {
     let internalUser = try await currentInternalUser()
 
-    let rows: [CryptoOperacaoDTO] = try await client
+    let baseQuery = client
       .from("crypto_operacoes")
-      .select("id,moeda_id,nome,simbolo,tipo,quantidade,preco_unitario,valor_total,taxa,exchange,notas,data_operacao")
+      .select("id,carteira_id,moeda_id,nome,simbolo,tipo,quantidade,preco_unitario,valor_total,taxa,exchange,notas,data_operacao")
       .eq("usuario_id", value: internalUser.id.uuidString)
+
+    let filteredQuery =
+      if let carteiraId {
+        baseQuery.eq("carteira_id", value: carteiraId.uuidString)
+      } else {
+        baseQuery
+      }
+
+    let rows: [CryptoOperacaoDTO] = try await filteredQuery
       .order("data_operacao", ascending: false)
       .limit(limit)
       .execute()
@@ -513,6 +564,7 @@ final class SupabaseService {
       let parsedDate = iso.date(from: row.data_operacao) ?? fallback.date(from: row.data_operacao) ?? Date()
       return OperationRow(
         id: row.id,
+        carteiraId: row.carteira_id,
         moedaId: row.moeda_id,
         nome: row.nome,
         simbolo: row.simbolo,
@@ -559,8 +611,9 @@ final class SupabaseService {
   }
 
   func fetchDashboardSummary() async throws -> DashboardSummary {
-    let wallet = try await fetchWalletSummaryAndHistory(months: 12)
-    let ops = try await fetchOperations(limit: 500)
+    let selectedPortfolioId = PortfolioSelectionStore.selectedPortfolioId
+    let wallet = try await fetchWalletSummaryAndHistory(months: 12, carteiraId: selectedPortfolioId)
+    let ops = try await fetchOperations(limit: 500, carteiraId: selectedPortfolioId)
     return DashboardSummary(
       patrimonio: wallet.0.patrimonioTotal,
       aporte: wallet.0.aporteTotal,
@@ -574,7 +627,7 @@ final class SupabaseService {
     let current = try await currentInternalUser()
     let rows: [PriceAlertDTO] = try await client
       .from("price_alerts")
-      .select("id,asset_symbol,provider_asset_id,direction,target_price,enabled,is_triggered,cooldown_minutes,last_price,last_triggered_at,next_eligible_at,updated_at")
+      .select("id,asset_symbol,provider_asset_id,direction,repeat_mode,target_price,enabled,is_triggered,cooldown_minutes,last_price,last_triggered_at,next_eligible_at,updated_at")
       .eq("usuario_id", value: current.id.uuidString)
       .order("updated_at", ascending: false)
       .limit(limit)
@@ -587,7 +640,8 @@ final class SupabaseService {
         id: row.id,
         assetSymbol: row.asset_symbol.uppercased(),
         providerAssetId: row.provider_asset_id,
-        direction: PriceAlertDirection(rawValue: row.direction.lowercased()) ?? .gte,
+        direction: PriceAlertDirection(rawValue: row.direction.lowercased()) ?? .cross,
+        repeatMode: PriceAlertRepeatMode(rawValue: row.repeat_mode?.lowercased() ?? "always") ?? .always,
         targetPrice: row.target_price,
         enabled: row.enabled ?? true,
         isTriggered: row.is_triggered ?? false,
@@ -607,6 +661,7 @@ final class SupabaseService {
       let asset_symbol: String
       let provider_asset_id: String?
       let direction: String
+      let repeat_mode: String
       let target_price: Double
       let enabled: Bool
       let cooldown_minutes: Int
@@ -616,6 +671,7 @@ final class SupabaseService {
       asset_symbol: input.assetSymbol.uppercased(),
       provider_asset_id: input.providerAssetId?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
       direction: input.direction.rawValue,
+      repeat_mode: input.repeatMode.rawValue,
       target_price: input.targetPrice,
       enabled: input.enabled,
       cooldown_minutes: max(0, input.cooldownMinutes)
@@ -629,6 +685,7 @@ final class SupabaseService {
       let asset_symbol: String
       let provider_asset_id: String?
       let direction: String
+      let repeat_mode: String
       let target_price: Double
       let enabled: Bool
       let cooldown_minutes: Int
@@ -639,6 +696,7 @@ final class SupabaseService {
       asset_symbol: input.assetSymbol.uppercased(),
       provider_asset_id: input.providerAssetId?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
       direction: input.direction.rawValue,
+      repeat_mode: input.repeatMode.rawValue,
       target_price: input.targetPrice,
       enabled: input.enabled,
       cooldown_minutes: max(0, input.cooldownMinutes),

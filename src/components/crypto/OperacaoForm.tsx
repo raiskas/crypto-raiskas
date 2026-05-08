@@ -54,6 +54,7 @@ interface OperacaoData {
   exchange: string | null;
   notas: string | null;
   grupo_id?: string; // Adicionado grupo_id
+  carteira_id?: string | null;
   image?: string; // Adicionado para receber a URL da imagem
 }
 

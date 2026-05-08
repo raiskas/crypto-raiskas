@@ -81,6 +81,31 @@ open /Users/claudioraikasfh/Desktop/crypto-raiskas/apps/ios/CryptoRaiskasIOS/Cry
   - Alertas de preço (CRUD + toggle ativo/inativo)
 - Logout via Painel Administrativo.
 
+## App nativo Apple Watch (via iPhone)
+
+Implementação inicial criada em watchOS com integração via iPhone (sem login no relógio).
+
+Arquivos principais:
+
+- `/Users/claudioraikasfh/Desktop/crypto-raiskas/apps/ios/CryptoRaiskasIOS/Watch/CryptoRaiskasWatchExtension/CryptoRaiskasWatchApp.swift`
+- `/Users/claudioraikasfh/Desktop/crypto-raiskas/apps/ios/CryptoRaiskasIOS/Watch/CryptoRaiskasWatchExtension/WatchRootView.swift`
+- `/Users/claudioraikasfh/Desktop/crypto-raiskas/apps/ios/CryptoRaiskasIOS/Watch/CryptoRaiskasWatchExtension/WatchSnapshotStore.swift`
+- `/Users/claudioraikasfh/Desktop/crypto-raiskas/apps/ios/CryptoRaiskasIOS/Sources/Core/WatchSnapshotSync.swift`
+
+Escopo atual:
+
+- 3 telas resumo no Watch:
+  - `Home`
+  - `Crypto`
+  - `Carteira`
+- Dados recebidos do iPhone por `WatchConnectivity` (snapshot de carteira).
+- O iPhone envia updates ao salvar snapshot do portfólio.
+
+Observações:
+
+- Não há autenticação no Watch.
+- Watch depende do iPhone para receber dados atualizados.
+
 ## Alertas de preço (iOS + Supabase)
 
 Documentação completa:

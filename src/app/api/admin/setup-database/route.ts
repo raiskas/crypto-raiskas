@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from '@supabase/supabase-js';
-import { supabaseConfig } from '@/lib/config';
+import { getServiceRoleKey, supabaseConfig } from '@/lib/config';
+import { requireMasterUser } from "@/lib/server/admin-auth";
 
 // Endpoint para inicializar o banco de dados - acessível sem autenticação
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireMasterUser();
+    if (!auth.ok) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     console.log('[Setup] Iniciando configuração do banco de dados');
     
     // Criar cliente do Supabase com a chave de serviço
     const supabase = createClient(
       supabaseConfig.url,
-      supabaseConfig.serviceRoleKey,
+      getServiceRoleKey(),
       {
         auth: {
           persistSession: false,

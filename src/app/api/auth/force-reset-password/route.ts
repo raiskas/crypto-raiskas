@@ -2,23 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/types/supabase';
-import { supabaseConfig } from '@/lib/config';
+import { getServiceRoleKey, supabaseConfig } from '@/lib/config';
+import { requireMasterUser } from "@/lib/server/admin-auth";
 
 // Schema para validação da solicitação de redefinição forçada
 const forceResetSchema = z.object({
   email: z.string().email("Email inválido"),
   new_password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
-  admin_key: z.string().min(1, "Chave administrativa é obrigatória"),
 });
-
-// Chave secreta para autorizar operações administrativas (deve ser armazenada em ambiente seguro)
-const ADMIN_API_KEY = "crypto_raiskas_admin_2023"; // Substitua por uma chave segura gerada aleatoriamente em produção
 
 // Inicializa o cliente Supabase com a chave de serviço
 const initializeSupabaseClient = () => {
   return createClient<Database>(
     supabaseConfig.url,
-    supabaseConfig.serviceRoleKey,
+    getServiceRoleKey(),
     {
       auth: {
         persistSession: false,
@@ -31,6 +28,11 @@ const initializeSupabaseClient = () => {
 // Função para forçar a redefinição de senha por admin
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireMasterUser();
+    if (!auth.ok) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     // Obter e validar os dados da requisição
     const body = await request.json();
     console.log("[API:ForceResetPassword] Solicitação recebida para:", body.email);
@@ -44,16 +46,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, new_password, admin_key } = validation.data;
-    
-    // Verificar chave administrativa
-    if (admin_key !== ADMIN_API_KEY) {
-      console.error("[API:ForceResetPassword] Tentativa de acesso com chave administrativa inválida");
-      return NextResponse.json(
-        { error: "Não autorizado" },
-        { status: 401 }
-      );
-    }
+    const { email, new_password } = validation.data;
     
     // Criar cliente Supabase
     let supabase;

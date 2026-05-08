@@ -14,6 +14,7 @@ final class AppState: ObservableObject {
   @Published var authError: String?
   @Published var selectedDestination: AppDestination = .home
   @Published var pendingAlertNavigation: PendingAlertNavigation?
+  private var companionSyncTask: Task<Void, Never>?
 
   private let service = SupabaseService.shared
 
@@ -23,6 +24,10 @@ final class AppState: ObservableObject {
       isAuthenticated = user != nil
       currentUserEmail = user?.email ?? ""
       authError = nil
+      if user != nil {
+        await syncCompanionSnapshot()
+        startCompanionAutoSync()
+      }
       if user == nil {
         selectedDestination = .home
       }
@@ -43,6 +48,8 @@ final class AppState: ObservableObject {
       currentUserEmail = email
       selectedDestination = .home
       authError = nil
+      await syncCompanionSnapshot()
+      startCompanionAutoSync()
     } catch {
       authError = error.localizedDescription
     }
@@ -56,6 +63,7 @@ final class AppState: ObservableObject {
       selectedDestination = .home
       pendingAlertNavigation = nil
       authError = nil
+      stopCompanionAutoSync()
     } catch {
       authError = error.localizedDescription
     }
@@ -71,5 +79,47 @@ final class AppState: ObservableObject {
   func routeToAlerts(alertId: UUID?, assetSymbol: String?) {
     selectedDestination = .admin
     pendingAlertNavigation = PendingAlertNavigation(alertId: alertId, assetSymbol: assetSymbol)
+  }
+
+  func appBecameActive() {
+    guard isAuthenticated else { return }
+    Task {
+      await syncCompanionSnapshot()
+      startCompanionAutoSync()
+    }
+  }
+
+  func appBecameInactive() {
+    stopCompanionAutoSync()
+  }
+
+  private func startCompanionAutoSync() {
+    companionSyncTask?.cancel()
+    companionSyncTask = Task { [weak self] in
+      guard let self else { return }
+      while !Task.isCancelled {
+        try? await Task.sleep(nanoseconds: 120 * 1_000_000_000) // 2 min foreground sync
+        guard !Task.isCancelled, self.isAuthenticated else { break }
+        await self.syncCompanionSnapshot()
+      }
+    }
+  }
+
+  private func stopCompanionAutoSync() {
+    companionSyncTask?.cancel()
+    companionSyncTask = nil
+  }
+
+  func syncCompanionSnapshot() async {
+    do {
+      let summary = try await service.fetchDashboardSummary()
+      WidgetPortfolioSnapshotStore.save(
+        portfolio: summary.patrimonio,
+        unrealized: summary.resultado,
+        unrealizedPct: summary.resultadoPct
+      )
+    } catch {
+      // Keep silent: this is best-effort sync for widget/watch.
+    }
   }
 }

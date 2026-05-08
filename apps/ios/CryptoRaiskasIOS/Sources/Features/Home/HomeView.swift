@@ -27,6 +27,10 @@ final class HomeViewModel: ObservableObject {
     "usd-coin", "ripple", "staked-ether", "dogecoin", "cardano",
   ]
 
+  private var selectedPortfolioId: UUID? {
+    PortfolioSelectionStore.selectedPortfolioId
+  }
+
   func carregarTudo() async {
     await withTaskGroup(of: Void.self) { group in
       group.addTask { await self.carregarPerformance() }
@@ -51,9 +55,13 @@ final class HomeViewModel: ObservableObject {
     errorPerformance = nil
 
     do {
-      let operacoes = try await SupabaseService.shared.fetchOperations(limit: 10_000)
+      let operacoes = try await SupabaseService.shared.fetchOperations(
+        limit: 10_000,
+        carteiraId: selectedPortfolioId
+      )
       if operacoes.isEmpty {
         performance = HomePerformanceSummary(valorTotalAtual: 0, totalInvestido: 0, totalNaoRealizado: 0, totalRealizado: 0)
+        WidgetPortfolioSnapshotStore.save(portfolio: 0, unrealized: 0, unrealizedPct: 0)
         loadingPerformance = false
         return
       }
@@ -135,9 +143,16 @@ final class HomeViewModel: ObservableObject {
         totalNaoRealizado: unrealized,
         totalRealizado: realized
       )
+      let unrealizedPct = costBasis > 0 ? (unrealized / costBasis) * 100 : 0
+      WidgetPortfolioSnapshotStore.save(
+        portfolio: marketValue,
+        unrealized: unrealized,
+        unrealizedPct: unrealizedPct
+      )
     } catch {
       errorPerformance = error.localizedDescription
       performance = HomePerformanceSummary(valorTotalAtual: 0, totalInvestido: 0, totalNaoRealizado: 0, totalRealizado: 0)
+      WidgetPortfolioSnapshotStore.save(portfolio: 0, unrealized: 0, unrealizedPct: 0)
     }
 
     loadingPerformance = false

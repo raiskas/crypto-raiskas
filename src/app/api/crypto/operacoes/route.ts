@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from '@supabase/supabase-js';
 // @ts-ignore - Ignorar erro de tipo devido à falha na geração de tipos
 import { Database } from '@/types/supabase';
-import { supabaseConfig } from '@/lib/config';
+import { getServiceRoleKey, supabaseConfig } from '@/lib/config';
 import { cookies } from 'next/headers';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { z } from "zod";
@@ -15,7 +15,7 @@ const createSupabaseClient = () => {
   const cookieStore = cookies();
   return createServerClient<Database>(
     supabaseConfig.url!,
-    supabaseConfig.serviceRoleKey!, // Usar chave de serviço para operações de admin/backend
+    getServiceRoleKey(), // Usar chave de serviço para operações de admin/backend
     {
       cookies: {
         get(name: string) {
@@ -353,9 +353,104 @@ export async function PATCH(request: NextRequest) {
             }
         }
         
-        const { id: bodyId, criado_em, atualizado_em, grupos, usuario_id, grupo_id, ...updateData } = body;
-        if (body.grupo_id) {
+        const { data: existingOperation, error: existingOperationError } = await supabase
+            .from("crypto_operacoes")
+            .select("id, grupo_id, carteira_id")
+            .eq("id", id)
+            .single();
+
+        if (existingOperationError || !existingOperation) {
+            console.error(`[API:operacoes:PATCH] Erro ao carregar operação ${id} para atualização:`, existingOperationError?.message);
+            return NextResponse.json({ error: "Operação não encontrada" }, { status: 404 });
+        }
+
+        const allowedFields = new Set([
+          "nome",
+          "moeda_id",
+          "simbolo",
+          "tipo",
+          "quantidade",
+          "preco_unitario",
+          "valor_total",
+          "taxa",
+          "data_operacao",
+          "exchange",
+          "notas",
+        ]);
+
+        const updateData: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(body)) {
+          if (allowedFields.has(key) && value !== undefined) {
+            updateData[key] = value;
+          }
+        }
+
+        if (body.grupo_id !== undefined) {
+          if (typeof body.grupo_id !== "string" || !body.grupo_id.trim()) {
+            return NextResponse.json({ error: "grupo_id inválido" }, { status: 400 });
+          }
+
+          if (userProfile.is_master) {
+            const { data: groupExists, error: groupExistsError } = await supabase
+              .from("grupos")
+              .select("id")
+              .eq("id", body.grupo_id)
+              .maybeSingle();
+
+            if (groupExistsError) {
+              return NextResponse.json({ error: "Erro ao validar grupo informado" }, { status: 500 });
+            }
+
+            if (!groupExists?.id) {
+              return NextResponse.json({ error: "Grupo informado não encontrado" }, { status: 404 });
+            }
+          } else {
+            const { data: userGroupLink, error: userGroupLinkError } = await supabase
+              .from("usuarios_grupos")
+              .select("grupo_id")
+              .eq("usuario_id", userProfile.id)
+              .eq("grupo_id", body.grupo_id)
+              .maybeSingle();
+
+            if (userGroupLinkError) {
+              return NextResponse.json({ error: "Erro ao validar grupo informado" }, { status: 500 });
+            }
+
+            if (!userGroupLink?.grupo_id) {
+              return NextResponse.json({ error: "Permissão negada para mover operação para este grupo" }, { status: 403 });
+            }
+          }
+
           updateData.grupo_id = body.grupo_id;
+        }
+
+        if (body.carteira_id !== undefined) {
+          const carteiraId = typeof body.carteira_id === "string" && body.carteira_id.trim()
+            ? body.carteira_id.trim()
+            : null;
+
+          if (carteiraId) {
+            const { data: walletOwnership, error: walletOwnershipError } = await supabase
+              .from("crypto_carteiras")
+              .select("id")
+              .eq("id", carteiraId)
+              .eq("usuario_id", userProfile.id)
+              .maybeSingle();
+
+            if (walletOwnershipError) {
+              return NextResponse.json({ error: "Erro ao validar carteira informada" }, { status: 500 });
+            }
+
+            if (!walletOwnership?.id) {
+              return NextResponse.json({ error: "Carteira informada não pertence ao usuário" }, { status: 403 });
+            }
+          }
+
+          updateData.carteira_id = carteiraId;
+        }
+
+        if (Object.keys(updateData).length === 0) {
+          return NextResponse.json({ error: "Nenhum campo válido informado para atualização" }, { status: 400 });
         }
 
         const { data, error } = await supabase

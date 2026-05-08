@@ -36,6 +36,7 @@ export type Database = {
       crypto_operacoes: {
         Row: {
           atualizado_em: string | null
+          carteira_id: string | null
           criado_em: string | null
           data_operacao: string
           exchange: string | null
@@ -54,6 +55,7 @@ export type Database = {
         }
         Insert: {
           atualizado_em?: string | null
+          carteira_id?: string | null
           criado_em?: string | null
           data_operacao: string
           exchange?: string | null
@@ -72,6 +74,7 @@ export type Database = {
         }
         Update: {
           atualizado_em?: string | null
+          carteira_id?: string | null
           criado_em?: string | null
           data_operacao?: string
           exchange?: string | null
@@ -90,6 +93,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "crypto_operacoes_carteira_id_fkey"
+            columns: ["carteira_id"]
+            isOneToOne: false
+            referencedRelation: "crypto_carteiras"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "crypto_operacoes_usuario_id_fkey"
             columns: ["usuario_id"]
             isOneToOne: false
@@ -101,6 +111,191 @@ export type Database = {
             columns: ["grupo_id"]
             isOneToOne: false
             referencedRelation: "grupos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crypto_carteiras: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string | null
+          criado_em: string | null
+          id: string
+          nome: string
+          usuario_id: string
+          valor_inicial: number
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string | null
+          criado_em?: string | null
+          id?: string
+          nome?: string
+          usuario_id: string
+          valor_inicial?: number
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string | null
+          criado_em?: string | null
+          id?: string
+          nome?: string
+          usuario_id?: string
+          valor_inicial?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crypto_carteiras_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crypto_carteira_aportes: {
+        Row: {
+          atualizado_em: string | null
+          carteira_id: string
+          criado_em: string | null
+          data_aporte: string
+          descricao: string | null
+          id: string
+          valor: number
+        }
+        Insert: {
+          atualizado_em?: string | null
+          carteira_id: string
+          criado_em?: string | null
+          data_aporte?: string
+          descricao?: string | null
+          id?: string
+          valor: number
+        }
+        Update: {
+          atualizado_em?: string | null
+          carteira_id?: string
+          criado_em?: string | null
+          data_aporte?: string
+          descricao?: string | null
+          id?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crypto_carteira_aportes_carteira_id_fkey"
+            columns: ["carteira_id"]
+            isOneToOne: false
+            referencedRelation: "crypto_carteiras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crypto_carteira_snapshots: {
+        Row: {
+          aporte_liquido: number
+          carteira_id: string
+          criado_em: string | null
+          data_ref: string
+          fonte_preco: string
+          id: string
+          saldo_caixa: number
+          valor_ativos: number
+          patrimonio_total: number
+        }
+        Insert: {
+          aporte_liquido: number
+          carteira_id: string
+          criado_em?: string | null
+          data_ref: string
+          fonte_preco?: string
+          id?: string
+          saldo_caixa: number
+          valor_ativos: number
+          patrimonio_total: number
+        }
+        Update: {
+          aporte_liquido?: number
+          carteira_id?: string
+          criado_em?: string | null
+          data_ref?: string
+          fonte_preco?: string
+          id?: string
+          saldo_caixa?: number
+          valor_ativos?: number
+          patrimonio_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crypto_carteira_snapshots_carteira_id_fkey"
+            columns: ["carteira_id"]
+            isOneToOne: false
+            referencedRelation: "crypto_carteiras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_alerts: {
+        Row: {
+          asset_symbol: string
+          cooldown_minutes: number
+          created_at: string
+          direction: string
+          enabled: boolean
+          id: string
+          is_triggered: boolean
+          last_price: number | null
+          last_triggered_at: string | null
+          next_eligible_at: string | null
+          provider_asset_id: string | null
+          repeat_mode: string
+          target_price: number
+          triggered_count: number
+          updated_at: string
+          usuario_id: string
+        }
+        Insert: {
+          asset_symbol: string
+          cooldown_minutes?: number
+          created_at?: string
+          direction: string
+          enabled?: boolean
+          id?: string
+          is_triggered?: boolean
+          last_price?: number | null
+          last_triggered_at?: string | null
+          next_eligible_at?: string | null
+          provider_asset_id?: string | null
+          repeat_mode?: string
+          target_price: number
+          triggered_count?: number
+          updated_at?: string
+          usuario_id: string
+        }
+        Update: {
+          asset_symbol?: string
+          cooldown_minutes?: number
+          created_at?: string
+          direction?: string
+          enabled?: boolean
+          id?: string
+          is_triggered?: boolean
+          last_price?: number | null
+          last_triggered_at?: string | null
+          next_eligible_at?: string | null
+          provider_asset_id?: string | null
+          repeat_mode?: string
+          target_price?: number
+          triggered_count?: number
+          updated_at?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_alerts_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
             referencedColumns: ["id"]
           },
         ]

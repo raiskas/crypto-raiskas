@@ -31,6 +31,7 @@ interface OperacaoData {
   exchange: string | null;
   notas: string | null;
   grupo_id?: string;
+  carteira_id?: string | null;
 }
 
 // Tipos para os valores do formulário (usando o schema importado)
@@ -44,6 +45,7 @@ interface OperacaoModalProps {
   onSuccess: () => void; // Callback para atualizar a lista após sucesso
   userId?: string; // ID do usuário logado
   grupoIdUsuario?: string | null; // Grupo ID do usuário logado
+  carteiraId?: string | null; // Portfolio selecionado na tela de origem
 }
 
 export const OperacaoModal: React.FC<OperacaoModalProps> = ({
@@ -53,6 +55,7 @@ export const OperacaoModal: React.FC<OperacaoModalProps> = ({
   onSuccess,
   userId,
   grupoIdUsuario,
+  carteiraId,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const isEditing = !!initialData;
@@ -82,6 +85,7 @@ export const OperacaoModal: React.FC<OperacaoModalProps> = ({
         // Senão, usa o grupo_id inicial (edição)
         // Senão, usa o grupoIdUsuario (criação ou edição sem grupo específico)
         grupo_id: values.grupo_id || initialData?.grupo_id || grupoIdUsuario || undefined,
+        carteira_id: initialData?.carteira_id ?? carteiraId ?? null,
     };
 
     // Validação final do grupo_id antes de enviar

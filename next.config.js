@@ -1,14 +1,4 @@
-const { hostname } = require("os");
-
-// <<< Importar a função da biblioteca PWA >>>
-const withPWA = require("@ducanh2912/next-pwa").default({
-  dest: "public", // Diretório de saída para os arquivos do service worker
-  disable: process.env.NODE_ENV === "development", // Desabilitar PWA no modo de desenvolvimento
-  register: true, // Registrar o service worker automaticamente
-  skipWaiting: true, // Forçar ativação imediata do novo service worker
-  // cacheOnFrontEndNav: true, // Opcional: Cachear navegações no cliente
-  // reloadOnOnline: true, // Opcional: Recarregar a página quando voltar a ficar online
-});
+const withPWAFactory = require("@ducanh2912/next-pwa").default;
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -47,5 +37,19 @@ const nextConfig = {
   },
 };
 
-// <<< Envolver a configuração com withPWA >>>
-module.exports = withPWA(nextConfig); 
+const isLocalRuntime =
+  !process.env.VERCEL &&
+  !process.env.VERCEL_ENV &&
+  !process.env.CI;
+
+if (process.env.NODE_ENV === "development" || isLocalRuntime) {
+  module.exports = nextConfig;
+} else {
+  const withPWA = withPWAFactory({
+    dest: "public",
+    register: true,
+    skipWaiting: true,
+  });
+
+  module.exports = withPWA(nextConfig);
+}

@@ -19,7 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { TrendingUp, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MarketDataMap, FullCoinData } from "@/lib/coingecko";
+import type { FullCoinData, MarketDataMap } from "@/types/crypto";
 
 // Tipo para top moedas
 interface TopMoeda {

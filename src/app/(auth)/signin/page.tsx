@@ -18,7 +18,6 @@ import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, LogIn } from "lucide-react";
 import { useAuth } from "@/lib/hooks/use-auth";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -30,7 +29,6 @@ const loginSchema = z.object({
 export default function SigninPage() {
   const { signIn } = useAuth();
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -52,18 +50,31 @@ export default function SigninPage() {
       console.log("[SignIn Page] Resultado recebido de signIn:", result);
       
       if (result.success) {
-        console.log("[SignIn Page] Login sucesso. Redirecionando para a raiz ('/')...");
-        // TESTE: Usar window.location.href para forçar reload
-        // window.location.href = "/home";
-        // REVERTER: Usar router.push
-        // router.push("/home"); // Comentado
-        // router.refresh(); // Comentado
-        router.push('/'); // REVERTIDO PARA push('/')
+        const searchParams = new URLSearchParams(window.location.search);
+        const requestedRedirect = searchParams.get("redirect");
+        const target =
+          requestedRedirect && requestedRedirect.startsWith("/")
+            ? requestedRedirect === "/"
+              ? "/home"
+              : requestedRedirect
+            : "/home";
+
+        console.log("[SignIn Page] Login sucesso. Redirecionando com navegação dura para:", target);
+
+        window.location.assign(target);
       } else {
         console.error("[SignIn Page] Login reportado como falha:", result.error);
+        form.setError("root", {
+          type: "server",
+          message: result.error || "Falha ao entrar.",
+        });
       }
     } catch (err: any) {
       console.error("[SignIn Page] Exceção capturada em onSubmit:", err);
+      form.setError("root", {
+        type: "server",
+        message: err?.message || "Erro inesperado ao entrar.",
+      });
     } finally {
       console.log("[SignIn Page] onSubmit finalizado."); 
       setLoading(false);
@@ -127,6 +138,12 @@ export default function SigninPage() {
                     </FormItem>
                   )}
                 />
+                {form.formState.errors.root?.message && (
+                  <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{form.formState.errors.root.message}</span>
+                  </div>
+                )}
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Entrando..." : (
                     <>

@@ -1,5 +1,9 @@
 "use client";
 
+const isLocalhost = () =>
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+
 export default function GlobalError({
   error,
   reset,
@@ -17,6 +21,12 @@ export default function GlobalError({
           <p className="text-sm text-muted-foreground">
             Tente novamente para recarregar a aplicação.
           </p>
+          {isLocalhost() && (
+            <pre className="max-w-full overflow-auto rounded-md border bg-muted p-3 text-left text-xs text-foreground">
+              {error.message}
+              {error.digest ? `\nDigest: ${error.digest}` : ""}
+            </pre>
+          )}
           <button
             type="button"
             onClick={reset}
@@ -29,4 +39,3 @@ export default function GlobalError({
     </html>
   );
 }
-

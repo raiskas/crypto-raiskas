@@ -6,12 +6,14 @@ type AlertRow = {
   usuario_id: string;
   asset_symbol: string;
   provider_asset_id: string | null;
-  direction: "gte" | "lte";
+  direction: "gte" | "lte" | "cross";
+  repeat_mode: "once" | "always";
   target_price: number;
   enabled: boolean;
   is_triggered: boolean;
   cooldown_minutes: number;
   triggered_count: number;
+  last_price: number | null;
   next_eligible_at: string | null;
 };
 
@@ -37,6 +39,7 @@ const SYMBOL_TO_COINGECKO: Record<string, string> = {
 
 const PROVIDER_CACHE = new Map<string, { price: number; fetchedAt: number }>();
 const PROVIDER_TTL_MS = 30_000;
+const APNS_ALERT_EXPIRATION_SECONDS = 10 * 60;
 
 function resolveProviderId(alert: AlertRow): string {
   if (alert.provider_asset_id && alert.provider_asset_id.trim().length > 0) {
@@ -103,8 +106,12 @@ async function apnsJwt(): Promise<string> {
 async function sendApnsPush(
   token: string,
   environment: "sandbox" | "production",
+  options: {
+    apnsId: string;
+    expirationEpochSeconds: number;
+  },
   payload: Record<string, unknown>,
-): Promise<{ ok: boolean; status: number; reason?: string }> {
+): Promise<{ ok: boolean; status: number; reason?: string; apnsId: string }> {
   const topic = Deno.env.get("APNS_BUNDLE_ID") ?? "";
   if (!topic) {
     throw new Error("apns_bundle_missing");
@@ -119,6 +126,8 @@ async function sendApnsPush(
     method: "POST",
     headers: {
       authorization: `bearer ${jwt}`,
+      "apns-id": options.apnsId,
+      "apns-expiration": String(options.expirationEpochSeconds),
       "apns-topic": topic,
       "apns-push-type": "alert",
       "apns-priority": "10",
@@ -128,7 +137,7 @@ async function sendApnsPush(
   });
 
   if (res.ok) {
-    return { ok: true, status: res.status };
+    return { ok: true, status: res.status, apnsId: options.apnsId };
   }
   let reason: string | undefined;
   try {
@@ -137,17 +146,34 @@ async function sendApnsPush(
   } catch {
     reason = undefined;
   }
-  return { ok: false, status: res.status, reason };
+  return { ok: false, status: res.status, reason, apnsId: options.apnsId };
 }
 
-function isEligible(alert: AlertRow): boolean {
+function isEligible(alert: AlertRow, now = new Date()): boolean {
   if (!alert.enabled) return false;
-  if (!alert.is_triggered) return true;
-  if (!alert.next_eligible_at) return false;
-  return Date.parse(alert.next_eligible_at) <= Date.now();
+  if (alert.next_eligible_at) {
+    const nextEligibleAt = new Date(alert.next_eligible_at);
+    if (Number.isFinite(nextEligibleAt.getTime()) && nextEligibleAt > now) {
+      return false;
+    }
+  }
+  if (alert.repeat_mode === "once") return !alert.is_triggered;
+  return true;
+}
+
+function crossedTarget(previousPrice: number | null, currentPrice: number, targetPrice: number): boolean {
+  if (typeof previousPrice !== "number" || !Number.isFinite(previousPrice)) {
+    return false;
+  }
+
+  return (previousPrice < targetPrice && currentPrice >= targetPrice) ||
+    (previousPrice > targetPrice && currentPrice <= targetPrice);
 }
 
 function isTriggered(alert: AlertRow, currentPrice: number): boolean {
+  if (alert.direction === "cross") {
+    return crossedTarget(alert.last_price, currentPrice, alert.target_price);
+  }
   if (alert.direction === "gte") {
     return currentPrice >= alert.target_price;
   }
@@ -173,7 +199,7 @@ Deno.serve(async (req) => {
 
   const { data: alerts, error: alertsError } = await supabase
     .from("price_alerts")
-    .select("id,usuario_id,asset_symbol,provider_asset_id,direction,target_price,enabled,is_triggered,cooldown_minutes,triggered_count,next_eligible_at")
+    .select("id,usuario_id,asset_symbol,provider_asset_id,direction,repeat_mode,target_price,enabled,is_triggered,cooldown_minutes,triggered_count,last_price,next_eligible_at")
     .eq("enabled", true)
     .limit(5000);
 
@@ -181,12 +207,12 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: alertsError.message }), { status: 500 });
   }
 
-  const candidates = (alerts ?? []).filter(isEligible);
-  if (candidates.length === 0) {
+  const activeAlerts = (alerts ?? []) as AlertRow[];
+  if (activeAlerts.length === 0) {
     return new Response(JSON.stringify({ ok: true, scanned: 0, triggered: 0 }));
   }
 
-  const providerIds = [...new Set(candidates.map(resolveProviderId))];
+  const providerIds = [...new Set(activeAlerts.map(resolveProviderId))];
   let prices: PriceMap;
   try {
     prices = await fetchPrices(providerIds);
@@ -197,23 +223,34 @@ Deno.serve(async (req) => {
     );
   }
 
+  const now = new Date();
   const triggered: Array<{ alert: AlertRow; price: number }> = [];
-  for (const alert of candidates) {
+  for (const alert of activeAlerts) {
     const providerId = resolveProviderId(alert);
     const price = prices[providerId];
     if (typeof price !== "number") continue;
-    if (isTriggered(alert, price)) {
+    if (isEligible(alert, now) && isTriggered(alert, price)) {
       triggered.push({ alert, price });
     } else {
+      const resetTriggered = alert.repeat_mode === "always" ? false : alert.is_triggered;
+      const nextEligibleAt = alert.next_eligible_at
+        ? new Date(alert.next_eligible_at)
+        : null;
+      const clearExpiredEligibility = nextEligibleAt && Number.isFinite(nextEligibleAt.getTime()) && nextEligibleAt <= now;
       await supabase
         .from("price_alerts")
-        .update({ last_price: price, updated_at: new Date().toISOString() })
+        .update({
+          last_price: price,
+          is_triggered: resetTriggered,
+          next_eligible_at: clearExpiredEligibility ? null : alert.next_eligible_at,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", alert.id);
     }
   }
 
   if (triggered.length === 0) {
-    return new Response(JSON.stringify({ ok: true, scanned: candidates.length, triggered: 0 }));
+    return new Response(JSON.stringify({ ok: true, scanned: activeAlerts.length, triggered: 0 }));
   }
 
   const userIds = [...new Set(triggered.map((t) => t.alert.usuario_id))];
@@ -239,8 +276,9 @@ Deno.serve(async (req) => {
   for (const item of triggered) {
     const { alert, price } = item;
     const now = new Date();
-    const nextEligibleAt = alert.cooldown_minutes > 0
-      ? new Date(now.getTime() + alert.cooldown_minutes * 60_000).toISOString()
+    const cooldownMinutes = Number.isFinite(alert.cooldown_minutes) ? Math.max(0, alert.cooldown_minutes) : 0;
+    const nextEligibleAt = alert.repeat_mode === "always" && cooldownMinutes > 0
+      ? new Date(now.getTime() + cooldownMinutes * 60_000).toISOString()
       : null;
 
     await supabase
@@ -259,9 +297,12 @@ Deno.serve(async (req) => {
     if (tokens.length === 0) continue;
 
     const title = `Alerta ${alert.asset_symbol.toUpperCase()}`;
-    const body = `${alert.direction === "gte" ? "Subiu para" : "Caiu para"} $${price.toFixed(2)} (alvo $${alert.target_price.toFixed(2)})`;
+    const body = alert.direction === "cross"
+      ? `Cruzou $${alert.target_price.toFixed(2)} e está em $${price.toFixed(2)}`
+      : `${alert.direction === "gte" ? "Subiu para" : "Caiu para"} $${price.toFixed(2)} (alvo $${alert.target_price.toFixed(2)})`;
 
     for (const tokenRow of tokens) {
+      const apnsId = crypto.randomUUID();
       const pushPayload = {
         aps: {
           alert: { title, body },
@@ -273,17 +314,51 @@ Deno.serve(async (req) => {
       };
 
       try {
-        const result = await sendApnsPush(tokenRow.token, tokenRow.apns_environment, pushPayload);
+        const result = await sendApnsPush(
+          tokenRow.token,
+          tokenRow.apns_environment,
+          {
+            apnsId,
+            expirationEpochSeconds: Math.floor(Date.now() / 1000) + APNS_ALERT_EXPIRATION_SECONDS,
+          },
+          pushPayload,
+        );
         if (result.ok) {
           pushesSent += 1;
         } else if ([400, 410].includes(result.status)) {
+          console.error("apns_push_failed", {
+            alertId: alert.id,
+            usuarioId: alert.usuario_id,
+            tokenId: tokenRow.id,
+            environment: tokenRow.apns_environment,
+            status: result.status,
+            reason: result.reason,
+            apnsId: result.apnsId,
+          });
           await supabase
             .from("device_tokens")
             .update({ ativo: false, updated_at: new Date().toISOString() })
             .eq("id", tokenRow.id);
+        } else {
+          console.error("apns_push_failed", {
+            alertId: alert.id,
+            usuarioId: alert.usuario_id,
+            tokenId: tokenRow.id,
+            environment: tokenRow.apns_environment,
+            status: result.status,
+            reason: result.reason,
+            apnsId: result.apnsId,
+          });
         }
-      } catch {
-        // mantém execução do ciclo
+      } catch (error) {
+        console.error("apns_push_exception", {
+          alertId: alert.id,
+          usuarioId: alert.usuario_id,
+          tokenId: tokenRow.id,
+          environment: tokenRow.apns_environment,
+          apnsId,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     }
   }
@@ -291,7 +366,7 @@ Deno.serve(async (req) => {
   return new Response(
     JSON.stringify({
       ok: true,
-      scanned: candidates.length,
+      scanned: activeAlerts.length,
       triggered: triggered.length,
       pushes_sent: pushesSent,
       symbols: [...new Set(triggered.map((t) => t.alert.asset_symbol.toUpperCase()))],

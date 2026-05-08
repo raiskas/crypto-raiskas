@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
-import { supabaseConfig } from "@/lib/config";
+import { getServiceRoleKey, supabaseConfig } from "@/lib/config";
 import { Database } from "@/types/supabase";
 
 const createSupabaseClient = () => {
   const cookieStore = cookies();
-  return createServerClient<Database>(supabaseConfig.url!, supabaseConfig.serviceRoleKey!, {
+  return createServerClient<Database>(supabaseConfig.url!, getServiceRoleKey(), {
     cookies: {
       get(name: string) {
         return cookieStore.get(name)?.value;

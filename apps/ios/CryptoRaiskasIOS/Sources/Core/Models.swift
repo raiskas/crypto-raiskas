@@ -23,6 +23,7 @@ struct WalletSnapshotPoint: Identifiable, Equatable {
 
 struct OperationRow: Identifiable, Equatable {
   let id: UUID
+  let carteiraId: UUID?
   let moedaId: String
   let nome: String
   let simbolo: String
@@ -109,6 +110,7 @@ struct CryptoCarteiraDTO: Decodable {
   let id: UUID
   let nome: String
   let valor_inicial: Double
+  let ativo: Bool?
 }
 
 struct CryptoAporteDTO: Decodable {
@@ -131,6 +133,13 @@ struct WalletConfigRow: Identifiable, Equatable {
   let valorInicial: Double
 }
 
+struct WalletPortfolioOption: Identifiable, Equatable {
+  let id: UUID
+  let nome: String
+  let valorInicial: Double
+  let ativo: Bool
+}
+
 struct WalletAporteRow: Identifiable, Equatable {
   let id: UUID
   let carteiraId: UUID
@@ -141,6 +150,7 @@ struct WalletAporteRow: Identifiable, Equatable {
 
 struct CryptoOperacaoDTO: Decodable {
   let id: UUID
+  let carteira_id: UUID?
   let moeda_id: String
   let nome: String
   let simbolo: String
@@ -229,13 +239,27 @@ struct CoinSearchRow: Identifiable, Equatable {
 }
 
 enum PriceAlertDirection: String, CaseIterable, Codable {
+  case cross = "cross"
   case gte = "gte"
   case lte = "lte"
 
   var label: String {
     switch self {
+    case .cross: return "Cruzar o valor"
     case .gte: return ">= (acima)"
     case .lte: return "<= (abaixo)"
+    }
+  }
+}
+
+enum PriceAlertRepeatMode: String, CaseIterable, Codable {
+  case once = "once"
+  case always = "always"
+
+  var label: String {
+    switch self {
+    case .once: return "Uma vez"
+    case .always: return "Sempre"
     }
   }
 }
@@ -245,6 +269,7 @@ struct PriceAlertRow: Identifiable, Equatable {
   let assetSymbol: String
   let providerAssetId: String?
   let direction: PriceAlertDirection
+  let repeatMode: PriceAlertRepeatMode
   let targetPrice: Double
   let enabled: Bool
   let isTriggered: Bool
@@ -259,6 +284,7 @@ struct PriceAlertUpsertInput: Equatable {
   let assetSymbol: String
   let providerAssetId: String?
   let direction: PriceAlertDirection
+  let repeatMode: PriceAlertRepeatMode
   let targetPrice: Double
   let enabled: Bool
   let cooldownMinutes: Int
@@ -287,6 +313,7 @@ struct PriceAlertDTO: Decodable {
   let asset_symbol: String
   let provider_asset_id: String?
   let direction: String
+  let repeat_mode: String?
   let target_price: Double
   let enabled: Bool?
   let is_triggered: Bool?
@@ -323,6 +350,7 @@ struct EmpresaUpsertInput: Equatable {
 }
 
 struct OperationUpsertInput: Equatable {
+  let carteiraId: UUID
   let moedaId: String
   let nome: String
   let simbolo: String
@@ -338,6 +366,7 @@ struct OperationUpsertInput: Equatable {
   func toInsertPayload(usuarioId: UUID) -> OperationInsertPayload {
     OperationInsertPayload(
       usuario_id: usuarioId.uuidString,
+      carteira_id: carteiraId.uuidString,
       moeda_id: moedaId,
       nome: nome,
       simbolo: simbolo,
@@ -355,6 +384,7 @@ struct OperationUpsertInput: Equatable {
   func toUpdatePayload(usuarioId: UUID) -> OperationUpdatePayload {
     OperationUpdatePayload(
       usuario_id: usuarioId.uuidString,
+      carteira_id: carteiraId.uuidString,
       moeda_id: moedaId,
       nome: nome,
       simbolo: simbolo,
@@ -372,6 +402,7 @@ struct OperationUpsertInput: Equatable {
 
 struct OperationInsertPayload: Encodable {
   let usuario_id: String
+  let carteira_id: String
   let moeda_id: String
   let nome: String
   let simbolo: String
@@ -387,6 +418,7 @@ struct OperationInsertPayload: Encodable {
 
 struct OperationUpdatePayload: Encodable {
   let usuario_id: String
+  let carteira_id: String
   let moeda_id: String
   let nome: String
   let simbolo: String

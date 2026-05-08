@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/types/supabase';
-import { supabaseConfig } from '@/lib/config';
+import { getServiceRoleKey, supabaseConfig } from '@/lib/config';
 
 // Criar cliente com role de serviço para operações administrativas
 const adminClient = createClient<Database>(
   supabaseConfig.url,
-  supabaseConfig.serviceRoleKey
+  getServiceRoleKey()
 );
 
 export async function forceResetPassword(

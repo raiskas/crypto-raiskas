@@ -7,6 +7,8 @@ final class PortfolioViewModel: ObservableObject {
   @Published var generatingHistory = false
   @Published var error: String?
   @Published var warning: String?
+  @Published var portfolios: [WalletPortfolioOption] = []
+  @Published var selectedPortfolioId: UUID?
   @Published var summary = WalletSummary(nome: "Carteira Principal", patrimonioTotal: 0, aporteTotal: 0, resultadoTotal: 0, resultadoPercentual: 0)
   @Published var history: [WalletSnapshotPoint] = []
   @Published var updatedAt: Date?
@@ -22,9 +24,24 @@ final class PortfolioViewModel: ObservableObject {
     defer { loading = false }
 
     do {
-      let payload = try await service.fetchWalletSummaryAndHistory(months: months)
-      let configAndAportes = try await service.fetchWalletConfigAndAportes()
-      let ops = try await service.fetchOperations(limit: 10_000)
+      let fetchedPortfolios = try await service.fetchWalletPortfolios()
+      portfolios = fetchedPortfolios
+
+      let resolvedPortfolioId =
+        selectedPortfolioId.flatMap { current in
+          fetchedPortfolios.contains(where: { $0.id == current }) ? current : nil
+        }
+        ?? PortfolioSelectionStore.selectedPortfolioId.flatMap { stored in
+          fetchedPortfolios.contains(where: { $0.id == stored }) ? stored : nil
+        }
+        ?? fetchedPortfolios.first?.id
+
+      selectedPortfolioId = resolvedPortfolioId
+      PortfolioSelectionStore.selectedPortfolioId = resolvedPortfolioId
+
+      let payload = try await service.fetchWalletSummaryAndHistory(months: months, carteiraId: resolvedPortfolioId)
+      let configAndAportes = try await service.fetchWalletConfigAndAportes(carteiraId: resolvedPortfolioId)
+      let ops = try await service.fetchOperations(limit: 10_000, carteiraId: resolvedPortfolioId)
 
       var tickers: [MarketTicker] = []
       var marketWarning: String?
@@ -64,14 +81,27 @@ final class PortfolioViewModel: ObservableObject {
     }
   }
 
+  func selectPortfolio(_ id: UUID) async {
+    selectedPortfolioId = id
+    PortfolioSelectionStore.selectedPortfolioId = id
+    await refresh(months: 12)
+  }
+
   func refreshHistoryOnly() async {
     generatingHistory = true
     defer { generatingHistory = false }
     await refresh(months: 12)
   }
 
-  func saveWallet(nome: String, valorInicial: Double) async throws {
-    try await service.upsertWallet(nome: nome, valorInicial: valorInicial)
+  func saveWallet(id: UUID?, nome: String, valorInicial: Double) async throws {
+    let savedId: UUID
+    if let id {
+      savedId = try await service.updateWallet(id: id, nome: nome, valorInicial: valorInicial)
+    } else {
+      savedId = try await service.createWallet(nome: nome, valorInicial: valorInicial)
+    }
+    selectedPortfolioId = savedId
+    PortfolioSelectionStore.selectedPortfolioId = savedId
     await refresh(months: 12)
   }
 
@@ -200,9 +230,9 @@ struct PortfolioView: View {
     ZStack(alignment: .topLeading) {
       AppTheme.pageBackground.ignoresSafeArea()
       ScrollView {
-        VStack(alignment: .leading, spacing: AppLayout.pageSpacing) {
+      VStack(alignment: .leading, spacing: AppLayout.pageSpacing) {
           header
-
+          portfolioSelectorSection
           if let error = vm.error { statusCard(title: "Erro", message: error, color: .red) }
           else if let warning = vm.warning { statusCard(title: "Aviso de mercado", message: warning, color: .yellow) }
 
@@ -247,6 +277,41 @@ struct PortfolioView: View {
           Button(vm.loading ? "Atualizando..." : "Atualizar") { Task { await vm.refresh(months: 12) } }
             .buttonStyle(.borderedProminent)
             .disabled(vm.loading)
+        }
+      }
+    }
+  }
+
+  private var portfolioSelectorSection: some View {
+    AppCard {
+      VStack(alignment: .leading, spacing: 10) {
+        Text("Portfólio")
+          .font(.title3.bold())
+          .foregroundStyle(AppTheme.strongText)
+
+        Text("A carteira e os aportes desta tela seguem o portfolio selecionado.")
+          .font(.subheadline)
+          .foregroundStyle(AppTheme.subtleText)
+
+        if vm.portfolios.isEmpty {
+          Text("Nenhum portfolio ativo encontrado.")
+            .font(.caption)
+            .foregroundStyle(AppTheme.subtleText)
+        } else {
+          Picker(
+            "Portfólio",
+            selection: Binding(
+              get: { vm.selectedPortfolioId ?? vm.portfolios.first?.id ?? UUID() },
+              set: { newValue in
+                Task { await vm.selectPortfolio(newValue) }
+              }
+            )
+          ) {
+            ForEach(vm.portfolios) { portfolio in
+              Text(portfolio.nome).tag(portfolio.id)
+            }
+          }
+          .pickerStyle(.menu)
         }
       }
     }
@@ -713,6 +778,7 @@ private struct PortfolioAdminSheet: View {
   @Environment(\.dismiss) private var dismiss
 
   @State private var tab: Int = 0
+  @State private var editingWalletId: UUID?
   @State private var nome = "Carteira Principal"
   @State private var valorInicial = "0"
 
@@ -723,6 +789,15 @@ private struct PortfolioAdminSheet: View {
 
   @State private var saving = false
   @State private var error: String?
+
+  private var selectedPortfolioBinding: Binding<UUID> {
+    Binding(
+      get: { vm.selectedPortfolioId ?? vm.portfolios.first?.id ?? UUID() },
+      set: { newValue in
+        Task { await vm.selectPortfolio(newValue) }
+      }
+    )
+  }
 
   var body: some View {
     NavigationStack {
@@ -742,10 +817,25 @@ private struct PortfolioAdminSheet: View {
 
         if tab == 0 {
           Form {
+            if !vm.portfolios.isEmpty {
+              Picker("Portfolio", selection: selectedPortfolioBinding) {
+                ForEach(vm.portfolios) { portfolio in
+                  Text(portfolio.nome).tag(portfolio.id)
+                }
+              }
+            }
+
             TextField("Nome da carteira", text: $nome)
             TextField("Valor inicial", text: $valorInicial)
-            Button(saving ? "Salvando..." : (vm.walletConfig == nil ? "Criar Carteira" : "Atualizar Carteira")) {
+            Button(saving ? "Salvando..." : (editingWalletId == nil ? "Criar Portfolio" : "Atualizar Portfolio")) {
               Task { await saveWallet() }
+            }
+            .disabled(saving)
+
+            Button("Novo Portfolio") {
+              editingWalletId = nil
+              nome = ""
+              valorInicial = "0"
             }
             .disabled(saving)
           }
@@ -806,9 +896,17 @@ private struct PortfolioAdminSheet: View {
       }
     }
     .onAppear {
-      nome = vm.walletConfig?.nome ?? "Carteira Principal"
-      valorInicial = AppFormatters.number(vm.walletConfig?.valorInicial ?? 0)
+      syncFormFromSelectedWallet()
     }
+    .onChange(of: vm.walletConfig?.id) { _, _ in
+      syncFormFromSelectedWallet()
+    }
+  }
+
+  private func syncFormFromSelectedWallet() {
+    nome = vm.walletConfig?.nome ?? "Carteira Principal"
+    valorInicial = AppFormatters.number(vm.walletConfig?.valorInicial ?? 0)
+    editingWalletId = vm.walletConfig?.id
   }
 
   private func saveWallet() async {
@@ -820,7 +918,8 @@ private struct PortfolioAdminSheet: View {
     saving = true
     defer { saving = false }
     do {
-      try await vm.saveWallet(nome: nome, valorInicial: inicial)
+      try await vm.saveWallet(id: editingWalletId, nome: nome, valorInicial: inicial)
+      editingWalletId = vm.walletConfig?.id
       error = nil
     } catch {
       self.error = error.localizedDescription

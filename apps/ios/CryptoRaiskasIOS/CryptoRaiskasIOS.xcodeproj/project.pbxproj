@@ -10,15 +10,20 @@
 		005640E293A56B0B7C363F1C /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B14C8718750AD8F523DAA3 /* SupabaseService.swift */; };
 		10B9284B373779286766611F /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 166C274D20FBBCD2EFAD82CA /* MainTabView.swift */; };
 		288526D85913CB1F71AF9532 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11832D15E316853E33CFA33 /* AppConfig.swift */; };
+		29DE937E77359F264F9E7598 /* WatchSnapshotSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDEAC5D78F8901AC767B7805 /* WatchSnapshotSync.swift */; };
+		2D2431BBBCB109DA87768054 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FF95A4A257BC5C8F2E962927 /* Assets.xcassets */; };
 		2EA104A2098BA875F55D41D6 /* WidgetPortfolioSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D85A9127D8D9B0ECCFCDCC89 /* WidgetPortfolioSnapshotStore.swift */; };
 		313FEDE4460D08E9F36B378D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8C242AE1187ADB188440130A /* Assets.xcassets */; };
 		50DEAF322A901E34004DAC25 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B490FA68C4F0712C46DF8F2 /* Models.swift */; };
 		585A4AD3C0A3D97313D1BEC6 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A2A4F4D93C793EE4201345 /* AppState.swift */; };
 		601DF3129BD1E644082B4FED /* AdminRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF74D09100259046A6F77823 /* AdminRootView.swift */; };
 		654D30F2982998939077A3C8 /* Config.local.plist in Resources */ = {isa = PBXBuildFile; fileRef = 472A3BED608241E4452EA5AD /* Config.local.plist */; };
+		6587E61D9D6AF21671E33E24 /* PortfolioSelectionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659D3F1B9D949A4261EA0D41 /* PortfolioSelectionStore.swift */; };
 		6F235D9DADE268D8A446E5E3 /* AdminUsersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE85FE6AB58BD424113D7CC3 /* AdminUsersView.swift */; };
+		7E87F5C8B80B6523078C2DEC /* Crypto Raiskas Watch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = B42DEA752C02ACAB70119450 /* Crypto Raiskas Watch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7F72FAF1F68F0EB69BEC13BE /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A12689C1D8F6A33302F8AE80 /* AppTheme.swift */; };
 		83C98AC010564DB929C818FB /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 9B747369EF880BCB5D59D520 /* Supabase */; };
+		8472D364230A08A2CC48AF53 /* CryptoRaiskasWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0F58CC689D98C57221BD76E /* CryptoRaiskasWatchApp.swift */; };
 		8EA1FAB53AFF21A49EAC4A41 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 140FC72A4F67908616735F9C /* HomeView.swift */; };
 		9EA4732BEBB8983EBFC77150 /* AppDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EFC1C7AD74168743D778F4 /* AppDestination.swift */; };
 		A5A71E8B618815A7FBF2A6F8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4FE3B6262C02A314F53F5C6A /* Assets.xcassets */; };
@@ -30,12 +35,21 @@
 		C8CA8B13B20768E867166E02 /* logo-sem-fundo.png in Resources */ = {isa = PBXBuildFile; fileRef = 186849FAA4057F6178D54628 /* logo-sem-fundo.png */; };
 		CAB66B9CDD08A339A36CD0B0 /* logo-sem-fundo.png in Resources */ = {isa = PBXBuildFile; fileRef = C65A1B088C1E4A2EB6F71A2C /* logo-sem-fundo.png */; };
 		E640AC974E590DF90D074E95 /* AppContract.swift in Sources */ = {isa = PBXBuildFile; fileRef = 933D9959288BD69B55CEC0B1 /* AppContract.swift */; };
+		F312B9936B84AE0F24030EE8 /* WatchSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4702A4D9FD9E8E1B66734999 /* WatchSnapshotStore.swift */; };
 		F94F788AABCB9941D6FBFB6D /* PortfolioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C6165D3CEE1BEF44C138032 /* PortfolioView.swift */; };
 		FCC14DACC3B6B417734EFF6C /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E99EA2B4723428D478E7BFE6 /* SignInView.swift */; };
 		FED9D9172488B356A0B31F70 /* CryptoRaiskasWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BB5CFFC4CB67D84AAA585C5 /* CryptoRaiskasWidgets.swift */; };
+		FF3225D201F7333DBE8625C1 /* WatchRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0388939E172C7EBC56BFA0CF /* WatchRootView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		61CDEF856156F358FA8EE909 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 73067B236D0519A5C37B6747 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 00918985C922E2BB01F8E353;
+			remoteInfo = CryptoRaiskasWatchApp;
+		};
 		972616D8FB776ABBCA9205A0 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 73067B236D0519A5C37B6747 /* Project object */;
@@ -57,9 +71,21 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		6C05172E757D810D7EF52775 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				7E87F5C8B80B6523078C2DEC /* Crypto Raiskas Watch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0388939E172C7EBC56BFA0CF /* WatchRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchRootView.swift; sourceTree = "<group>"; };
 		04E74485A69E80EC8602A93B /* CryptoRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoRootView.swift; sourceTree = "<group>"; };
 		0B490FA68C4F0712C46DF8F2 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		140FC72A4F67908616735F9C /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -68,12 +94,16 @@
 		3180B6EE6ADD8FBC2F238468 /* Formatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatters.swift; sourceTree = "<group>"; };
 		3C6165D3CEE1BEF44C138032 /* PortfolioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioView.swift; sourceTree = "<group>"; };
 		46EFC1C7AD74168743D778F4 /* AppDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDestination.swift; sourceTree = "<group>"; };
+		4702A4D9FD9E8E1B66734999 /* WatchSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSnapshotStore.swift; sourceTree = "<group>"; };
 		472A3BED608241E4452EA5AD /* Config.local.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Config.local.plist; sourceTree = "<group>"; };
 		49B14C8718750AD8F523DAA3 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
 		4FE3B6262C02A314F53F5C6A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		659D3F1B9D949A4261EA0D41 /* PortfolioSelectionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioSelectionStore.swift; sourceTree = "<group>"; };
+		735A98227DCA5B08E161815E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		788CFA619DF30BB02060C8D3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		7BB5CFFC4CB67D84AAA585C5 /* CryptoRaiskasWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoRaiskasWidgets.swift; sourceTree = "<group>"; };
 		8069980678EC6043A002F754 /* CryptoRaiskasIOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoRaiskasIOSApp.swift; sourceTree = "<group>"; };
+		8195F5652F92CC7E0044202F /* CryptoRaiskasIOS-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "CryptoRaiskasIOS-Info.plist"; sourceTree = "<group>"; };
 		8C242AE1187ADB188440130A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8F67DC19F11CCB42466B0A9F /* Crypto Raiskas.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Crypto Raiskas.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		933D9959288BD69B55CEC0B1 /* AppContract.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContract.swift; sourceTree = "<group>"; };
@@ -81,12 +111,17 @@
 		A12689C1D8F6A33302F8AE80 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		B0A2A4F4D93C793EE4201345 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		B11832D15E316853E33CFA33 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		B42DEA752C02ACAB70119450 /* Crypto Raiskas Watch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Crypto Raiskas Watch.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		BDEAC5D78F8901AC767B7805 /* WatchSnapshotSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSnapshotSync.swift; sourceTree = "<group>"; };
 		C65A1B088C1E4A2EB6F71A2C /* logo-sem-fundo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "logo-sem-fundo.png"; sourceTree = "<group>"; };
+		C74910321556A7830E21CF61 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		CE85FE6AB58BD424113D7CC3 /* AdminUsersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminUsersView.swift; sourceTree = "<group>"; };
 		D85A9127D8D9B0ECCFCDCC89 /* WidgetPortfolioSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetPortfolioSnapshotStore.swift; sourceTree = "<group>"; };
 		E99EA2B4723428D478E7BFE6 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		F0F58CC689D98C57221BD76E /* CryptoRaiskasWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoRaiskasWatchApp.swift; sourceTree = "<group>"; };
 		F92BA0D648F8BEB9DB978E8E /* Crypto Raiskas Widgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Crypto Raiskas Widgets.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FF74D09100259046A6F77823 /* AdminRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminRootView.swift; sourceTree = "<group>"; };
+		FF95A4A257BC5C8F2E962927 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -101,12 +136,34 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		02EAA788F47420151AC9D9C3 /* CryptoRaiskasWatchExtension */ = {
+			isa = PBXGroup;
+			children = (
+				F0F58CC689D98C57221BD76E /* CryptoRaiskasWatchApp.swift */,
+				735A98227DCA5B08E161815E /* Info.plist */,
+				0388939E172C7EBC56BFA0CF /* WatchRootView.swift */,
+				4702A4D9FD9E8E1B66734999 /* WatchSnapshotStore.swift */,
+			);
+			name = CryptoRaiskasWatchExtension;
+			path = Watch/CryptoRaiskasWatchExtension;
+			sourceTree = "<group>";
+		};
 		04EAAC50E305812DAEA7D2E1 /* Home */ = {
 			isa = PBXGroup;
 			children = (
 				140FC72A4F67908616735F9C /* HomeView.swift */,
 			);
 			path = Home;
+			sourceTree = "<group>";
+		};
+		057BF817F281D7F2B48C3428 /* CryptoRaiskasWatchApp */ = {
+			isa = PBXGroup;
+			children = (
+				FF95A4A257BC5C8F2E962927 /* Assets.xcassets */,
+				C74910321556A7830E21CF61 /* Info.plist */,
+			);
+			name = CryptoRaiskasWatchApp;
+			path = Watch/CryptoRaiskasWatchApp;
 			sourceTree = "<group>";
 		};
 		0998A345862EC6AC9DA3D20A /* Admin */ = {
@@ -144,7 +201,9 @@
 			children = (
 				B11832D15E316853E33CFA33 /* AppConfig.swift */,
 				0B490FA68C4F0712C46DF8F2 /* Models.swift */,
+				659D3F1B9D949A4261EA0D41 /* PortfolioSelectionStore.swift */,
 				49B14C8718750AD8F523DAA3 /* SupabaseService.swift */,
+				BDEAC5D78F8901AC767B7805 /* WatchSnapshotSync.swift */,
 				D85A9127D8D9B0ECCFCDCC89 /* WidgetPortfolioSnapshotStore.swift */,
 			);
 			path = Core;
@@ -196,6 +255,7 @@
 			isa = PBXGroup;
 			children = (
 				8F67DC19F11CCB42466B0A9F /* Crypto Raiskas.app */,
+				B42DEA752C02ACAB70119450 /* Crypto Raiskas Watch.app */,
 				F92BA0D648F8BEB9DB978E8E /* Crypto Raiskas Widgets.appex */,
 			);
 			name = Products;
@@ -231,7 +291,10 @@
 		F16AC1726EDD59D83A606695 = {
 			isa = PBXGroup;
 			children = (
+				8195F5652F92CC7E0044202F /* CryptoRaiskasIOS-Info.plist */,
 				472A3BED608241E4452EA5AD /* Config.local.plist */,
+				057BF817F281D7F2B48C3428 /* CryptoRaiskasWatchApp */,
+				02EAA788F47420151AC9D9C3 /* CryptoRaiskasWatchExtension */,
 				126DEEAD733999BE8A08B5F0 /* CryptoRaiskasWidgets */,
 				598C157071A3006F0893042D /* Resources */,
 				AC62602B63239C664EBC5087 /* Sources */,
@@ -242,6 +305,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		00918985C922E2BB01F8E353 /* CryptoRaiskasWatchApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 938356625579E3B748A94EFD /* Build configuration list for PBXNativeTarget "CryptoRaiskasWatchApp" */;
+			buildPhases = (
+				9884C5A1D6C1B0931513FFE8 /* Resources */,
+				FD3DC002580DFD1C13E47814 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CryptoRaiskasWatchApp;
+			packageProductDependencies = (
+			);
+			productName = CryptoRaiskasWatchApp;
+			productReference = B42DEA752C02ACAB70119450 /* Crypto Raiskas Watch.app */;
+			productType = "com.apple.product-type.application";
+		};
 		5EBF1A0E63379E8EF3F2E6A8 /* CryptoRaiskasWidgets */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5A6620AC6A514E8754B1BD9A /* Build configuration list for PBXNativeTarget "CryptoRaiskasWidgets" */;
@@ -268,11 +349,13 @@
 				ABCA0BFF6584BE254FE84E6D /* Resources */,
 				17BFF9301CDB1981EFBC4514 /* Frameworks */,
 				350EED1D20574BF9894B2540 /* Embed Foundation Extensions */,
+				6C05172E757D810D7EF52775 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				C0A1FC6D2F70AA1690AF633A /* PBXTargetDependency */,
+				BA902E55DC016A6BB9EB6079 /* PBXTargetDependency */,
 			);
 			name = CryptoRaiskasIOS;
 			packageProductDependencies = (
@@ -289,7 +372,18 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 2630;
+				LastUpgradeCheck = 2640;
+				TargetAttributes = {
+					00918985C922E2BB01F8E353 = {
+						ProvisioningStyle = Automatic;
+					};
+					5EBF1A0E63379E8EF3F2E6A8 = {
+						ProvisioningStyle = Automatic;
+					};
+					A004E55B7C99E182EAA89F05 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
 			};
 			buildConfigurationList = 00011014173AF8EADDB39E24 /* Build configuration list for PBXProject "CryptoRaiskasIOS" */;
 			compatibilityVersion = "Xcode 14.0";
@@ -308,12 +402,21 @@
 			projectRoot = "";
 			targets = (
 				A004E55B7C99E182EAA89F05 /* CryptoRaiskasIOS */,
+				00918985C922E2BB01F8E353 /* CryptoRaiskasWatchApp */,
 				5EBF1A0E63379E8EF3F2E6A8 /* CryptoRaiskasWidgets */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		9884C5A1D6C1B0931513FFE8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2D2431BBBCB109DA87768054 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A8D7489ED93DC97A53EDF372 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -362,16 +465,33 @@
 				8EA1FAB53AFF21A49EAC4A41 /* HomeView.swift in Sources */,
 				10B9284B373779286766611F /* MainTabView.swift in Sources */,
 				50DEAF322A901E34004DAC25 /* Models.swift in Sources */,
+				6587E61D9D6AF21671E33E24 /* PortfolioSelectionStore.swift in Sources */,
 				F94F788AABCB9941D6FBFB6D /* PortfolioView.swift in Sources */,
 				FCC14DACC3B6B417734EFF6C /* SignInView.swift in Sources */,
 				005640E293A56B0B7C363F1C /* SupabaseService.swift in Sources */,
+				29DE937E77359F264F9E7598 /* WatchSnapshotSync.swift in Sources */,
 				2EA104A2098BA875F55D41D6 /* WidgetPortfolioSnapshotStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FD3DC002580DFD1C13E47814 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8472D364230A08A2CC48AF53 /* CryptoRaiskasWatchApp.swift in Sources */,
+				FF3225D201F7333DBE8625C1 /* WatchRootView.swift in Sources */,
+				F312B9936B84AE0F24030EE8 /* WatchSnapshotStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		BA902E55DC016A6BB9EB6079 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 00918985C922E2BB01F8E353 /* CryptoRaiskasWatchApp */;
+			targetProxy = 61CDEF856156F358FA8EE909 /* PBXContainerItemProxy */;
+		};
 		C0A1FC6D2F70AA1690AF633A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 5EBF1A0E63379E8EF3F2E6A8 /* CryptoRaiskasWidgets */;
@@ -386,9 +506,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = CryptoRaiskasIOS.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 79KY2ARRTR;
 				GENERATE_INFOPLIST_FILE = YES;
 				GENERATE_LAUNCH_SCREEN_FILE = YES;
+				INFOPLIST_FILE = "CryptoRaiskasIOS-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Crypto Raiskas";
 				INFOPLIST_KEY_CFBundleName = "Crypto Raiskas";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
@@ -404,10 +526,51 @@
 			};
 			name = Debug;
 		};
+		48B5A2B543B2447CB98FD353 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = WatchAppIcon;
+				ASSETCATALOG_COMPILER_COMPLICATION_NAME = "";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Watch/CryptoRaiskasWatchApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.raiskas.ios.dev2.watchkitapp;
+				PRODUCT_NAME = "Crypto Raiskas Watch";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Debug;
+		};
+		682A6FF4E174877614261AA1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = WatchAppIcon;
+				ASSETCATALOG_COMPILER_COMPLICATION_NAME = "";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Watch/CryptoRaiskasWatchApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.raiskas.ios.dev2.watchkitapp;
+				PRODUCT_NAME = "Crypto Raiskas Watch";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Release;
+		};
 		750B7F439931C1239E08313F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -437,9 +600,12 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 79KY2ARRTR;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -462,13 +628,13 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.raiskas.ios;
+				PRODUCT_BUNDLE_IDENTIFIER = com.raiskas.ios.dev2;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.10;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 			};
 			name = Debug;
 		};
@@ -476,7 +642,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = CryptoRaiskasWidgets.entitlements;
-				DEVELOPMENT_TEAM = 79KY2ARRTR;
+				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Widgets/CryptoRaiskasWidgets/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -485,7 +651,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.raiskas.ios.widgets;
+				PRODUCT_BUNDLE_IDENTIFIER = com.raiskas.ios.dev2.widgets;
 				PRODUCT_NAME = "Crypto Raiskas Widgets";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -498,9 +664,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = CryptoRaiskasIOS.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 79KY2ARRTR;
 				GENERATE_INFOPLIST_FILE = YES;
 				GENERATE_LAUNCH_SCREEN_FILE = YES;
+				INFOPLIST_FILE = "CryptoRaiskasIOS-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Crypto Raiskas";
 				INFOPLIST_KEY_CFBundleName = "Crypto Raiskas";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
@@ -520,7 +688,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = CryptoRaiskasWidgets.entitlements;
-				DEVELOPMENT_TEAM = 79KY2ARRTR;
+				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Widgets/CryptoRaiskasWidgets/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -529,7 +697,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.raiskas.ios.widgets;
+				PRODUCT_BUNDLE_IDENTIFIER = com.raiskas.ios.dev2.widgets;
 				PRODUCT_NAME = "Crypto Raiskas Widgets";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -540,6 +708,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -569,9 +738,12 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 79KY2ARRTR;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -587,13 +759,13 @@
 				MARKETING_VERSION = 1.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.raiskas.ios;
+				PRODUCT_BUNDLE_IDENTIFIER = com.raiskas.ios.dev2;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.10;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 			};
 			name = Release;
 		};
@@ -623,6 +795,15 @@
 			buildConfigurations = (
 				2CD3E274B34E72179A29915D /* Debug */,
 				E1C342EE56DE8361222EE9EE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		938356625579E3B748A94EFD /* Build configuration list for PBXNativeTarget "CryptoRaiskasWatchApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				48B5A2B543B2447CB98FD353 /* Debug */,
+				682A6FF4E174877614261AA1 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

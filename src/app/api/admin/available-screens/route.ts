@@ -4,13 +4,14 @@ import path from 'path';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { Database } from '@/types/supabase';
-import { supabaseConfig } from '@/lib/config';
+import { getServiceRoleKey, supabaseConfig } from '@/lib/config';
+import { requireMasterUser } from "@/lib/server/admin-auth";
 
 // Helper para criar cliente Supabase (copiado de outra API para consistência)
 const createSupabaseClient = (cookieStore: ReturnType<typeof cookies>) => {
   return createServerClient<Database>(
     supabaseConfig.url!,
-    supabaseConfig.serviceRoleKey!, // Usar service role para operações admin
+    getServiceRoleKey(), // Usar service role para operações admin
     {
       cookies: {
         get(name: string) {
@@ -29,20 +30,12 @@ const createSupabaseClient = (cookieStore: ReturnType<typeof cookies>) => {
 
 export async function GET(request: NextRequest) {
   console.log("[API:AdminAvailableScreens:GET] Buscando telas disponíveis");
-  const cookieStore = cookies();
-  const supabase = createSupabaseClient(cookieStore);
 
   try {
-    // 1. Verificar autenticação e permissão (assumindo que só admin pode ver isso)
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !session?.user) {
-      return NextResponse.json({ error: "Usuário não autenticado ou erro na sessão." }, { status: 401 });
+    const auth = await requireMasterUser();
+    if (!auth.ok) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
-    // Adicionar verificação se o usuário é admin/master, se necessário
-    // const isMaster = session.user.user_metadata?.is_master === true;
-    // if (!isMaster) {
-    //   return NextResponse.json({ error: "Acesso não autorizado." }, { status: 403 });
-    // }
 
     // 2. Ler o arquivo de configuração
     const configPath = path.resolve(process.cwd(), 'screens.config.json');

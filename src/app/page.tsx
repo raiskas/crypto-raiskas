@@ -1,22 +1,16 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/hooks/use-auth";
+import { HOME_ROUTE } from "@/lib/config/routes";
+import { getServerSession } from "@/lib/supabase/async-cookies";
 
-export default function HomePage() {
-  const router = useRouter();
-  const { user, loading } = useAuth();
-  
-  useEffect(() => {
-    if (loading) return;
-    
-    if (user) {
-      router.push("/home");
-    } else {
-      router.push("/signin");
-    }
-  }, [user, loading, router]);
-  
-  return null;
+export const dynamic = "force-dynamic";
+
+export default async function RootPage() {
+  const session = await getServerSession();
+
+  if (session) {
+    redirect(HOME_ROUTE);
+  }
+
+  redirect("/signin?redirect=%2F");
 }

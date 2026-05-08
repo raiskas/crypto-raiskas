@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/types/supabase';
-import { supabaseConfig } from '@/lib/config';
+import { getServiceRoleKey, supabaseConfig } from '@/lib/config';
 
 // Inicializa o cliente Supabase com a chave de serviço para operações administrativas
 const supabase = createClient<Database>(
   supabaseConfig.url,
-  supabaseConfig.serviceRoleKey,
+  getServiceRoleKey(),
   {
     auth: {
       persistSession: false,

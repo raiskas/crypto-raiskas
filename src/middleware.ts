@@ -123,6 +123,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
+  if (pathname === '/') {
+    console.log(`[Middleware] DECISÃO: Usuário logado acessando raiz. Redirecionando para ${HOME_ROUTE}.`);
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = HOME_ROUTE;
+    return NextResponse.redirect(redirectUrl);
+  }
+
   // 4. Se está autenticado, verificar permissão para a rota protegida
   if (isAuthenticated) { // Não precisa mais verificar se não é AUTH/PUBLIC, pois já foram tratadas
     console.log(`[Middleware] Usuário logado (${user.email}) acessando rota protegida (${pathname}). Verificando permissão...`);

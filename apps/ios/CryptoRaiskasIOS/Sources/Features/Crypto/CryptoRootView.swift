@@ -70,6 +70,8 @@ final class CryptoRootViewModel: ObservableObject {
   @Published var loading = false
   @Published var saving = false
   @Published var error: String?
+  @Published var portfolios: [WalletPortfolioOption] = []
+  @Published var selectedPortfolioId: UUID?
 
   @Published var operations: [OperationRow] = []
   @Published var prices: [String: Double] = [:]
@@ -87,7 +89,22 @@ final class CryptoRootViewModel: ObservableObject {
     defer { loading = false }
 
     do {
-      let ops = try await SupabaseService.shared.fetchOperations(limit: 1200)
+      let fetchedPortfolios = try await SupabaseService.shared.fetchWalletPortfolios()
+      portfolios = fetchedPortfolios
+
+      let resolvedPortfolioId =
+        selectedPortfolioId.flatMap { current in
+          fetchedPortfolios.contains(where: { $0.id == current }) ? current : nil
+        }
+        ?? PortfolioSelectionStore.selectedPortfolioId.flatMap { stored in
+          fetchedPortfolios.contains(where: { $0.id == stored }) ? stored : nil
+        }
+        ?? fetchedPortfolios.first?.id
+
+      selectedPortfolioId = resolvedPortfolioId
+      PortfolioSelectionStore.selectedPortfolioId = resolvedPortfolioId
+
+      let ops = try await SupabaseService.shared.fetchOperations(limit: 1200, carteiraId: resolvedPortfolioId)
       operations = ops
       error = nil
 
@@ -121,6 +138,12 @@ final class CryptoRootViewModel: ObservableObject {
     }
   }
 
+  func selectPortfolio(_ id: UUID) async {
+    selectedPortfolioId = id
+    PortfolioSelectionStore.selectedPortfolioId = id
+    await refresh()
+  }
+
   func saveOperation(editingId: UUID?, form: OperationFormData) async {
     let qtd = Double(form.quantidade.replacingOccurrences(of: ",", with: ".")) ?? 0
     let preco = Double(form.precoUnitario.replacingOccurrences(of: ",", with: ".")) ?? 0
@@ -130,10 +153,16 @@ final class CryptoRootViewModel: ObservableObject {
       return
     }
 
+    guard let carteiraId = selectedPortfolioId ?? portfolios.first?.id else {
+      error = "Selecione um portfolio antes de salvar a operação."
+      return
+    }
+
     saving = true
     defer { saving = false }
     do {
       let input = OperationUpsertInput(
+        carteiraId: carteiraId,
         moedaId: form.coinId.lowercased(),
         nome: form.nome,
         simbolo: form.simbolo.uppercased(),
@@ -365,6 +394,7 @@ struct CryptoRootView: View {
       ScrollView {
         VStack(alignment: .leading, spacing: AppLayout.pageSpacing) {
           header
+          portfolioSelectorBlock
           summaryCards
           portfolioBlock
           operationsHeader
@@ -446,6 +476,47 @@ struct CryptoRootView: View {
         valueColor: s.unrealized >= 0 ? .green : .red
       )
       CryptoMetricCard(title: "L/P Realizado", value: AppFormatters.currency(s.realized), subtitle: "Total desde o início", icon: "bitcoinsign.circle", valueColor: s.realized >= 0 ? .green : .red)
+    }
+  }
+
+  private var portfolioSelectorBlock: some View {
+    AppCard {
+      VStack(alignment: .leading, spacing: 10) {
+        Text("Portfólio ativo")
+          .font(.title3.bold())
+          .foregroundStyle(AppTheme.strongText)
+
+        Text("As operações e o resumo desta página seguem o portfolio selecionado.")
+          .font(.subheadline)
+          .foregroundStyle(AppTheme.subtleText)
+
+        if vm.portfolios.isEmpty {
+          Text("Nenhum portfolio ativo encontrado.")
+            .font(.caption)
+            .foregroundStyle(AppTheme.subtleText)
+        } else {
+          Picker(
+            "Portfólio",
+            selection: Binding(
+              get: { vm.selectedPortfolioId ?? vm.portfolios.first?.id ?? UUID() },
+              set: { newValue in
+                Task { await vm.selectPortfolio(newValue) }
+              }
+            )
+          ) {
+            ForEach(vm.portfolios) { portfolio in
+              Text(portfolio.nome).tag(portfolio.id)
+            }
+          }
+          .pickerStyle(.menu)
+
+          if let selected = vm.portfolios.first(where: { $0.id == vm.selectedPortfolioId }) {
+            Text("Selecionado: \(selected.nome)")
+              .font(.caption)
+              .foregroundStyle(AppTheme.subtleText)
+          }
+        }
+      }
     }
   }
 

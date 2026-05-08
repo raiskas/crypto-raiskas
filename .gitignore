@@ -59,3 +59,7 @@ public/workbox-*.js
 # local tool runtime/cache data
 tools/cache/
 tools/onchain-monitor/data/
+
+# local secrets and Supabase link metadata
+Keys/
+supabase/.temp/

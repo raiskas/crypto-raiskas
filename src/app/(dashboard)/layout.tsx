@@ -1,10 +1,8 @@
-import { AuthProvider } from "@/providers/auth-provider";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "../globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { DashboardHeader } from "@/components/layouts/dashboard-header";
-import { PriceProvider } from '@/lib/context/PriceContext';
+import { DashboardRuntimeBoundary } from "@/components/layouts/dashboard-runtime-boundary";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,16 +17,14 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthProvider requireAuth={true}>
-      <PriceProvider>
-        <div className="flex min-h-screen flex-col">
-          <DashboardHeader />
-          <main className="flex-1 p-4 pt-6 md:p-6">
-            {children}
-          </main>
-          <Toaster />
-        </div>
-      </PriceProvider>
-    </AuthProvider>
+    <DashboardRuntimeBoundary>
+      <div className="flex min-h-screen flex-col">
+        <DashboardHeader />
+        <main className="flex-1 p-4 pt-6 md:p-6">
+          {children}
+        </main>
+        <Toaster />
+      </div>
+    </DashboardRuntimeBoundary>
   );
 } 

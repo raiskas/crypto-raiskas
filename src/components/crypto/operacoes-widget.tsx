@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useRouter } from "next/navigation";
-import { MarketDataMap, FullCoinData } from "@/lib/coingecko";
+import type { FullCoinData, MarketDataMap } from "@/types/crypto";
 
 // Tipo para top moedas
 interface TopMoeda {

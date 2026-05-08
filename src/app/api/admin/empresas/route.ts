@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { Database } from '@/types/supabase';
-import { supabaseConfig } from '@/lib/config';
+import { getServiceRoleKey, supabaseConfig } from '@/lib/config';
 import { z } from 'zod';
 import type { CookieOptions } from '@supabase/ssr';
 
@@ -33,7 +33,7 @@ const updateEmpresaSchema = empresaBaseSchema.partial().extend({ // Para PATCH, 
 const createClient = (cookieStore: ReturnType<typeof cookies>) => {
   return createServerClient<Database>(
     supabaseConfig.url!,
-    supabaseConfig.serviceRoleKey!, // Usar service role para operações admin
+    getServiceRoleKey(), // Usar service role para operações admin
     {
       cookies: {
         get(name: string) {

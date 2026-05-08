@@ -12,13 +12,36 @@ enum WidgetPortfolioSnapshotStore {
 
   static func save(portfolio: Double, unrealized: Double, unrealizedPct: Double) {
     guard let defaults = UserDefaults(suiteName: appGroupSuite) else { return }
+    let now = Date()
     defaults.set(portfolio, forKey: keyPortfolioTotal)
     defaults.set(unrealized, forKey: keyUnrealized)
     defaults.set(unrealizedPct, forKey: keyUnrealizedPct)
-    defaults.set(Date().timeIntervalSince1970, forKey: keyUpdatedAt)
+    defaults.set(now.timeIntervalSince1970, forKey: keyUpdatedAt)
     defaults.synchronize()
     #if canImport(WidgetKit)
     WidgetCenter.shared.reloadAllTimelines()
     #endif
+    #if os(iOS)
+    Task { @MainActor in
+      WatchSnapshotSync.pushSnapshot(
+        portfolio: portfolio,
+        unrealized: unrealized,
+        unrealizedPct: unrealizedPct,
+        updatedAt: now
+      )
+    }
+    #endif
+  }
+
+  static func readLatest() -> (portfolio: Double, unrealized: Double, unrealizedPct: Double, updatedAt: Date)? {
+    guard let defaults = UserDefaults(suiteName: appGroupSuite) else { return nil }
+    let ts = defaults.double(forKey: keyUpdatedAt)
+    guard ts > 0 else { return nil }
+    return (
+      portfolio: defaults.double(forKey: keyPortfolioTotal),
+      unrealized: defaults.double(forKey: keyUnrealized),
+      unrealizedPct: defaults.double(forKey: keyUnrealizedPct),
+      updatedAt: Date(timeIntervalSince1970: ts)
+    )
   }
 }

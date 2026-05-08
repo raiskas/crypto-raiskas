@@ -3,7 +3,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/types/supabase';
 import { cookies } from 'next/headers';
-import { supabaseConfig } from '@/lib/config';
+import { getServiceRoleKey, supabaseConfig } from '@/lib/config';
 
 // Verificação e inicialização de variáveis de ambiente
 const getSupabaseCredentials = () => {
@@ -32,7 +32,7 @@ export async function createServerSupabaseClient() {
     // Criando o cliente com as credenciais Admin/Service Role
     const supabase = createClient<Database>(
       supabaseConfig.url,
-      supabaseConfig.serviceRoleKey,
+      getServiceRoleKey(),
       {
         auth: {
           persistSession: false,

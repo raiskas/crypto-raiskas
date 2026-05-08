@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from '@supabase/supabase-js';
-import { supabaseConfig } from '@/lib/config';
-import { getCurrentUser } from '@/lib/supabase/auth';
+import { getServiceRoleKey, supabaseConfig } from '@/lib/config';
+import { requireMasterUser } from '@/lib/server/admin-auth';
 
 // Interface para os resultados de criação de tabelas
 interface TableResult {
@@ -13,23 +13,12 @@ interface TableResult {
 // GET: Criar tabelas necessárias
 export async function GET(request: NextRequest) {
   try {
-    // Verificar se o usuário é admin
-    const user = await getCurrentUser();
-    
-    // Verificar se o usuário existe ANTES de acessar propriedades
-    if (!user) {
-        console.error("[Admin:create-tables] Nenhum usuário autenticado encontrado.");
-        return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    const auth = await requireMasterUser();
+    if (!auth.ok) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
     
-    console.log(`[Admin:create-tables] Usuário: ${user.id}`);
-    
-    if (!user.ativo) {
-      return NextResponse.json(
-        { error: "Usuário não autorizado ou inativo" },
-        { status: 403 }
-      );
-    }
+    console.log(`[Admin:create-tables] Usuário master: ${auth.user.id}`);
     
     // Lista de tabelas a serem criadas
     const tables = ['crypto_operacoes'];
@@ -43,7 +32,7 @@ export async function GET(request: NextRequest) {
         // Verificar se a tabela já existe
         const supabase = createClient(
           supabaseConfig.url,
-          supabaseConfig.serviceRoleKey,
+          getServiceRoleKey(),
           {
             auth: {
               persistSession: false,

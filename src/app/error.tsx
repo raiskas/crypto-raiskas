@@ -2,6 +2,10 @@
 
 import { useEffect } from "react";
 
+const isLocalhost = () =>
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+
 export default function Error({
   error,
   reset,
@@ -19,6 +23,12 @@ export default function Error({
       <p className="text-sm text-muted-foreground">
         Tente novamente. Se persistir, recarregue a página.
       </p>
+      {isLocalhost() && (
+        <pre className="max-w-full overflow-auto rounded-md border bg-muted p-3 text-left text-xs text-foreground">
+          {error.message}
+          {error.digest ? `\nDigest: ${error.digest}` : ""}
+        </pre>
+      )}
       <button
         type="button"
         onClick={reset}
@@ -29,4 +39,3 @@ export default function Error({
     </div>
   );
 }
-
