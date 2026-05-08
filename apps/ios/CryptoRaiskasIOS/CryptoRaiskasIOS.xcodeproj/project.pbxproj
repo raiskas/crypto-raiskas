@@ -17,7 +17,7 @@
 		50DEAF322A901E34004DAC25 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B490FA68C4F0712C46DF8F2 /* Models.swift */; };
 		585A4AD3C0A3D97313D1BEC6 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A2A4F4D93C793EE4201345 /* AppState.swift */; };
 		601DF3129BD1E644082B4FED /* AdminRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF74D09100259046A6F77823 /* AdminRootView.swift */; };
-		654D30F2982998939077A3C8 /* Config.local.plist in Resources */ = {isa = PBXBuildFile; fileRef = 472A3BED608241E4452EA5AD /* Config.local.plist */; };
+		654D30F2982998939077A3C8 /* Config.plist in Resources */ = {isa = PBXBuildFile; fileRef = 472A3BED608241E4452EA5AD /* Config.plist */; };
 		6587E61D9D6AF21671E33E24 /* PortfolioSelectionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659D3F1B9D949A4261EA0D41 /* PortfolioSelectionStore.swift */; };
 		6F235D9DADE268D8A446E5E3 /* AdminUsersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE85FE6AB58BD424113D7CC3 /* AdminUsersView.swift */; };
 		7E87F5C8B80B6523078C2DEC /* Crypto Raiskas Watch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = B42DEA752C02ACAB70119450 /* Crypto Raiskas Watch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -95,7 +95,7 @@
 		3C6165D3CEE1BEF44C138032 /* PortfolioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioView.swift; sourceTree = "<group>"; };
 		46EFC1C7AD74168743D778F4 /* AppDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDestination.swift; sourceTree = "<group>"; };
 		4702A4D9FD9E8E1B66734999 /* WatchSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSnapshotStore.swift; sourceTree = "<group>"; };
-		472A3BED608241E4452EA5AD /* Config.local.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Config.local.plist; sourceTree = "<group>"; };
+		472A3BED608241E4452EA5AD /* Config.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Config.plist; sourceTree = "<group>"; };
 		49B14C8718750AD8F523DAA3 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
 		4FE3B6262C02A314F53F5C6A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		659D3F1B9D949A4261EA0D41 /* PortfolioSelectionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioSelectionStore.swift; sourceTree = "<group>"; };
@@ -292,7 +292,7 @@
 			isa = PBXGroup;
 			children = (
 				8195F5652F92CC7E0044202F /* CryptoRaiskasIOS-Info.plist */,
-				472A3BED608241E4452EA5AD /* Config.local.plist */,
+				472A3BED608241E4452EA5AD /* Config.plist */,
 				057BF817F281D7F2B48C3428 /* CryptoRaiskasWatchApp */,
 				02EAA788F47420151AC9D9C3 /* CryptoRaiskasWatchExtension */,
 				126DEEAD733999BE8A08B5F0 /* CryptoRaiskasWidgets */,
@@ -431,7 +431,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A5A71E8B618815A7FBF2A6F8 /* Assets.xcassets in Resources */,
-				654D30F2982998939077A3C8 /* Config.local.plist in Resources */,
+				654D30F2982998939077A3C8 /* Config.plist in Resources */,
 				CAB66B9CDD08A339A36CD0B0 /* logo-sem-fundo.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -602,7 +602,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 79KY2ARRTR;
@@ -740,7 +740,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 79KY2ARRTR;

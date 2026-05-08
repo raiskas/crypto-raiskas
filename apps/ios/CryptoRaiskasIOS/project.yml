@@ -22,8 +22,7 @@ targets:
       - path: Sources
       - path: Resources
         buildPhase: resources
-      - path: Config.local.plist
-        optional: true
+      - path: Config.plist
         buildPhase: resources
     settings:
       base:

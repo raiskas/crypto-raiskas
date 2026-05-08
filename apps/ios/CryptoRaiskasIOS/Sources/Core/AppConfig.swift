@@ -2,20 +2,24 @@ import Foundation
 
 enum AppConfig {
   private static var bundleConfig: [String: Any]? {
-    guard let url = Bundle.main.url(forResource: "Config.local", withExtension: "plist"),
-          let data = try? Data(contentsOf: url),
-          let plist = try? PropertyListSerialization.propertyList(from: data, format: nil),
-          let dict = plist as? [String: Any] else {
-      return nil
+    func load(_ resource: String) -> [String: Any]? {
+      guard let url = Bundle.main.url(forResource: resource, withExtension: "plist"),
+            let data = try? Data(contentsOf: url),
+            let plist = try? PropertyListSerialization.propertyList(from: data, format: nil),
+            let dict = plist as? [String: Any] else {
+        return nil
+      }
+      return dict
     }
-    return dict
+
+    return load("Config.local") ?? load("Config")
   }
 
   private static func readValue(_ key: String) -> String? {
-    if let value = bundleConfig?[key] as? String, !value.isEmpty {
+    if let value = ProcessInfo.processInfo.environment[key], !value.isEmpty {
       return value
     }
-    if let value = ProcessInfo.processInfo.environment[key], !value.isEmpty {
+    if let value = bundleConfig?[key] as? String, !value.isEmpty {
       return value
     }
     return nil
